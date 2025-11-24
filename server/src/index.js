@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -11,7 +12,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "*", // Allow all for dev
+        origin: process.env.CLIENT_URL || "http://localhost:5173",
         methods: ["GET", "POST"]
     }
 });
@@ -30,8 +31,8 @@ io.on('connection', (socket) => {
 
     socket.on('join_game', ({ userId, quizId }) => {
         gameManager.startSession(socket.id, userId, quizId);
-        socket.join(`quiz_${quizId}`);
-        console.log(`User ${userId} joined quiz ${quizId}`);
+        socket.join(`quiz_${quizId} `);
+        console.log(`User ${userId} joined quiz ${quizId} `);
     });
 
     socket.on('submit_answer', async ({ quizId, questionId, answer }) => {
@@ -65,7 +66,7 @@ io.on('connection', (socket) => {
             [session.userId, quizId, score],
             (err) => {
                 if (err) console.error('Error saving result:', err);
-                else console.log(`Saved score ${score} for user ${session.userId} on quiz ${quizId}`);
+                else console.log(`Saved score ${score} for user ${session.userId} on quiz ${quizId} `);
             }
         );
     });
@@ -78,5 +79,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT} `);
 });

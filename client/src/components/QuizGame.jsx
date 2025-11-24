@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
+import API_URL from '../config';
 import { useAuth } from '../context/AuthContext';
 
 const QuizGame = ({ quizId, onEndGame }) => {
@@ -25,7 +26,7 @@ const QuizGame = ({ quizId, onEndGame }) => {
 
     useEffect(() => {
         // Fetch quiz details first
-        fetch(`http://localhost:3001/api/quizzes/${quizId}`)
+        fetch(`${API_URL}/api/quizzes/${quizId}`)
             .then(res => res.json())
             .then(data => setQuiz(data));
     }, [quizId]);
@@ -34,7 +35,7 @@ const QuizGame = ({ quizId, onEndGame }) => {
         if (!quiz) return;
 
         // Connect socket
-        const newSocket = io('http://localhost:3001');
+        const newSocket = io(API_URL);
         setSocket(newSocket);
 
         newSocket.emit('join_game', { userId: user.id, quizId });

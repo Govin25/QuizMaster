@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import API_URL from '../config';
 
 const QuizSetup = ({ onStartQuiz }) => {
     const { user } = useAuth();
@@ -12,8 +13,8 @@ const QuizSetup = ({ onStartQuiz }) => {
 
     useEffect(() => {
         Promise.all([
-            fetch('http://localhost:3001/api/quizzes').then(res => res.json()),
-            fetch(`http://localhost:3001/api/results/${user.id}`).then(res => res.json())
+            fetch(`${API_URL}/api/quizzes`).then(res => res.json()),
+            fetch(`${API_URL}/api/results/${user.id}`).then(res => res.json())
         ])
             .then(([quizzesData, resultsData]) => {
                 setQuizzes(quizzesData);

@@ -1,11 +1,12 @@
 import React from 'react';
+import API_URL from '../config';
 
 const Leaderboard = ({ onBack }) => {
     const [scores, setScores] = React.useState([]);
     const [filter, setFilter] = React.useState('best'); // 'best' or 'all'
 
     React.useEffect(() => {
-        fetch(`http://localhost:3001/api/leaderboard?filter=${filter}`)
+        fetch(`${API_URL}/api/leaderboard?filter=${filter}`)
             .then(res => res.json())
             .then(data => setScores(data))
             .catch(err => console.error(err));

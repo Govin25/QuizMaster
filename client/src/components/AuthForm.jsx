@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import API_URL from '../config';
 
 const AuthForm = () => {
     const [isLogin, setIsLogin] = useState(true);
@@ -14,7 +15,7 @@ const AuthForm = () => {
         const endpoint = isLogin ? '/api/auth/login' : '/api/auth/signup';
 
         try {
-            const response = await fetch(`http://localhost:3001${endpoint}`, {
+            const response = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password }),

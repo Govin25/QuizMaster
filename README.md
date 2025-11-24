@@ -37,39 +37,58 @@ An interactive, real-time quiz application built with React, Node.js, Express, a
    cd QuizMaster
    ```
 
-2. **Install server dependencies**
+2. **Install all dependencies (root, server, and client)**
    ```bash
-   cd server
-   npm install
+   npm run install:all
    ```
 
-3. **Install client dependencies**
-   ```bash
-   cd ../client
-   npm install
+3. **Set up environment variables**
+   
+   **Server** (`server/.env`):
+   ```env
+   PORT=3001
+   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+   CLIENT_URL=http://localhost:5173
    ```
+
+   **Client** (`client/.env`):
+   ```env
+   VITE_API_URL=http://localhost:3001
+   ```
+
+   *Note: `.env.example` files are provided in both directories as templates.*
 
 ### Running the Application
 
-1. **Start the backend server**
-   ```bash
-   cd server
-   npm start
-   ```
-   Server runs on `http://localhost:3001`
+**Development Mode** (runs both frontend and backend concurrently):
+```bash
+npm run dev
+```
+- Backend: `http://localhost:3001`
+- Frontend: `http://localhost:5173`
 
-2. **Start the frontend (in a new terminal)**
-   ```bash
-   cd client
-   npm run dev
-   ```
-   Client runs on `http://localhost:5173`
+**Production Build**:
+```bash
+npm run build    # Build frontend
+npm start        # Start backend server
+```
 
-3. **Seed the database (optional)**
-   ```bash
-   cd server
-   node seed_expanded.js
-   ```
+**Seed the Database**:
+```bash
+npm run seed
+```
+
+### Individual Commands
+
+If you prefer to run frontend and backend separately:
+
+```bash
+# Backend only
+npm run dev:server
+
+# Frontend only  
+npm run dev:client
+```
 
 ## 📁 Project Structure
 
