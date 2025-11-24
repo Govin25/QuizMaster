@@ -4,13 +4,52 @@ import API_URL from '../config';
 const Leaderboard = ({ onBack }) => {
     const [scores, setScores] = React.useState([]);
     const [filter, setFilter] = React.useState('best'); // 'best' or 'all'
+    const [page, setPage] = React.useState(1);
+    const [totalPages, setTotalPages] = React.useState(1);
+    const [search, setSearch] = React.useState({
+        player: '',
+        quiz: '',
+        attempt: ''
+    });
+
+    // Debounce search
+    const [debouncedSearch, setDebouncedSearch] = React.useState(search);
 
     React.useEffect(() => {
-        fetch(`${API_URL}/api/leaderboard?filter=${filter}`)
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+            setPage(1); // Reset to page 1 on search change
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [search]);
+
+    React.useEffect(() => {
+        const queryParams = new URLSearchParams({
+            filter,
+            page,
+            limit: 10,
+            player: debouncedSearch.player,
+            quiz: debouncedSearch.quiz,
+            attempt: debouncedSearch.attempt
+        });
+
+        fetch(`${API_URL}/api/leaderboard?${queryParams}`)
             .then(res => res.json())
-            .then(data => setScores(data))
+            .then(data => {
+                if (data.meta) {
+                    setScores(data.data);
+                    setTotalPages(data.meta.totalPages);
+                } else {
+                    // Fallback for old API if needed (though we updated it)
+                    setScores(data);
+                }
+            })
             .catch(err => console.error(err));
-    }, [filter]);
+    }, [filter, page, debouncedSearch]);
+
+    const handleSearchChange = (field, value) => {
+        setSearch(prev => ({ ...prev, [field]: value }));
+    };
 
     return (
         <div className="glass-card" style={{ maxWidth: '900px', width: '100%' }}>
@@ -18,7 +57,7 @@ const Leaderboard = ({ onBack }) => {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '2rem',
+                marginBottom: '1rem',
                 borderBottom: '1px solid var(--glass-border)',
                 paddingBottom: '1rem',
                 flexWrap: 'wrap',
@@ -35,7 +74,7 @@ const Leaderboard = ({ onBack }) => {
                     border: '1px solid var(--glass-border)'
                 }}>
                     <button
-                        onClick={() => setFilter('best')}
+                        onClick={() => { setFilter('best'); setPage(1); }}
                         style={{
                             padding: '0.5rem 1.2rem',
                             borderRadius: '10px',
@@ -54,7 +93,7 @@ const Leaderboard = ({ onBack }) => {
                         Best Scores
                     </button>
                     <button
-                        onClick={() => setFilter('all')}
+                        onClick={() => { setFilter('all'); setPage(1); }}
                         style={{
                             padding: '0.5rem 1.2rem',
                             borderRadius: '10px',
@@ -73,6 +112,61 @@ const Leaderboard = ({ onBack }) => {
                         All Attempts
                     </button>
                 </div>
+            </div>
+
+            {/* Search Inputs */}
+            <div style={{
+                display: 'flex',
+                gap: '1rem',
+                marginBottom: '1.5rem',
+                flexWrap: 'wrap'
+            }}>
+                <input
+                    type="text"
+                    placeholder="Search Player..."
+                    value={search.player}
+                    onChange={(e) => handleSearchChange('player', e.target.value)}
+                    style={{
+                        padding: '0.8rem',
+                        borderRadius: '8px',
+                        border: '1px solid var(--glass-border)',
+                        background: 'rgba(255,255,255,0.05)',
+                        color: 'white',
+                        flex: 1,
+                        minWidth: '200px'
+                    }}
+                />
+                <input
+                    type="text"
+                    placeholder="Search Quiz..."
+                    value={search.quiz}
+                    onChange={(e) => handleSearchChange('quiz', e.target.value)}
+                    style={{
+                        padding: '0.8rem',
+                        borderRadius: '8px',
+                        border: '1px solid var(--glass-border)',
+                        background: 'rgba(255,255,255,0.05)',
+                        color: 'white',
+                        flex: 1,
+                        minWidth: '200px'
+                    }}
+                />
+                {filter === 'all' && (
+                    <input
+                        type="number"
+                        placeholder="Attempt #"
+                        value={search.attempt}
+                        onChange={(e) => handleSearchChange('attempt', e.target.value)}
+                        style={{
+                            padding: '0.8rem',
+                            borderRadius: '8px',
+                            border: '1px solid var(--glass-border)',
+                            background: 'rgba(255,255,255,0.05)',
+                            color: 'white',
+                            width: '120px'
+                        }}
+                    />
+                )}
             </div>
 
             <div style={{ overflowX: 'auto' }}>
@@ -100,12 +194,12 @@ const Leaderboard = ({ onBack }) => {
                                         lineHeight: '24px',
                                         textAlign: 'center',
                                         borderRadius: '50%',
-                                        background: idx < 3 ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
-                                        color: idx < 3 ? 'black' : 'white',
+                                        background: (page - 1) * 10 + idx < 3 ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+                                        color: (page - 1) * 10 + idx < 3 ? 'black' : 'white',
                                         fontWeight: 'bold',
                                         fontSize: '0.8rem'
                                     }}>
-                                        {idx + 1}
+                                        {(page - 1) * 10 + idx + 1}
                                     </span>
                                 </td>
                                 <td style={{ padding: '1rem', textAlign: 'left', fontWeight: '500' }}>{entry.username}</td>
@@ -147,9 +241,52 @@ const Leaderboard = ({ onBack }) => {
 
             {scores.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
-                    No scores yet. Be the first to play!
+                    No scores found.
                 </div>
             )}
+
+            {/* Pagination Controls */}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '1rem',
+                marginTop: '2rem'
+            }}>
+                <button
+                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                    style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '8px',
+                        border: '1px solid var(--glass-border)',
+                        background: 'rgba(255,255,255,0.05)',
+                        color: 'white',
+                        cursor: page === 1 ? 'not-allowed' : 'pointer',
+                        opacity: page === 1 ? 0.5 : 1
+                    }}
+                >
+                    Previous
+                </button>
+                <span style={{ color: 'var(--text-muted)' }}>
+                    Page {page} of {totalPages || 1}
+                </span>
+                <button
+                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page >= totalPages}
+                    style={{
+                        padding: '0.5rem 1rem',
+                        borderRadius: '8px',
+                        border: '1px solid var(--glass-border)',
+                        background: 'rgba(255,255,255,0.05)',
+                        color: 'white',
+                        cursor: page >= totalPages ? 'not-allowed' : 'pointer',
+                        opacity: page >= totalPages ? 0.5 : 1
+                    }}
+                >
+                    Next
+                </button>
+            </div>
 
             <button onClick={onBack} style={{ marginTop: '2rem' }}>Back to Menu</button>
         </div>
