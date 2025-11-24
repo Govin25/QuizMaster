@@ -3,7 +3,7 @@ import { io } from 'socket.io-client';
 import API_URL from '../config';
 import { useAuth } from '../context/AuthContext';
 
-const QuizGame = ({ quizId, onEndGame }) => {
+const QuizGame = ({ quizId, onEndGame, onShowReport }) => {
     const { user } = useAuth();
     const [socket, setSocket] = useState(null);
     const [quiz, setQuiz] = useState(null);
@@ -12,6 +12,8 @@ const QuizGame = ({ quizId, onEndGame }) => {
     const [timeLeft, setTimeLeft] = useState(30); // 30 seconds per question
     const [gameOver, setGameOver] = useState(false);
     const [feedback, setFeedback] = useState(null); // { correct: boolean, correctAnswer: string }
+    const [questionStartTime, setQuestionStartTime] = useState(Date.now());
+    const [resultId, setResultId] = useState(null);
 
     const scoreRef = useRef(score);
     const socketRef = useRef(socket);
@@ -52,8 +54,20 @@ const QuizGame = ({ quizId, onEndGame }) => {
             }, 2000);
         });
 
+        newSocket.on('result_saved', ({ success, resultId }) => {
+            console.log('Received result_saved event:', { success, resultId });
+            if (success) {
+                setResultId(resultId);
+            }
+        });
+
         return () => newSocket.close();
     }, [quiz, quizId, user.id]);
+
+    // Reset question start time when question changes
+    useEffect(() => {
+        setQuestionStartTime(Date.now());
+    }, [currentQuestionIndex]);
 
     useEffect(() => {
         if (timeLeft > 0 && !gameOver && !feedback) {
@@ -86,11 +100,15 @@ const QuizGame = ({ quizId, onEndGame }) => {
 
     const submitAnswer = (answer) => {
         if (feedback) return; // Prevent double submission
+
         const question = quiz.questions[currentQuestionIndex];
+        const timeTaken = Math.floor((Date.now() - questionStartTime) / 1000); // Convert to seconds
+
         socket.emit('submit_answer', {
             quizId,
             questionId: question.id,
-            answer
+            answer,
+            timeTaken
         });
     };
 
@@ -113,6 +131,15 @@ const QuizGame = ({ quizId, onEndGame }) => {
                         <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>{Math.round((score / (quiz.questions.length * 10)) * 100)}%</div>
                     </div>
                 </div>
+                {resultId ? (
+                    <button onClick={() => onShowReport(resultId)} style={{ marginBottom: '1rem' }}>
+                        View Detailed Report
+                    </button>
+                ) : (
+                    <div style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                        Saving results...
+                    </div>
+                )}
                 <button onClick={onEndGame}>Back to Menu</button>
             </div>
         );
@@ -136,9 +163,9 @@ const QuizGame = ({ quizId, onEndGame }) => {
                     marginBottom: '1rem',
                     borderRadius: '8px',
                     background: feedback.correct ? 'rgba(34, 197, 94, 0.2)' : 'rgba(239, 68, 68, 0.2)',
-                    border: `1px solid ${feedback.correct ? '#22c55e' : '#ef4444'}`
+                    border: `1px solid ${feedback.correct ? '#22c55e' : '#ef4444'} `
                 }}>
-                    {feedback.correct ? 'Correct!' : `Wrong! The answer was ${feedback.correctAnswer}`}
+                    {feedback.correct ? 'Correct!' : `Wrong! The answer was ${feedback.correctAnswer} `}
                 </div>
             )}
 

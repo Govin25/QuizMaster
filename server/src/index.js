@@ -7,6 +7,7 @@ const authRoutes = require('./routes/auth');
 const quizRoutes = require('./routes/quiz');
 const gameManager = require('./managers/GameManager');
 const Quiz = require('./models/Quiz');
+const QuizResult = require('./models/QuizResult');
 
 const app = express();
 const server = http.createServer(app);
@@ -35,7 +36,7 @@ io.on('connection', (socket) => {
         console.log(`User ${userId} joined quiz ${quizId} `);
     });
 
-    socket.on('submit_answer', async ({ quizId, questionId, answer }) => {
+    socket.on('submit_answer', async ({ quizId, questionId, answer, timeTaken }) => {
         const session = gameManager.getSession(socket.id);
         if (!session) return;
 
@@ -53,6 +54,21 @@ io.on('connection', (socket) => {
             socket.emit('score_update', { score: newScore });
         }
 
+        // Save question attempt to database
+        try {
+            await QuizResult.saveQuestionAttempt({
+                userId: session.userId,
+                quizId: quizId,
+                questionId: questionId,
+                resultId: session.resultId || null, // Will be updated when result is saved
+                userAnswer: answer,
+                isCorrect: isCorrect,
+                timeTakenSeconds: timeTaken || 0
+            });
+        } catch (err) {
+            console.error('Error saving question attempt:', err);
+        }
+
         socket.emit('answer_result', { correct: isCorrect, correctAnswer: question.correctAnswer });
     });
 
@@ -64,9 +80,26 @@ io.on('connection', (socket) => {
         db.run(
             'INSERT INTO results (user_id, quiz_id, score) VALUES (?, ?, ?)',
             [session.userId, quizId, score],
-            (err) => {
-                if (err) console.error('Error saving result:', err);
-                else console.log(`Saved score ${score} for user ${session.userId} on quiz ${quizId} `);
+            function (err) {
+                if (err) {
+                    console.error('Error saving result:', err);
+                    socket.emit('result_saved', { success: false });
+                } else {
+                    const resultId = this.lastID;
+                    console.log(`Saved score ${score} for user ${session.userId} on quiz ${quizId}`);
+
+                    // Update all question attempts with the result_id
+                    db.run(
+                        'UPDATE question_attempts SET result_id = ? WHERE user_id = ? AND quiz_id = ? AND result_id IS NULL',
+                        [resultId, session.userId, quizId],
+                        (updateErr) => {
+                            if (updateErr) console.error('Error updating attempts:', updateErr);
+                        }
+                    );
+
+                    // Send result ID back to client for navigation
+                    socket.emit('result_saved', { success: true, resultId: resultId });
+                }
             }
         );
     });

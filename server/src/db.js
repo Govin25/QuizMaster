@@ -54,6 +54,23 @@ function initializeSchema() {
       FOREIGN KEY(user_id) REFERENCES users(id),
       FOREIGN KEY(quiz_id) REFERENCES quizzes(id)
     )`);
+
+    // Question Attempts Table - tracks detailed metrics for each question
+    db.run(`CREATE TABLE IF NOT EXISTS question_attempts (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      quiz_id INTEGER NOT NULL,
+      question_id INTEGER NOT NULL,
+      result_id INTEGER,
+      user_answer TEXT NOT NULL,
+      is_correct BOOLEAN NOT NULL,
+      time_taken_seconds INTEGER NOT NULL,
+      attempted_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(user_id) REFERENCES users(id),
+      FOREIGN KEY(quiz_id) REFERENCES quizzes(id),
+      FOREIGN KEY(question_id) REFERENCES questions(id),
+      FOREIGN KEY(result_id) REFERENCES results(id)
+    )`);
   });
 }
 

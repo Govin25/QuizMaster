@@ -1,5 +1,6 @@
 const express = require('express');
 const Quiz = require('../models/Quiz');
+const QuizResult = require('../models/QuizResult');
 
 const router = express.Router();
 
@@ -41,6 +42,39 @@ router.post('/:id/questions', async (req, res) => {
         const quizId = req.params.id;
         const questionId = await Quiz.addQuestion(quizId, req.body);
         res.status(201).json({ id: questionId });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get detailed quiz report
+router.get('/results/:resultId/report', async (req, res) => {
+    try {
+        const report = await QuizResult.getQuizReport(req.params.resultId);
+        if (!report) return res.status(404).json({ error: 'Report not found' });
+        res.json(report);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get question analysis
+router.get('/questions/:questionId/analysis', async (req, res) => {
+    try {
+        const userId = req.query.userId || null;
+        const analysis = await QuizResult.getQuestionAnalysis(req.params.questionId, userId);
+        if (!analysis) return res.status(404).json({ error: 'Question not found' });
+        res.json(analysis);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get all attempts for a quiz by a user
+router.get('/:quizId/attempts/:userId', async (req, res) => {
+    try {
+        const attempts = await QuizResult.getUserQuizAttempts(req.params.quizId, req.params.userId);
+        res.json(attempts);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
