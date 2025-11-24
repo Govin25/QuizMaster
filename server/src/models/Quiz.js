@@ -2,22 +2,26 @@ const db = require('../db');
 const { MultipleChoiceQuestion, TrueFalseQuestion } = require('./Question');
 
 class Quiz {
-    constructor(id, title, category, difficulty, questions = []) {
+    constructor(id, title, category, difficulty, questions = [], creator_id = null, is_public = false, status = 'draft', created_at = null) {
         this.id = id;
         this.title = title;
         this.category = category;
         this.difficulty = difficulty;
         this.questions = questions;
+        this.creator_id = creator_id;
+        this.is_public = is_public;
+        this.status = status;
+        this.created_at = created_at;
     }
 
-    static async create(title, category, difficulty) {
+    static async create(title, category, difficulty, creator_id = null) {
         return new Promise((resolve, reject) => {
             db.run(
-                'INSERT INTO quizzes (title, category, difficulty) VALUES (?, ?, ?)',
-                [title, category, difficulty],
+                'INSERT INTO quizzes (title, category, difficulty, creator_id) VALUES (?, ?, ?, ?)',
+                [title, category, difficulty, creator_id],
                 function (err) {
                     if (err) return reject(err);
-                    resolve(new Quiz(this.lastID, title, category, difficulty));
+                    resolve(new Quiz(this.lastID, title, category, difficulty, [], creator_id));
                 }
             );
         });
@@ -34,6 +38,19 @@ class Quiz {
                 function (err) {
                     if (err) return reject(err);
                     resolve(this.lastID);
+                }
+            );
+        });
+    }
+
+    static async updateStatus(id, status, is_public) {
+        return new Promise((resolve, reject) => {
+            db.run(
+                'UPDATE quizzes SET status = ?, is_public = ? WHERE id = ?',
+                [status, is_public, id],
+                function (err) {
+                    if (err) return reject(err);
+                    resolve(this.changes);
                 }
             );
         });
@@ -68,7 +85,17 @@ class Quiz {
             }
         });
 
-        return new Quiz(quizData.id, quizData.title, quizData.category, quizData.difficulty, questions);
+        return new Quiz(
+            quizData.id,
+            quizData.title,
+            quizData.category,
+            quizData.difficulty,
+            questions,
+            quizData.creator_id,
+            quizData.is_public,
+            quizData.status,
+            quizData.created_at
+        );
     }
 
     static async getAll() {
@@ -80,6 +107,38 @@ class Quiz {
                 GROUP BY q.id
             `;
             db.all(query, [], (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+    }
+
+    static async getPublicQuizzes() {
+        return new Promise((resolve, reject) => {
+            const query = `
+                SELECT q.*, COUNT(qu.id) as questionCount 
+                FROM quizzes q 
+                LEFT JOIN questions qu ON q.id = qu.quiz_id 
+                WHERE q.is_public = 1
+                GROUP BY q.id
+            `;
+            db.all(query, [], (err, rows) => {
+                if (err) return reject(err);
+                resolve(rows);
+            });
+        });
+    }
+
+    static async getUserQuizzes(userId) {
+        return new Promise((resolve, reject) => {
+            const query = `
+                SELECT q.*, COUNT(qu.id) as questionCount 
+                FROM quizzes q 
+                LEFT JOIN questions qu ON q.id = qu.quiz_id 
+                WHERE q.creator_id = ?
+                GROUP BY q.id
+            `;
+            db.all(query, [userId], (err, rows) => {
                 if (err) return reject(err);
                 resolve(rows);
             });

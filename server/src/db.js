@@ -27,8 +27,27 @@ function initializeSchema() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       category TEXT NOT NULL,
-      difficulty TEXT NOT NULL
+      difficulty TEXT NOT NULL,
+      creator_id INTEGER,
+      is_public BOOLEAN DEFAULT 0,
+      status TEXT DEFAULT 'draft',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(creator_id) REFERENCES users(id)
     )`);
+
+    // Migration for existing quizzes table
+    const columnsToAdd = [
+      "ALTER TABLE quizzes ADD COLUMN creator_id INTEGER REFERENCES users(id)",
+      "ALTER TABLE quizzes ADD COLUMN is_public BOOLEAN DEFAULT 0",
+      "ALTER TABLE quizzes ADD COLUMN status TEXT DEFAULT 'draft'",
+      "ALTER TABLE quizzes ADD COLUMN created_at DATETIME DEFAULT CURRENT_TIMESTAMP"
+    ];
+
+    columnsToAdd.forEach(query => {
+      db.run(query, (err) => {
+        // Ignore errors if column already exists
+      });
+    });
 
     // Questions Table
     // type: 'multiple_choice' or 'true_false'
@@ -70,6 +89,18 @@ function initializeSchema() {
       FOREIGN KEY(quiz_id) REFERENCES quizzes(id),
       FOREIGN KEY(question_id) REFERENCES questions(id),
       FOREIGN KEY(result_id) REFERENCES results(id)
+    )`);
+
+    // Quiz Reviews Table
+    db.run(`CREATE TABLE IF NOT EXISTS quiz_reviews (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      quiz_id INTEGER NOT NULL,
+      reviewer_id INTEGER,
+      status TEXT NOT NULL,
+      comments TEXT,
+      reviewed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(quiz_id) REFERENCES quizzes(id),
+      FOREIGN KEY(reviewer_id) REFERENCES users(id)
     )`);
   });
 }

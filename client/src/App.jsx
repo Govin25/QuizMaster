@@ -1,15 +1,21 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ToastProvider } from './context/ToastContext';
 import AuthForm from './components/AuthForm';
 import QuizSetup from './components/QuizSetup';
 import QuizGame from './components/QuizGame';
 import Leaderboard from './components/Leaderboard';
 import QuizReport from './components/QuizReport';
 import QuizAttempts from './components/QuizAttempts';
+import MyQuizzes from './components/MyQuizzes';
+import QuizCreator from './components/QuizCreator';
+// import QuizHub from './components/QuizHub';
+import AIGenerator from './components/AIGenerator';
+import QuizReview from './components/QuizReview';
 
 const AppContent = () => {
   const { user, logout } = useAuth();
-  const [view, setView] = useState('menu'); // menu, game, leaderboard, report, attempts
+  const [view, setView] = useState('menu'); // menu, game, leaderboard, report, attempts, my-quizzes, creator, hub, ai-generator, review
   const [activeQuizId, setActiveQuizId] = useState(null);
   const [activeResultId, setActiveResultId] = useState(null);
 
@@ -21,6 +27,7 @@ const AppContent = () => {
       </div>
     );
   }
+
 
   const startQuiz = (quizId) => {
     setActiveQuizId(quizId);
@@ -113,14 +120,64 @@ const AppContent = () => {
             flexWrap: 'wrap'
           }}>
             <button
+              onClick={() => setView('hub')}
+              style={{
+                padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
+                fontSize: 'clamp(0.75rem, 2vw, 0.9rem)',
+                minWidth: 'auto',
+                background: view === 'hub' ? 'var(--primary)' : 'rgba(255,255,255,0.1)'
+              }}
+            >
+              Quiz Hub
+            </button>
+            <button
+              onClick={() => setView('my-quizzes')}
+              style={{
+                padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
+                fontSize: 'clamp(0.75rem, 2vw, 0.9rem)',
+                minWidth: 'auto',
+                background: view === 'my-quizzes' ? 'var(--primary)' : 'rgba(255,255,255,0.1)'
+              }}
+            >
+              My Quizzes
+            </button>
+            <button
+              onClick={() => setView('ai-generator')}
+              style={{
+                padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
+                fontSize: 'clamp(0.75rem, 2vw, 0.9rem)',
+                minWidth: 'auto',
+                background: view === 'ai-generator'
+                  ? 'linear-gradient(45deg, #ff00cc, #3333ff)'
+                  : 'rgba(255,255,255,0.1)',
+                opacity: view === 'ai-generator' ? 1 : 0.7
+              }}
+            >
+              ✨ AI Generate
+            </button>
+            <button
+              onClick={() => setView('review')}
+              style={{
+                padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
+                fontSize: 'clamp(0.75rem, 2vw, 0.9rem)',
+                minWidth: 'auto',
+                background: view === 'review' ? 'var(--primary)' : 'rgba(255,255,255,0.1)'
+              }}
+            >
+              Review Quizzes
+            </button>
+            <button
               onClick={() => setView('leaderboard')}
               style={{
                 padding: 'clamp(0.4rem, 1.5vw, 0.5rem) clamp(0.75rem, 2vw, 1rem)',
                 fontSize: 'clamp(0.75rem, 2vw, 0.9rem)',
-                minWidth: 'auto'
+                minWidth: 'auto',
+                background: view === 'leaderboard'
+                  ? 'linear-gradient(135deg, var(--primary), var(--secondary))'
+                  : 'rgba(255,255,255,0.1)'
               }}
             >
-              Leaderboard
+              🏆 Leaderboard
             </button>
             <button
               onClick={logout}
@@ -142,6 +199,37 @@ const AppContent = () => {
       {view === 'leaderboard' && <Leaderboard onBack={backToMenu} />}
       {view === 'report' && <QuizReport resultId={activeResultId} onBackToMenu={backToMenu} onBackToAttempts={backToAttempts} />}
       {view === 'attempts' && <QuizAttempts quizId={activeQuizId} userId={user.id} onViewReport={showReport} onBack={backToMenu} />}
+
+      {view === 'my-quizzes' && (
+        <MyQuizzes
+          onEdit={(id) => console.log('Edit', id)}
+          onCreate={() => setView('creator')}
+          onBack={backToMenu}
+        />
+      )}
+      {view === 'creator' && (
+        <QuizCreator
+          onBack={() => setView('my-quizzes')}
+          onCreated={() => setView('my-quizzes')}
+        />
+      )}
+      {/* {view === 'hub' && (
+        <QuizHub
+          onStartQuiz={startQuiz}
+          onBack={backToMenu}
+        />
+      )} */}
+      {view === 'ai-generator' && (
+        <AIGenerator
+          onBack={backToMenu}
+          onCreated={() => setView('my-quizzes')}
+        />
+      )}
+      {view === 'review' && (
+        <QuizReview
+          onBack={backToMenu}
+        />
+      )}
     </div>
   );
 };
@@ -149,7 +237,9 @@ const AppContent = () => {
 function App() {
   return (
     <AuthProvider>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </AuthProvider>
   );
 }
