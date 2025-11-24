@@ -1,60 +1,80 @@
 # Vercel Deployment Guide
 
-## Environment Variables
+## Recommended Approach: Split Deployment
 
-Set these in your Vercel project settings (Settings → Environment Variables):
+Since this app uses Socket.IO and SQLite, the best approach is to deploy frontend and backend separately.
 
-### Production Environment Variables
+### Option 1: Frontend on Vercel (Recommended)
 
-**Server Variables:**
-- `PORT` = `3001` (or leave empty, Vercel will assign)
-- `JWT_SECRET` = `your-production-secret-key-here`
-- `CLIENT_URL` = `https://your-app.vercel.app`
+**1. Deploy Frontend to Vercel:**
+- The `vercel.json` is configured for frontend-only deployment
+- Vercel will build the React app from the `client` directory
 
-**Client Variables:**
-- `VITE_API_URL` = `https://your-app.vercel.app`
+**2. Deploy Backend Separately:**
+- Use Railway, Render, or Heroku for the backend
+- These platforms support WebSockets and persistent databases better
 
-## Deployment Steps
+**3. Environment Variables in Vercel:**
+- `VITE_API_URL` = `https://your-backend-url.railway.app` (or your backend URL)
 
-1. **Install Vercel CLI** (optional, for local testing):
-   ```bash
-   npm install -g vercel
-   ```
+### Option 2: Full Stack on Railway/Render
 
-2. **Connect to Vercel**:
-   - Push your code to GitHub/GitLab/Bitbucket
-   - Go to [vercel.com](https://vercel.com)
-   - Import your repository
-   - Vercel will auto-detect the configuration
+Deploy the entire monorepo to Railway or Render for better Socket.IO support.
 
-3. **Set Environment Variables** in Vercel Dashboard:
-   - Go to Project Settings → Environment Variables
-   - Add all variables listed above
-   - Make sure to set them for "Production", "Preview", and "Development"
+## Vercel Setup (Frontend Only)
 
-4. **Deploy**:
-   - Vercel will automatically deploy on every push to main branch
-   - Or manually trigger deployment from Vercel dashboard
+### Step 1: Prepare Backend
+Deploy your backend to Railway/Render first:
+1. Create new project on Railway/Render
+2. Connect your GitHub repo
+3. Set root directory to `server`
+4. Add environment variables:
+   - `PORT` (Railway/Render will provide)
+   - `JWT_SECRET` = `your-production-secret`
+   - `CLIENT_URL` = `https://your-app.vercel.app`
 
-## Important Notes
+### Step 2: Deploy Frontend to Vercel
+1. Go to [vercel.com](https://vercel.com)
+2. Import your repository
+3. Vercel will auto-detect the configuration from `vercel.json`
+4. Add environment variable:
+   - `VITE_API_URL` = `https://your-backend-url.railway.app`
+5. Deploy!
 
-⚠️ **Database**: SQLite won't work on Vercel (serverless). You'll need to:
-- Use a hosted database (PostgreSQL, MySQL, MongoDB)
-- Or use Vercel's KV/Postgres offerings
-- Update `server/src/db.js` accordingly
+## Environment Variables Summary
 
-⚠️ **Socket.IO**: May have limitations on Vercel serverless. Consider:
-- Using Vercel's Edge Functions
-- Or deploying backend separately (Railway, Render, Heroku)
+### Backend (Railway/Render):
+```env
+PORT=3001
+JWT_SECRET=your-production-secret-key-here
+CLIENT_URL=https://your-app.vercel.app
+```
 
-## Alternative: Split Deployment
+### Frontend (Vercel):
+```env
+VITE_API_URL=https://your-backend-url.railway.app
+```
 
-For better Socket.IO support, consider:
+## Database Migration
 
-**Frontend on Vercel:**
-- Deploy only the `client` directory
-- Set `VITE_API_URL` to your backend URL
+⚠️ **Important:** SQLite won't work in production. Migrate to PostgreSQL:
 
-**Backend on Railway/Render:**
-- Deploy the `server` directory
-- Better support for WebSockets and persistent connections
+1. **Railway Postgres** (easiest):
+   - Add PostgreSQL plugin in Railway
+   - Update `server/src/db.js` to use PostgreSQL
+   - Install `pg` package: `npm install pg`
+
+2. **Update db.js** to use PostgreSQL instead of SQLite
+
+## Testing Locally with Production URLs
+
+```bash
+# In server/.env
+CLIENT_URL=http://localhost:5173
+
+# In client/.env  
+VITE_API_URL=http://localhost:3001
+
+# Run both
+npm run dev
+```
