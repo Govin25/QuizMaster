@@ -1,36 +1,21 @@
-const db = require('../db');
-const bcrypt = require('bcrypt');
+const UserRepository = require('../repositories/UserRepository');
 
 class User {
-    static async create(username, password) {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        return new Promise((resolve, reject) => {
-            db.run(
-                'INSERT INTO users (username, password) VALUES (?, ?)',
-                [username, hashedPassword],
-                function (err) {
-                    if (err) return reject(err);
-                    resolve({ id: this.lastID, username });
-                }
-            );
-        });
+    static async create(username, password, role = 'user') {
+        return await UserRepository.create(username, password, role);
     }
 
-    static findByUsername(username) {
-        return new Promise((resolve, reject) => {
-            db.get(
-                'SELECT * FROM users WHERE username = ?',
-                [username],
-                (err, row) => {
-                    if (err) return reject(err);
-                    resolve(row);
-                }
-            );
-        });
+    static async findByUsername(username) {
+        return await UserRepository.findByUsername(username);
     }
 
     static async validatePassword(user, password) {
-        return await bcrypt.compare(password, user.password);
+        if (!user || !user.validatePassword) {
+            // Fallback for plain user objects from repository
+            const bcrypt = require('bcrypt');
+            return await bcrypt.compare(password, user.password);
+        }
+        return await user.validatePassword(password);
     }
 }
 

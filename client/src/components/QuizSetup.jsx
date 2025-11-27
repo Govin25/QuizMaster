@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import API_URL from '../config';
 
-const QuizSetup = ({ onStartQuiz }) => {
+const QuizSetup = ({ onStartQuiz, onViewAttempts }) => {
     const { user } = useAuth();
     const [quizzes, setQuizzes] = useState([]);
     const [results, setResults] = useState({});
@@ -76,7 +76,7 @@ const QuizSetup = ({ onStartQuiz }) => {
                         style={{ width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)', color: 'white' }}
                     />
                 </div>
-                <div style={{ minWidth: '150px' }}>
+                <div style={{ minWidth: '150px', position: 'relative' }}>
                     <select
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
@@ -152,10 +152,24 @@ const QuizSetup = ({ onStartQuiz }) => {
 
                                         <button
                                             onClick={() => onStartQuiz(quiz.id)}
-                                            style={{ width: '100%', marginTop: 'auto' }}
+                                            style={{ width: '100%', marginBottom: isCompleted ? '0.5rem' : '0' }}
                                         >
                                             {isCompleted ? 'Retake Quiz' : 'Start Quiz'}
                                         </button>
+
+                                        {isCompleted && (
+                                            <button
+                                                onClick={() => onViewAttempts(quiz.id)}
+                                                style={{
+                                                    width: '100%',
+                                                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))',
+                                                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                                                    color: '#a5b4fc'
+                                                }}
+                                            >
+                                                📊 View Reports ({result.attempts})
+                                            </button>
+                                        )}
                                     </div>
                                 );
                             })}

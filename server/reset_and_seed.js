@@ -1,5 +1,5 @@
 const db = require('./src/db');
-const Quiz = require('./src/models/Quiz');
+const bcrypt = require('bcrypt');
 
 const pythonQuizzes = [
     {
@@ -174,30 +174,129 @@ const pythonQuizzes = [
     }
 ];
 
-async function seed() {
-    console.log('Seeding Python Levels...');
+async function resetAndSeed() {
+    console.log('🗑️  Clearing all existing data...');
 
+    // Wait for DB to be ready
     setTimeout(async () => {
         try {
-            // Optional: Clear existing Python quizzes to avoid duplicates if re-seeding
-            // For now, we just append.
+            // Clear all tables
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM question_attempts', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared question_attempts');
 
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM results', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared results');
+
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM quiz_reviews', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared quiz_reviews');
+
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM user_quiz_library', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared user_quiz_library');
+
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM questions', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared questions');
+
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM quizzes', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared quizzes');
+
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM users', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared users');
+
+            // Create System admin user
+            console.log('\n👤 Creating System admin user...');
+            const hashedPassword = await bcrypt.hash('system123', 10);
+            const systemUserId = await new Promise((resolve, reject) => {
+                db.run(
+                    'INSERT INTO users (username, password) VALUES (?, ?)',
+                    ['System', hashedPassword],
+                    function (err) {
+                        if (err) reject(err);
+                        else resolve(this.lastID);
+                    }
+                );
+            });
+            console.log(`✓ Created System admin (ID: ${systemUserId})`);
+
+            // Seed Python quizzes as published
+            console.log('\n📚 Seeding Python quizzes...');
             for (const quizData of pythonQuizzes) {
-                const quiz = await Quiz.create(quizData.title, quizData.category, quizData.difficulty);
-                console.log(`Created Quiz: ${quiz.title}`);
+                // Create quiz with System as creator, status 'approved', is_public = 1
+                const quizId = await new Promise((resolve, reject) => {
+                    db.run(
+                        'INSERT INTO quizzes (title, category, difficulty, creator_id, status, is_public) VALUES (?, ?, ?, ?, ?, ?)',
+                        [quizData.title, quizData.category, quizData.difficulty, systemUserId, 'approved', 1],
+                        function (err) {
+                            if (err) reject(err);
+                            else resolve(this.lastID);
+                        }
+                    );
+                });
+                console.log(`  ✓ Created: ${quizData.title} (ID: ${quizId})`);
 
+                // Add questions
                 for (const q of quizData.questions) {
-                    await Quiz.addQuestion(quiz.id, q);
+                    await new Promise((resolve, reject) => {
+                        const options = q.type === 'multiple_choice' ? JSON.stringify(q.options) : null;
+                        db.run(
+                            'INSERT INTO questions (quiz_id, type, question_text, options, correct_answer) VALUES (?, ?, ?, ?, ?)',
+                            [quizId, q.type, q.text, options, q.correctAnswer],
+                            function (err) {
+                                if (err) reject(err);
+                                else resolve(this.lastID);
+                            }
+                        );
+                    });
                 }
+                console.log(`    → Added ${quizData.questions.length} questions`);
             }
 
-            console.log('Seeding complete!');
+            console.log('\n✅ Database reset and seeding complete!');
+            console.log('\n📊 Summary:');
+            console.log(`   - System admin created (username: "System", password: "system123")`);
+            console.log(`   - ${pythonQuizzes.length} Python quizzes published to Quiz Hub`);
+            console.log(`   - All quizzes are in "approved" status and publicly visible`);
+
             process.exit(0);
         } catch (err) {
-            console.error('Error seeding:', err);
+            console.error('❌ Error during reset and seed:', err);
             process.exit(1);
         }
     }, 1000);
 }
 
-seed();
+resetAndSeed();
