@@ -9,6 +9,12 @@ module.exports = {
             timestamps: false, // We'll manually define timestamps where needed
             underscored: true, // Use snake_case for auto-generated fields
         },
+        pool: {
+            max: 5,
+            min: 1,
+            acquire: 30000,
+            idle: 10000,
+        },
     },
     production: {
         dialect: 'postgres',

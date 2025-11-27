@@ -1,6 +1,7 @@
 const express = require('express');
 const db = require('../db');
 const authenticateToken = require('../middleware/authMiddleware');
+const cache = require('../utils/cache');
 
 const router = express.Router();
 
@@ -15,6 +16,14 @@ router.get('/', authenticateToken, (req, res) => {
     const playerSearch = req.query.player || '';
     const quizSearch = req.query.quiz || '';
     const attemptSearch = req.query.attempt || '';
+
+    // Create cache key based on all query parameters
+    const cacheKey = `leaderboard_${filter}_${page}_${limit}_${myQuizzesOnly}_${playerSearch}_${quizSearch}_${attemptSearch}_${req.user.id}`;
+
+    // Check cache first
+    if (cache.has(cacheKey)) {
+        return res.json(cache.get(cacheKey));
+    }
 
     let params = [];
     let whereConditions = [];
@@ -102,10 +111,13 @@ router.get('/', authenticateToken, (req, res) => {
 
             db.all(querySQL, dataParams, (err, rows) => {
                 if (err) return res.status(500).json({ error: err.message });
-                res.json({
+                const result = {
                     data: rows,
                     meta: { total, page, limit, totalPages }
-                });
+                };
+                // Cache for 30 seconds
+                cache.set(cacheKey, result, 30 * 1000);
+                res.json(result);
             });
         });
 
@@ -162,10 +174,13 @@ router.get('/', authenticateToken, (req, res) => {
 
             db.all(firstQuery, dataParams, (err, rows) => {
                 if (err) return res.status(500).json({ error: err.message });
-                res.json({
+                const result = {
                     data: rows,
                     meta: { total, page, limit, totalPages }
-                });
+                };
+                // Cache for 30 seconds
+                cache.set(cacheKey, result, 30 * 1000);
+                res.json(result);
             });
         });
     }

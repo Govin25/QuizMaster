@@ -2,6 +2,7 @@ const express = require('express');
 const authenticateToken = require('../middleware/authMiddleware');
 const analyticsService = require('../services/analyticsService');
 const achievementService = require('../services/achievementService');
+const cache = require('../utils/cache');
 
 const router = express.Router();
 
@@ -9,6 +10,12 @@ const router = express.Router();
 router.get('/stats/:userId', authenticateToken, async (req, res) => {
     try {
         const userId = parseInt(req.params.userId);
+        const cacheKey = `profile_stats_${userId}`;
+
+        // Check cache first
+        if (cache.has(cacheKey)) {
+            return res.json(cache.get(cacheKey));
+        }
 
         // Get all stats in parallel
         const [
@@ -25,13 +32,18 @@ router.get('/stats/:userId', authenticateToken, async (req, res) => {
             analyticsService.getDifficultyDistribution(userId)
         ]);
 
-        res.json({
+        const result = {
             userStats,
             categoryStats,
             rank,
             improvementRate,
             difficultyDist
-        });
+        };
+
+        // Cache for 1 minute
+        cache.set(cacheKey, result, 60 * 1000);
+
+        res.json(result);
     } catch (err) {
         console.error('Error fetching profile stats:', err);
         res.status(500).json({ error: err.message });

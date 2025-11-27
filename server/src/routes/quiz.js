@@ -7,6 +7,7 @@ const QuizResult = require('../models/QuizResult');
 const authenticateToken = require('../middleware/authMiddleware');
 const documentParser = require('../services/documentParser');
 const aiQuizGenerator = require('../services/aiQuizGenerator');
+const cache = require('../utils/cache');
 
 const router = express.Router();
 
@@ -29,7 +30,18 @@ const upload = multer({
 // Get public quizzes (Quiz Hub)
 router.get('/public', async (req, res) => {
     try {
+        const cacheKey = 'public_quizzes';
+
+        // Check cache first
+        if (cache.has(cacheKey)) {
+            return res.json(cache.get(cacheKey));
+        }
+
         const quizzes = await Quiz.getPublicQuizzes();
+
+        // Cache for 5 minutes
+        cache.set(cacheKey, quizzes, 5 * 60 * 1000);
+
         res.json(quizzes);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -54,6 +66,10 @@ router.post('/:id/add-to-library', authenticateToken, async (req, res) => {
         const userId = req.user.id;
 
         const entry = await LibraryRepository.addToLibrary(userId, quizId);
+
+        // Invalidate user's library cache
+        cache.delete(`library_${userId}`);
+
         res.json({ message: 'Quiz added to library', id: entry.id });
     } catch (err) {
         if (err.message === 'Quiz already in library') {
@@ -71,6 +87,10 @@ router.delete('/:id/remove-from-library', authenticateToken, async (req, res) =>
         const userId = req.user.id;
 
         const wasInLibrary = await LibraryRepository.removeFromLibrary(userId, quizId);
+
+        // Invalidate user's library cache
+        cache.delete(`library_${userId}`);
+
         res.json({
             message: 'Quiz removed from library',
             wasInLibrary
@@ -128,14 +148,17 @@ router.get('/my-library', authenticateToken, async (req, res) => {
     try {
         const LibraryRepository = require('../repositories/LibraryRepository');
         const userId = req.user.id;
+        const cacheKey = `library_${userId}`;
+
+        // Check cache first
+        if (cache.has(cacheKey)) {
+            return res.json(cache.get(cacheKey));
+        }
 
         const library = await LibraryRepository.getUserLibrary(userId);
 
-        console.log('=== MY-LIBRARY DEBUG ===');
-        console.log('Recently added:', library.recentlyAdded.length);
-        console.log('Completed:', library.completed.length);
-        console.log('Completed quiz IDs:', library.completed.map(q => q.id));
-        console.log('========================');
+        // Cache for 1 minute
+        cache.set(cacheKey, library, 60 * 1000);
 
         res.json(library);
     } catch (err) {
@@ -160,8 +183,20 @@ router.get('/', async (req, res) => {
 // Get a specific quiz by ID
 router.get('/:id', async (req, res) => {
     try {
-        const quiz = await Quiz.getById(req.params.id);
+        const quizId = req.params.id;
+        const cacheKey = `quiz_${quizId}`;
+
+        // Check cache first
+        if (cache.has(cacheKey)) {
+            return res.json(cache.get(cacheKey));
+        }
+
+        const quiz = await Quiz.getById(quizId);
         if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
+
+        // Cache for 5 minutes
+        cache.set(cacheKey, quiz, 5 * 60 * 1000);
+
         res.json(quiz);
     } catch (err) {
         res.status(500).json({ error: err.message });

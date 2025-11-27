@@ -165,6 +165,38 @@ function initializeSchema() {
         // Ignore errors if column already exists
       });
     });
+
+    // Create indexes for performance optimization
+    const indexes = [
+      // Foreign key indexes
+      "CREATE INDEX IF NOT EXISTS idx_quizzes_creator_id ON quizzes(creator_id)",
+      "CREATE INDEX IF NOT EXISTS idx_questions_quiz_id ON questions(quiz_id)",
+      "CREATE INDEX IF NOT EXISTS idx_results_user_id ON results(user_id)",
+      "CREATE INDEX IF NOT EXISTS idx_results_quiz_id ON results(quiz_id)",
+      "CREATE INDEX IF NOT EXISTS idx_results_completed_at ON results(completed_at)",
+      "CREATE INDEX IF NOT EXISTS idx_question_attempts_user_id ON question_attempts(user_id)",
+      "CREATE INDEX IF NOT EXISTS idx_question_attempts_quiz_id ON question_attempts(quiz_id)",
+      "CREATE INDEX IF NOT EXISTS idx_question_attempts_result_id ON question_attempts(result_id)",
+      "CREATE INDEX IF NOT EXISTS idx_user_quiz_library_user_id ON user_quiz_library(user_id)",
+      "CREATE INDEX IF NOT EXISTS idx_user_quiz_library_quiz_id ON user_quiz_library(quiz_id)",
+      "CREATE INDEX IF NOT EXISTS idx_user_stats_user_id ON user_stats(user_id)",
+      "CREATE INDEX IF NOT EXISTS idx_quiz_reviews_quiz_id ON quiz_reviews(quiz_id)",
+      "CREATE INDEX IF NOT EXISTS idx_user_achievements_user_id ON user_achievements(user_id)",
+
+      // Composite indexes for common query patterns
+      "CREATE INDEX IF NOT EXISTS idx_results_user_quiz ON results(user_id, quiz_id)",
+      "CREATE INDEX IF NOT EXISTS idx_results_quiz_score ON results(quiz_id, score DESC)",
+      "CREATE INDEX IF NOT EXISTS idx_quizzes_public_status ON quizzes(is_public, status)",
+      "CREATE INDEX IF NOT EXISTS idx_question_attempts_result_correct ON question_attempts(result_id, is_correct)"
+    ];
+
+    indexes.forEach(indexQuery => {
+      db.run(indexQuery, (err) => {
+        if (err) {
+          console.error('Error creating index:', err.message);
+        }
+      });
+    });
   });
 }
 

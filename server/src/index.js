@@ -1,9 +1,10 @@
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
-const compression = require('compression')
+const compression = require('compression');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const cache = require('./utils/cache');
 
 // Initialize Sequelize models
 const { sequelize } = require('./models/sequelize');
@@ -31,7 +32,29 @@ app.use(cors(
         credentials: true
     }
 ));
-app.use(compression());
+
+// Optimized compression middleware
+app.use(compression({
+    level: 6, // Balance between speed and compression ratio
+    threshold: 1024, // Only compress responses > 1KB
+    filter: (req, res) => {
+        if (req.headers['x-no-compression']) return false;
+        return compression.filter(req, res);
+    }
+}));
+
+// Performance monitoring middleware
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        if (duration > 100) {
+            console.warn(`⚠️  Slow request: ${req.method} ${req.path} - ${duration}ms`);
+        }
+    });
+    next();
+});
+
 app.use(express.json());
 
 app.use('/api/auth', authRoutes);
@@ -130,6 +153,11 @@ io.on('connection', (socket) => {
 
             // Check for new achievements
             const newAchievements = await achievementService.checkAndAwardAchievements(session.userId);
+
+            // Invalidate relevant caches
+            cache.delete(`library_${session.userId}`);
+            cache.delete(`profile_stats_${session.userId}`);
+            cache.deletePattern('leaderboard_*');
 
             socket.emit('result_saved', {
                 success: true,
