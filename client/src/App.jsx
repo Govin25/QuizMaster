@@ -3,7 +3,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import AuthForm from './components/AuthForm';
 import Home from './components/Home';
-// import QuizSetup from './components/QuizSetup'; // Removed as per user request
 import QuizGame from './components/QuizGame';
 import Leaderboard from './components/Leaderboard';
 import QuizReport from './components/QuizReport';
@@ -374,7 +373,6 @@ const AppContent = () => {
           onViewReport={showReport}
         />
       )}
-      {/* {view === 'menu' && <QuizSetup onStartQuiz={startQuiz} onViewAttempts={viewAttempts} />} */}
       {view === 'game' && <QuizGame quizId={activeQuizId} onEndGame={endGame} onShowReport={showReport} />}
       {view === 'leaderboard' && <Leaderboard onBack={backToMenu} />}
       {view === 'report' && <QuizReport resultId={activeResultId} onBackToMenu={() => setView('home')} onBackToAttempts={backToAttempts} />}

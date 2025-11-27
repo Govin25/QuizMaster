@@ -98,7 +98,6 @@ QuizMaster/
 │   ├── src/
 │   │   ├── components/     # React components
 │   │   │   ├── AuthForm.jsx
-│   │   │   ├── QuizSetup.jsx
 │   │   │   ├── QuizGame.jsx
 │   │   │   └── Leaderboard.jsx
 │   │   ├── context/        # React context
