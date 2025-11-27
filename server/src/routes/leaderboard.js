@@ -2,20 +2,21 @@ const express = require('express');
 const db = require('../db');
 const authenticateToken = require('../middleware/authMiddleware');
 const cache = require('../utils/cache');
+const { validateSearch } = require('../middleware/inputValidator');
 
 const router = express.Router();
 
-router.get('/', authenticateToken, (req, res) => {
+router.get('/', authenticateToken, validateSearch, (req, res) => {
     const filter = req.query.filter || 'first'; // Default to 'first'
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = Math.min(parseInt(req.query.limit) || 10, 100); // Cap at 100
     const offset = (page - 1) * limit;
     const myQuizzesOnly = req.query.myQuizzesOnly === 'true';
 
-    // Search filters
-    const playerSearch = req.query.player || '';
-    const quizSearch = req.query.quiz || '';
-    const attemptSearch = req.query.attempt || '';
+    // Search filters - already validated by validateSearch middleware
+    const playerSearch = req.query.player ? req.query.player.trim() : '';
+    const quizSearch = req.query.quiz ? req.query.quiz.trim() : '';
+    const attemptSearch = req.query.attempt ? parseInt(req.query.attempt) : '';
 
     // Create cache key based on all query parameters
     const cacheKey = `leaderboard_${filter}_${page}_${limit}_${myQuizzesOnly}_${playerSearch}_${quizSearch}_${attemptSearch}_${req.user.id}`;
@@ -37,7 +38,7 @@ router.get('/', authenticateToken, (req, res) => {
         params.push(req.user.id);
     }
 
-    // Build WHERE clause based on search params
+    // Build WHERE clause based on search params - using parameterized queries
     if (playerSearch) {
         whereConditions.push(`u.username LIKE ?`);
         params.push(`%${playerSearch}%`);

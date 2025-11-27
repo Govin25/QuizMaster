@@ -2,29 +2,53 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
+const crypto = require('crypto');
 const Quiz = require('../models/Quiz');
 const QuizResult = require('../models/QuizResult');
 const authenticateToken = require('../middleware/authMiddleware');
 const documentParser = require('../services/documentParser');
 const aiQuizGenerator = require('../services/aiQuizGenerator');
 const cache = require('../utils/cache');
+const { uploadLimiter, createQuizLimiter } = require('../middleware/rateLimiter');
+const { validateQuiz, validateQuestion, validateQuizStatus, validateId } = require('../middleware/inputValidator');
 
 const router = express.Router();
 
-// Configure multer for file uploads
+// Configure multer for file uploads with enhanced security
 const upload = multer({
     dest: 'uploads/',
     limits: {
-        fileSize: 10 * 1024 * 1024 // 10MB limit
+        fileSize: 10 * 1024 * 1024, // 10MB limit
+        files: 1 // Only allow 1 file at a time
     },
     fileFilter: (req, file, cb) => {
+        // Validate MIME type
         const allowedTypes = ['application/pdf', 'text/plain'];
-        if (allowedTypes.includes(file.mimetype)) {
-            cb(null, true);
-        } else {
-            cb(new Error('Invalid file type. Only PDF and TXT files are allowed.'));
+        if (!allowedTypes.includes(file.mimetype)) {
+            return cb(new Error('Invalid file type. Only PDF and TXT files are allowed.'));
         }
-    }
+
+        // Validate file extension
+        const ext = path.extname(file.originalname).toLowerCase();
+        const allowedExtensions = ['.pdf', '.txt'];
+        if (!allowedExtensions.includes(ext)) {
+            return cb(new Error('Invalid file extension.'));
+        }
+
+        // Sanitize filename to prevent path traversal
+        file.originalname = path.basename(file.originalname);
+
+        cb(null, true);
+    },
+    storage: multer.diskStorage({
+        destination: 'uploads/',
+        filename: (req, file, cb) => {
+            // Generate random filename to prevent collisions and directory traversal
+            const randomName = crypto.randomBytes(16).toString('hex');
+            const ext = path.extname(file.originalname);
+            cb(null, `${randomName}${ext}`);
+        }
+    })
 });
 
 // Get public quizzes (Quiz Hub)
@@ -204,13 +228,14 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create a new quiz
-router.post('/', authenticateToken, async (req, res) => {
+router.post('/', authenticateToken, createQuizLimiter, validateQuiz, async (req, res) => {
     try {
         const { title, category, difficulty } = req.body;
         const quiz = await Quiz.create(title, category, difficulty, req.user.id);
         res.status(201).json(quiz);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Quiz creation error:', err);
+        res.status(500).json({ error: 'Failed to create quiz' });
     }
 });
 
@@ -309,7 +334,7 @@ router.post('/generate', authenticateToken, async (req, res) => {
 });
 
 // Generate Quiz from Document
-router.post('/generate-from-document', authenticateToken, upload.single('document'), async (req, res) => {
+router.post('/generate-from-document', authenticateToken, uploadLimiter, upload.single('document'), async (req, res) => {
     let filePath = null;
 
     try {
@@ -439,7 +464,7 @@ router.put('/:id/update-questions', authenticateToken, async (req, res) => {
 
 
 // Add a question to a quiz
-router.post('/:id/questions', authenticateToken, async (req, res) => {
+router.post('/:id/questions', authenticateToken, validateQuestion, async (req, res) => {
     try {
         const quizId = req.params.id;
         // Verify ownership
@@ -452,7 +477,8 @@ router.post('/:id/questions', authenticateToken, async (req, res) => {
         const questionId = await Quiz.addQuestion(quizId, req.body);
         res.status(201).json({ id: questionId });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Add question error:', err);
+        res.status(500).json({ error: 'Failed to add question' });
     }
 });
 

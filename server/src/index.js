@@ -4,7 +4,9 @@ const http = require('http');
 const compression = require('compression');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const helmet = require('helmet');
 const cache = require('./utils/cache');
+const { apiLimiter } = require('./middleware/rateLimiter');
 
 // Initialize Sequelize models
 const { sequelize } = require('./models/sequelize');
@@ -25,13 +27,45 @@ const io = new Server(server, {
     }
 });
 
-app.use(cors(
-    {
-        origin: process.env.CLIENT_URL || "http://localhost:5173",
-        methods: ["GET", "POST", "PUT", "DELETE"],
-        credentials: true
-    }
-));
+// Security headers with helmet
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'"],
+            scriptSrc: ["'self'"],
+            imgSrc: ["'self'", "data:", "https:"],
+        },
+    },
+    crossOriginEmbedderPolicy: false, // Allow embedding for development
+}));
+
+// CORS configuration
+const allowedOrigins = process.env.CLIENT_URL
+    ? process.env.CLIENT_URL.split(',')
+    : ["http://localhost:5173"];
+
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
+}));
+
+// Request size limits to prevent DoS
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Apply rate limiting to all API routes
+app.use('/api/', apiLimiter);
 
 // Optimized compression middleware
 app.use(compression({
@@ -43,9 +77,27 @@ app.use(compression({
     }
 }));
 
-// Performance monitoring middleware
+// Performance and security monitoring middleware
 app.use((req, res, next) => {
     const start = Date.now();
+
+    // Log suspicious activities
+    const suspiciousPatterns = [
+        /(\%27)|(\')|(\-\-)|(\%23)|(#)/i, // SQL injection attempts
+        /(<script|javascript:|onerror=)/i, // XSS attempts
+        /(\.\.\/|\.\.\\)/i, // Path traversal attempts
+    ];
+
+    const fullUrl = req.originalUrl;
+    const body = JSON.stringify(req.body);
+
+    for (const pattern of suspiciousPatterns) {
+        if (pattern.test(fullUrl) || pattern.test(body)) {
+            console.warn(`🚨 Suspicious request detected from ${req.ip}: ${req.method} ${fullUrl}`);
+            break;
+        }
+    }
+
     res.on('finish', () => {
         const duration = Date.now() - start;
         if (duration > 100) {
@@ -54,8 +106,6 @@ app.use((req, res, next) => {
     });
     next();
 });
-
-app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/quizzes', quizRoutes);

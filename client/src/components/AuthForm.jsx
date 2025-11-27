@@ -10,15 +10,17 @@ const AuthForm = () => {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [error, setError] = useState('');
+    const [fieldErrors, setFieldErrors] = useState({});
     const { login } = useAuth();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setFieldErrors({});
 
         // Validate passwords match for signup
         if (!isLogin && password !== confirmPassword) {
-            setError('Passwords do not match');
+            setFieldErrors({ confirmPassword: 'Passwords do not match' });
             return;
         }
 
@@ -34,6 +36,21 @@ const AuthForm = () => {
             const data = await response.json();
 
             if (!response.ok) {
+                // Handle validation errors
+                if (data.details && Array.isArray(data.details)) {
+                    const newFieldErrors = {};
+                    data.details.forEach(err => {
+                        // If multiple errors for same field, join them
+                        if (newFieldErrors[err.field]) {
+                            newFieldErrors[err.field] += '. ' + err.message;
+                        } else {
+                            newFieldErrors[err.field] = err.message;
+                        }
+                    });
+                    setFieldErrors(newFieldErrors);
+                    // Don't set the generic error if we have specific field errors
+                    return;
+                }
                 throw new Error(data.error || 'Authentication failed');
             }
 
@@ -110,12 +127,19 @@ const AuthForm = () => {
                             width: '100%',
                             padding: '0.75rem',
                             background: 'rgba(0, 0, 0, 0.2)',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            border: fieldErrors.username
+                                ? '1px solid rgba(239, 68, 68, 0.5)'
+                                : '1px solid rgba(255, 255, 255, 0.1)',
                             borderRadius: '8px',
                             color: 'white',
                             fontSize: '1rem'
                         }}
                     />
+                    {fieldErrors.username && (
+                        <div style={{ color: '#fca5a5', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                            {fieldErrors.username}
+                        </div>
+                    )}
                 </div>
                 <div style={{ marginBottom: '1rem' }}>
                     <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Password</label>
@@ -131,7 +155,9 @@ const AuthForm = () => {
                                 padding: '0.75rem',
                                 paddingRight: '3rem',
                                 background: 'rgba(0, 0, 0, 0.2)',
-                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                border: fieldErrors.password
+                                    ? '1px solid rgba(239, 68, 68, 0.5)'
+                                    : '1px solid rgba(255, 255, 255, 0.1)',
                                 borderRadius: '8px',
                                 color: 'white',
                                 fontSize: '1rem'
@@ -162,6 +188,11 @@ const AuthForm = () => {
                             {showPassword ? '👁️' : '👁️‍🗨️'}
                         </button>
                     </div>
+                    {fieldErrors.password && (
+                        <div style={{ color: '#fca5a5', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                            {fieldErrors.password}
+                        </div>
+                    )}
                 </div>
                 {!isLogin && (
                     <div style={{ marginBottom: '1.5rem' }}>
@@ -178,7 +209,9 @@ const AuthForm = () => {
                                     padding: '0.75rem',
                                     paddingRight: '3rem',
                                     background: 'rgba(0, 0, 0, 0.2)',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                    border: fieldErrors.confirmPassword
+                                        ? '1px solid rgba(239, 68, 68, 0.5)'
+                                        : '1px solid rgba(255, 255, 255, 0.1)',
                                     borderRadius: '8px',
                                     color: 'white',
                                     fontSize: '1rem'
@@ -209,6 +242,11 @@ const AuthForm = () => {
                                 {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
                             </button>
                         </div>
+                        {fieldErrors.confirmPassword && (
+                            <div style={{ color: '#fca5a5', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                                {fieldErrors.confirmPassword}
+                            </div>
+                        )}
                     </div>
                 )}
                 <button
@@ -250,6 +288,7 @@ const AuthForm = () => {
                     onClick={() => {
                         setIsLogin(!isLogin);
                         setError('');
+                        setFieldErrors({});
                         setUsername('');
                         setPassword('');
                         setConfirmPassword('');

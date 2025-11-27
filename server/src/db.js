@@ -56,13 +56,7 @@ function initializeSchema() {
       // Ignore errors
     });
 
-    // Create Admin User if not exists
-    const adminPassword = 'admin123'; // In production, hash this!
-    // For this simple app, we might be storing plain text or simple hash. 
-    // Let's check how auth is handled. 
-    // Assuming simple storage for now based on existing code (or I should check auth.js).
-    // But for now, I'll just insert if not exists.
-
+    // Note: Admin users should be created through a secure setup script, not hardcoded here
 
     // Questions Table
     // type: 'multiple_choice' or 'true_false'
