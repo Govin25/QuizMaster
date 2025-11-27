@@ -20,6 +20,8 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
         correctAnswer: ''
     });
     const [questionCount, setQuestionCount] = useState(0);
+    const [existingQuestions, setExistingQuestions] = useState([]);
+    const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     const [loading, setLoading] = useState(!!editQuizId);
 
     // Load quiz data if editing
@@ -45,6 +47,7 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
                 difficulty: data.difficulty
             });
             setCreatedQuizId(editQuizId);
+            setExistingQuestions(data.questions || []);
             setQuestionCount(data.questions?.length || 0);
             setStep(2); // Go directly to adding questions
             setLoading(false);
@@ -110,7 +113,71 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
                 correctAnswer: ''
             });
             setQuestionCount(prev => prev + 1);
+
+            // Refresh existing questions if editing
+            if (editQuizId) {
+                await fetchQuizData();
+            }
+
             showSuccess('Question added successfully!');
+        } catch (err) {
+            showError(err.message);
+        }
+    };
+
+    const handleUpdateQuestion = async (questionId, questionData) => {
+        try {
+            const response = await fetch(`${API_URL}/api/quizzes/questions/${questionId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(questionData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to update question');
+            }
+
+            await fetchQuizData();
+            showSuccess('Question updated successfully!');
+        } catch (err) {
+            showError(err.message);
+        }
+    };
+
+    const handleDeleteQuestion = async (questionId) => {
+        if (questionCount <= 1) {
+            showError('Cannot delete the last question. Quiz must have at least 1 question.');
+            return;
+        }
+
+        if (!confirm('Are you sure you want to delete this question?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/api/quizzes/questions/${questionId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to delete question');
+            }
+
+            setQuestionCount(prev => prev - 1);
+            // Adjust slide index if needed
+            if (currentSlideIndex >= existingQuestions.length - 1 && currentSlideIndex > 0) {
+                setCurrentSlideIndex(prev => prev - 1);
+            }
+            await fetchQuizData();
+            showSuccess('Question deleted successfully!');
         } catch (err) {
             showError(err.message);
         }

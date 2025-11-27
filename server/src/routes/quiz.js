@@ -421,6 +421,71 @@ router.post('/:id/questions', authenticateToken, async (req, res) => {
     }
 });
 
+// Update a question
+router.put('/questions/:questionId', authenticateToken, async (req, res) => {
+    try {
+        const { Question } = require('../models/sequelize');
+        const questionId = req.params.questionId;
+
+        // Get question with quiz to verify ownership
+        const question = await Question.findByPk(questionId, {
+            include: [{ model: require('../models/sequelize').Quiz, as: 'quiz' }]
+        });
+
+        if (!question) {
+            return res.status(404).json({ error: 'Question not found' });
+        }
+
+        if (question.quiz.creator_id !== req.user.id) {
+            return res.status(403).json({ error: 'You can only update questions in your own quizzes' });
+        }
+
+        // Update question
+        await question.update({
+            type: req.body.type,
+            question_text: req.body.text,
+            options: req.body.options,
+            correct_answer: req.body.correctAnswer,
+        });
+
+        res.json({ message: 'Question updated successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete a question
+router.delete('/questions/:questionId', authenticateToken, async (req, res) => {
+    try {
+        const { Question, QuestionAttempt } = require('../models/sequelize');
+        const questionId = req.params.questionId;
+
+        // Get question with quiz to verify ownership
+        const question = await Question.findByPk(questionId, {
+            include: [{ model: require('../models/sequelize').Quiz, as: 'quiz' }]
+        });
+
+        if (!question) {
+            return res.status(404).json({ error: 'Question not found' });
+        }
+
+        if (question.quiz.creator_id !== req.user.id) {
+            return res.status(403).json({ error: 'You can only delete questions from your own quizzes' });
+        }
+
+        // Delete related question attempts first
+        await QuestionAttempt.destroy({ where: { question_id: questionId } });
+
+        // Delete the question
+        await question.destroy();
+
+        res.json({ message: 'Question deleted successfully' });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+
 // Get detailed quiz report
 router.get('/results/:resultId/report', async (req, res) => {
     try {

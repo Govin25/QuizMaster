@@ -66,6 +66,10 @@ class ResultRepository {
         const result = await Result.findByPk(resultId, {
             include: [
                 {
+                    model: User,
+                    as: 'user',
+                },
+                {
                     model: Quiz,
                     as: 'quiz',
                     include: [
@@ -92,29 +96,45 @@ class ResultRepository {
 
         // Format the report
         const quiz = result.quiz;
-        const attempts = result.questionAttempts;
+        const user = result.user;
+        const questionAttempts = result.questionAttempts;
+
+        // Calculate total time from all attempts
+        const totalTime = questionAttempts.reduce((sum, attempt) => sum + (attempt.time_taken_seconds || 0), 0);
+
+        // Calculate correct answers
+        const correctAnswers = questionAttempts.filter(a => a.is_correct).length;
 
         return {
-            resultId: result.id,
+            quiz_id: quiz.id,
+            quiz_title: quiz.title,
+            category: quiz.category,
+            difficulty: quiz.difficulty,
+            username: user.username,
             score: result.score,
-            completedAt: result.completed_at,
-            quiz: {
-                id: quiz.id,
-                title: quiz.title,
-                category: quiz.category,
-                difficulty: quiz.difficulty,
-            },
-            questions: quiz.questions.map(q => {
-                const attempt = attempts.find(a => a.question_id === q.id);
+            totalQuestions: quiz.questions.length,
+            correctAnswers: correctAnswers,
+            totalTime: totalTime,
+            attempts: quiz.questions.map(q => {
+                const attempt = questionAttempts.find(a => a.question_id === q.id);
+
+                // Determine status
+                let status = 'incorrect';
+                if (!attempt || attempt.user_answer === null || attempt.user_answer === undefined) {
+                    status = 'unattempted';
+                } else if (attempt.is_correct) {
+                    status = 'correct';
+                }
+
                 return {
                     id: q.id,
+                    question_text: q.question_text,
                     type: q.type,
-                    questionText: q.question_text,
                     options: q.options,
-                    correctAnswer: q.correct_answer,
-                    userAnswer: attempt?.user_answer,
-                    isCorrect: attempt?.is_correct,
-                    timeTaken: attempt?.time_taken_seconds,
+                    correct_answer: q.correct_answer,
+                    user_answer: attempt?.user_answer || null,
+                    status: status,
+                    time_taken_seconds: attempt?.time_taken_seconds || 0,
                 };
             }),
         };

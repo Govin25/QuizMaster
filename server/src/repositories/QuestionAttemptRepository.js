@@ -80,6 +80,7 @@ class QuestionAttemptRepository {
 
         const attempts = await QuestionAttempt.findAll({
             where: whereClause,
+            order: [['attempted_at', 'DESC']],
         });
 
         const totalAttempts = attempts.length;
@@ -88,18 +89,33 @@ class QuestionAttemptRepository {
             ? attempts.reduce((sum, a) => sum + a.time_taken_seconds, 0) / totalAttempts
             : 0;
 
+        // Get user-specific performance if userId is provided
+        let userPerformance = null;
+        if (userId) {
+            const userAttempts = attempts.filter(a => a.user_id === userId);
+            if (userAttempts.length > 0) {
+                userPerformance = userAttempts.map(attempt => ({
+                    user_answer: attempt.user_answer,
+                    is_correct: attempt.is_correct,
+                    time_taken_seconds: attempt.time_taken_seconds,
+                    attempted_at: attempt.attempted_at,
+                }));
+            }
+        }
+
         return {
             question: {
                 id: question.id,
-                text: question.question_text,
+                question_text: question.question_text,
                 type: question.type,
                 options: question.options,
-                correctAnswer: question.correct_answer,
+                correct_answer: question.correct_answer,
             },
             quiz: {
                 id: question.quiz.id,
                 title: question.quiz.title,
             },
+            userPerformance: userPerformance,
             stats: {
                 totalAttempts,
                 correctAttempts,

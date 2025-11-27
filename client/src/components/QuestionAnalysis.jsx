@@ -8,12 +8,12 @@ const QuestionAnalysis = ({ question, userId, onClose }) => {
 
     useEffect(() => {
         fetchAnalysis();
-    }, [question.question_id]);
+    }, [question.id]);
 
     const fetchAnalysis = async () => {
         try {
             const response = await fetch(
-                `${API_URL}/api/quizzes/questions/${question.question_id}/analysis?userId=${userId}`
+                `${API_URL}/api/quizzes/questions/${question.id}/analysis?userId=${userId}`
             );
             const data = await response.json();
             setAnalysis(data);

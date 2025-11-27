@@ -104,13 +104,60 @@ class QuizRepository {
     }
 
     /**
-     * Delete quiz
+     * Delete quiz and all related records
      * @param {number} id 
      * @returns {Promise<boolean>}
      */
     async deleteQuiz(id) {
-        const deleted = await Quiz.destroy({ where: { id } });
-        return deleted > 0;
+        const transaction = await sequelize.transaction();
+
+        try {
+            // Import models needed for deletion
+            const { QuestionAttempt, QuizReview, UserQuizLibrary } = require('../models/sequelize');
+
+            // Delete in order to respect foreign key constraints:
+            // 1. Delete question attempts (references results and questions)
+            await QuestionAttempt.destroy({
+                where: { quiz_id: id },
+                transaction
+            });
+
+            // 2. Delete results (references quiz)
+            await Result.destroy({
+                where: { quiz_id: id },
+                transaction
+            });
+
+            // 3. Delete quiz reviews (references quiz)
+            await QuizReview.destroy({
+                where: { quiz_id: id },
+                transaction
+            });
+
+            // 4. Delete questions (references quiz)
+            await Question.destroy({
+                where: { quiz_id: id },
+                transaction
+            });
+
+            // 5. Delete library entries (references quiz)
+            await UserQuizLibrary.destroy({
+                where: { quiz_id: id },
+                transaction
+            });
+
+            // 6. Finally, delete the quiz itself
+            const deleted = await Quiz.destroy({
+                where: { id },
+                transaction
+            });
+
+            await transaction.commit();
+            return deleted > 0;
+        } catch (error) {
+            await transaction.rollback();
+            throw error;
+        }
     }
 
     /**
