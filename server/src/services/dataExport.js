@@ -40,10 +40,10 @@ class DataExportService {
                 order: [['completed_at', 'DESC']]
             });
 
-            // Fetch all question attempts
+            // Get question attempts
             const questionAttempts = await QuestionAttempt.findAll({
                 where: { user_id: userId },
-                order: [['created_at', 'DESC']]
+                order: [['attempted_at', 'DESC']]
             });
 
             // Fetch user statistics
@@ -110,7 +110,7 @@ class DataExportService {
                     selected_answer: attempt.selected_answer,
                     is_correct: attempt.is_correct,
                     time_taken: attempt.time_taken,
-                    created_at: attempt.created_at
+                    attempted_at: attempt.attempted_at
                 })),
                 achievements: achievements.map(achievement => ({
                     id: achievement.id,

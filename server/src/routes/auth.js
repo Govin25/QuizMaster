@@ -49,10 +49,14 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
         });
     } catch (err) {
         // Don't expose internal error details
+        console.error('Signup error - Full details:', err);
+        console.error('Error name:', err.name);
+        console.error('Error message:', err.message);
+        console.error('Error stack:', err.stack);
+
         if (err.name && err.name == 'SequelizeUniqueConstraintError') {
             return res.status(409).json({ error: 'Username already exists' });
         }
-        console.error('Signup error:', err);
         res.status(500).json({ error: 'Failed to create account' });
     }
 });

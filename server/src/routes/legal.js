@@ -83,13 +83,14 @@ router.post('/accept-terms', authMiddleware, async (req, res) => {
 router.get('/user/data-export', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
-        const userData = await dataExportService.exportUserData(userId);
+        const dataExport = await dataExportService.exportUserData(userId);
 
-        // Set headers for file download
+        // Set headers for file download with formatted JSON
         res.setHeader('Content-Type', 'application/json');
         res.setHeader('Content-Disposition', `attachment; filename="quizmaster-data-${userId}-${Date.now()}.json"`);
 
-        res.json(userData);
+        // Send formatted JSON with 2-space indentation for readability
+        res.send(JSON.stringify(dataExport, null, 2));
     } catch (error) {
         console.error('Data export error:', error);
         res.status(500).json({ error: 'Failed to export user data' });
