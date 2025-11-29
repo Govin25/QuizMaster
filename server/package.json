@@ -5,7 +5,11 @@
   "scripts": {
     "start": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "seed": "node seed_expanded.js"
+    "seed": "node seed_expanded.js",
+    "migrate": "sequelize-cli db:migrate",
+    "migrate:undo": "sequelize-cli db:migrate:undo",
+    "migrate:status": "sequelize-cli db:migrate:status",
+    "migration:create": "sequelize-cli migration:generate --name"
   },
   "keywords": [],
   "author": "",
@@ -28,5 +32,8 @@
     "socket.io": "^4.8.1",
     "sqlite3": "^5.1.7",
     "xss-clean": "^0.1.4"
+  },
+  "devDependencies": {
+    "sequelize-cli": "^6.6.3"
   }
 }
