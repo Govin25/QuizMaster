@@ -1,5 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
 const User = require('../models/User');
 const { authLimiter } = require('../middleware/rateLimiter');
 const { validateAuth } = require('../middleware/inputValidator');
@@ -9,7 +10,9 @@ const SECRET_KEY = process.env.JWT_SECRET || 'secret_key';
 
 // Warn if using default secret
 if (SECRET_KEY === 'secret_key') {
-    console.warn('⚠️  WARNING: Using default JWT_SECRET. Set a strong secret in production!');
+    logger.warn('Using default JWT_SECRET - set a strong secret in production', {
+        security: 'CRITICAL'
+    });
 }
 
 router.post('/signup', authLimiter, validateAuth, async (req, res) => {
@@ -48,11 +51,11 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
             }
         });
     } catch (err) {
-        // Don't expose internal error details
-        console.error('Signup error - Full details:', err);
-        console.error('Error name:', err.name);
-        console.error('Error message:', err.message);
-        console.error('Error stack:', err.stack);
+        logger.error('User signup failed', {
+            error: err,
+            context: { username: req.body.username },
+            requestId: req.requestId
+        });
 
         if (err.name && err.name == 'SequelizeUniqueConstraintError') {
             return res.status(409).json({ error: 'Username already exists' });
@@ -90,7 +93,11 @@ router.post('/login', authLimiter, async (req, res) => {
             }
         });
     } catch (err) {
-        console.error('Login error:', err);
+        logger.error('User login failed', {
+            error: err,
+            context: { username: req.body.username },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: 'Login failed' });
     }
 });

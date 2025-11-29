@@ -5,6 +5,8 @@ const compression = require('compression');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
+const logger = require('./utils/logger');
+const requestLogger = require('./middleware/requestLogger');
 const cache = require('./utils/cache');
 const { apiLimiter } = require('./middleware/rateLimiter');
 
@@ -67,6 +69,9 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Request logging and tracking middleware
+app.use(requestLogger);
+
 // Apply rate limiting to all API routes
 app.use('/api/', apiLimiter);
 
@@ -80,36 +85,6 @@ app.use(compression({
     }
 }));
 
-// Performance and security monitoring middleware
-app.use((req, res, next) => {
-    const start = Date.now();
-
-    // Log suspicious activities
-    const suspiciousPatterns = [
-        /(\%27)|(\')|(\-\-)|(\%23)|(#)/i, // SQL injection attempts
-        /(<script|javascript:|onerror=)/i, // XSS attempts
-        /(\.\.\/|\.\.\\)/i, // Path traversal attempts
-    ];
-
-    const fullUrl = req.originalUrl;
-    const body = JSON.stringify(req.body);
-
-    for (const pattern of suspiciousPatterns) {
-        if (pattern.test(fullUrl) || pattern.test(body)) {
-            console.warn(`🚨 Suspicious request detected from ${req.ip}: ${req.method} ${fullUrl}`);
-            break;
-        }
-    }
-
-    res.on('finish', () => {
-        const duration = Date.now() - start;
-        if (duration > 100) {
-            console.warn(`⚠️  Slow request: ${req.method} ${req.path} - ${duration}ms`);
-        }
-    });
-    next();
-});
-
 app.use('/api/auth', authRoutes);
 app.use('/api/quizzes', quizRoutes);
 app.use('/api/leaderboard', require('./routes/leaderboard'));
@@ -119,12 +94,12 @@ app.use('/api/legal', require('./routes/legal'));
 
 // Socket.io Logic
 io.on('connection', (socket) => {
-    console.log('User connected:', socket.id);
+    logger.info('WebSocket connection established', { socketId: socket.id });
 
     socket.on('join_game', ({ userId, quizId }) => {
         gameManager.startSession(socket.id, userId, quizId);
         socket.join(`quiz_${quizId} `);
-        console.log(`User ${userId} joined quiz ${quizId} `);
+        logger.info('User joined quiz game', { userId, quizId, socketId: socket.id });
     });
 
     socket.on('submit_answer', async ({ quizId, questionId, answer, timeTaken }) => {
@@ -157,7 +132,10 @@ io.on('connection', (socket) => {
                 timeTakenSeconds: timeTaken || 0
             });
         } catch (err) {
-            console.error('Error saving question attempt:', err);
+            logger.error('Failed to save question attempt', {
+                error: err,
+                context: { userId: session.userId, quizId, questionId }
+            });
         }
 
         socket.emit('answer_result', { correct: isCorrect, correctAnswer: question.correctAnswer });
@@ -177,7 +155,14 @@ io.on('connection', (socket) => {
             const maxScore = totalQuestions * 10;
             const actualPercentage = totalQuestions > 0 ? Math.round((score / maxScore) * 100) : 0;
 
-            console.log(`Quiz ${quizId}: Score ${score}/${maxScore} (${actualPercentage}%) - Total Questions: ${totalQuestions}`);
+            logger.debug('Quiz completion calculated', {
+                quizId,
+                userId: session.userId,
+                score,
+                maxScore,
+                percentage: actualPercentage,
+                totalQuestions
+            });
 
             // Save result
             const result = await Result.create({
@@ -187,7 +172,13 @@ io.on('connection', (socket) => {
             });
 
             const resultId = result.id;
-            console.log(`Saved score ${score} for user ${session.userId} on quiz ${quizId}`);
+            logger.info('Quiz result saved', {
+                resultId,
+                userId: session.userId,
+                quizId,
+                score,
+                percentage: actualPercentage
+            });
 
             // Update all question attempts with the result_id
             await QuestionAttempt.update(
@@ -224,18 +215,25 @@ io.on('connection', (socket) => {
                 }))
             });
         } catch (err) {
-            console.error('Error saving result:', err);
+            logger.error('Failed to save quiz result', {
+                error: err,
+                context: { userId: session.userId, quizId, score }
+            });
             socket.emit('result_saved', { success: false });
         }
     });
 
     socket.on('disconnect', () => {
         gameManager.endSession(socket.id);
-        console.log('User disconnected:', socket.id);
+        logger.info('WebSocket connection closed', { socketId: socket.id });
     });
 });
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT} `);
+    logger.info('Server started successfully', {
+        port: PORT,
+        environment: process.env.NODE_ENV || 'development',
+        logLevel: process.env.LOG_LEVEL || 'default'
+    });
 });

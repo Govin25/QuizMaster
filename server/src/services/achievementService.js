@@ -3,6 +3,7 @@
  * Manages user achievements and badges
  */
 
+const logger = require('../utils/logger');
 const db = require('../db');
 
 // Achievement Definitions
@@ -176,7 +177,10 @@ class AchievementService {
 
             return newAchievements;
         } catch (error) {
-            console.error('Error checking achievements:', error);
+            logger.error('Failed to check and award achievements', {
+                error,
+                context: { userId }
+            });
             return [];
         }
     }

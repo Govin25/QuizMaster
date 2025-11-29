@@ -1,5 +1,6 @@
 const fs = require('fs').promises;
 const path = require('path');
+const logger = require('../utils/logger');
 
 /**
  * Document Parser Service
@@ -23,7 +24,10 @@ class DocumentParser {
                 throw new Error('Unsupported file type');
             }
         } catch (error) {
-            console.error('Document parsing error:', error);
+            logger.error('Failed to parse document', {
+                error,
+                context: { filePath, fileType }
+            });
             throw new Error('Failed to parse document: ' + error.message);
         }
     }

@@ -1,4 +1,5 @@
 const { User, Quiz, Result, QuestionAttempt, UserStats, UserAchievement } = require('../models/sequelize');
+const logger = require('../utils/logger');
 
 /**
  * Service to export all user data for GDPR compliance
@@ -128,7 +129,10 @@ class DataExportService {
 
             return dataExport;
         } catch (error) {
-            console.error('Data export error:', error);
+            logger.error('Failed to export user data', {
+                error,
+                context: { userId }
+            });
             throw new Error('Failed to export user data');
         }
     }

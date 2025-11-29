@@ -1,3 +1,5 @@
+const logger = require('../utils/logger');
+
 /**
  * AI Quiz Generator Service
  * Generates quiz questions from document content using AI
@@ -24,7 +26,10 @@ class AIQuizGenerator {
             // For now, we'll use a mock implementation
             return await this.mockGenerateQuiz(text, config);
         } catch (error) {
-            console.error('Quiz generation error:', error);
+            logger.error('Failed to generate quiz from text', {
+                error,
+                context: { textLength: text?.length, config }
+            });
             throw new Error('Failed to generate quiz: ' + error.message);
         }
     }

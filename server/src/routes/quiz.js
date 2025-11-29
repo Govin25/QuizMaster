@@ -3,6 +3,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const crypto = require('crypto');
+const logger = require('../utils/logger');
 const Quiz = require('../models/Quiz');
 const QuizResult = require('../models/QuizResult');
 const authenticateToken = require('../middleware/authMiddleware');
@@ -132,26 +133,41 @@ router.delete('/delete/:id', authenticateToken, async (req, res) => {
         const quizId = req.params.id;
         const userId = req.user.id;
 
-        console.log('DELETE /delete/:id called for quiz:', quizId, 'by user:', userId);
+        logger.debug('Quiz deletion requested', {
+            quizId,
+            userId,
+            requestId: req.requestId
+        });
 
         // Check if quiz exists
         const quiz = await Quiz.getById(quizId);
         if (!quiz) {
-            console.log('Quiz not found:', quizId);
+            logger.warn('Quiz deletion failed - quiz not found', {
+                quizId,
+                userId,
+                requestId: req.requestId
+            });
             return res.status(404).json({ error: 'Quiz not found' });
         }
 
-        console.log('Quiz found:', { id: quiz.id, creator_id: quiz.creator_id, status: quiz.status });
-
         // Check if user owns the quiz (if creator_id exists)
         if (quiz.creator_id && quiz.creator_id !== userId) {
-            console.log('Authorization failed: user', userId, 'does not own quiz created by', quiz.creator_id);
+            logger.warn('Quiz deletion failed - unauthorized', {
+                quizId,
+                userId,
+                creatorId: quiz.creator_id,
+                requestId: req.requestId
+            });
             return res.status(403).json({ error: 'Not authorized to delete this quiz' });
         }
 
         // Only allow deletion of draft or rejected quizzes
         if (quiz.status !== 'draft' && quiz.status !== 'rejected') {
-            console.log('Status check failed: quiz status is', quiz.status);
+            logger.warn('Quiz deletion failed - invalid status', {
+                quizId,
+                status: quiz.status,
+                requestId: req.requestId
+            });
             return res.status(403).json({
                 error: `Cannot delete ${quiz.status} quizzes. Only draft or rejected quizzes can be deleted.`
             });
@@ -159,10 +175,18 @@ router.delete('/delete/:id', authenticateToken, async (req, res) => {
 
         // Delete quiz
         await QuizRepository.deleteQuiz(quizId);
-        console.log('Quiz deleted successfully:', quizId);
+        logger.info('Quiz deleted successfully', {
+            quizId,
+            userId,
+            requestId: req.requestId
+        });
         res.json({ message: 'Quiz deleted successfully' });
     } catch (err) {
-        console.error('Delete quiz catch error:', err);
+        logger.error('Quiz deletion failed', {
+            error: err,
+            context: { quizId: req.params.id, userId: req.user.id },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: err.message });
     }
 });
@@ -234,7 +258,11 @@ router.post('/', authenticateToken, createQuizLimiter, validateQuiz, async (req,
         const quiz = await Quiz.create(title, category, difficulty, req.user.id);
         res.status(201).json(quiz);
     } catch (err) {
-        console.error('Quiz creation error:', err);
+        logger.error('Quiz creation failed', {
+            error: err,
+            context: { title: req.body.title, userId: req.user.id },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: 'Failed to create quiz' });
     }
 });
@@ -280,7 +308,11 @@ router.post('/:id/review', authenticateToken, async (req, res) => {
                 comments: comments || null,
             });
         } catch (err) {
-            console.error('Error saving review:', err);
+            logger.error('Failed to save quiz review', {
+                error: err,
+                context: { quizId, reviewerId: req.user.id },
+                requestId: req.requestId
+            });
         }
 
         res.json({ message: `Quiz ${status}` });
@@ -345,11 +377,11 @@ router.post('/generate-from-document', authenticateToken, uploadLimiter, upload.
         filePath = req.file.path;
         const config = JSON.parse(req.body.config || '{}');
 
-        console.log('Document upload received:', {
+        logger.debug('Document upload received', {
             filename: req.file.originalname,
             mimetype: req.file.mimetype,
             size: req.file.size,
-            config
+            requestId: req.requestId
         });
 
         // Step 1: Extract text from document
@@ -359,7 +391,11 @@ router.post('/generate-from-document', authenticateToken, uploadLimiter, upload.
             throw new Error('Document content is too short or could not be extracted');
         }
 
-        console.log('Text extracted, length:', extractedText.length);
+        logger.debug('Document text extracted', {
+            textLength: extractedText.length,
+            filename: req.file.originalname,
+            requestId: req.requestId
+        });
 
         // Step 2: Generate quiz using AI
         const questions = await aiQuizGenerator.generateQuiz(extractedText, config);
@@ -368,7 +404,11 @@ router.post('/generate-from-document', authenticateToken, uploadLimiter, upload.
             throw new Error('Failed to generate questions from document');
         }
 
-        console.log('Generated questions:', questions.length);
+        logger.debug('Questions generated from document', {
+            questionCount: questions.length,
+            filename: req.file.originalname,
+            requestId: req.requestId
+        });
 
         // Step 3: Format questions for frontend (don't save to DB yet)
         const title = `${config.category || 'Document'} Quiz - ${req.file.originalname}`;
@@ -389,14 +429,25 @@ router.post('/generate-from-document', authenticateToken, uploadLimiter, upload.
             source: 'ai_document'
         });
     } catch (err) {
-        console.error('Document quiz generation error:', err);
+        logger.error('Document quiz generation failed', {
+            error: err,
+            context: {
+                filename: req.file?.originalname,
+                userId: req.user.id
+            },
+            requestId: req.requestId
+        });
 
         // Clean up uploaded file on error
         if (filePath) {
             try {
                 await fs.unlink(filePath);
             } catch (unlinkErr) {
-                console.error('Error deleting file:', unlinkErr);
+                logger.error('Failed to delete uploaded file', {
+                    error: unlinkErr,
+                    context: { filePath },
+                    requestId: req.requestId
+                });
             }
         }
 
@@ -427,7 +478,11 @@ router.post('/save-document-quiz', authenticateToken, async (req, res) => {
 
         res.status(201).json(completeQuiz);
     } catch (err) {
-        console.error('Save document quiz error:', err);
+        logger.error('Failed to save document quiz', {
+            error: err,
+            context: { title: req.body.title, userId: req.user.id },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: err.message });
     }
 });
@@ -457,7 +512,11 @@ router.put('/:id/update-questions', authenticateToken, async (req, res) => {
 
         res.json(updatedQuiz);
     } catch (err) {
-        console.error('Update questions error:', err);
+        logger.error('Failed to update quiz questions', {
+            error: err,
+            context: { quizId: req.params.id, userId: req.user.id },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: err.message });
     }
 });
@@ -477,7 +536,11 @@ router.post('/:id/questions', authenticateToken, validateQuestion, async (req, r
         const questionId = await Quiz.addQuestion(quizId, req.body);
         res.status(201).json({ id: questionId });
     } catch (err) {
-        console.error('Add question error:', err);
+        logger.error('Failed to add question to quiz', {
+            error: err,
+            context: { quizId: req.params.id, userId: req.user.id },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: 'Failed to add question' });
     }
 });

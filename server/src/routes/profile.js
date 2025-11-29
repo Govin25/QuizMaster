@@ -1,4 +1,5 @@
 const express = require('express');
+const logger = require('../utils/logger');
 const authenticateToken = require('../middleware/authMiddleware');
 const analyticsService = require('../services/analyticsService');
 const achievementService = require('../services/achievementService');
@@ -45,7 +46,11 @@ router.get('/stats/:userId', authenticateToken, async (req, res) => {
 
         res.json(result);
     } catch (err) {
-        console.error('Error fetching profile stats:', err);
+        logger.error('Failed to fetch profile stats', {
+            error: err,
+            context: { userId: req.params.userId },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: err.message });
     }
 });
@@ -65,7 +70,11 @@ router.get('/activity/:userId', authenticateToken, async (req, res) => {
             recentAttempts
         });
     } catch (err) {
-        console.error('Error fetching activity data:', err);
+        logger.error('Failed to fetch activity data', {
+            error: err,
+            context: { userId: req.params.userId },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: err.message });
     }
 });
@@ -80,7 +89,11 @@ router.get('/trends/:userId', authenticateToken, async (req, res) => {
 
         res.json({ trends });
     } catch (err) {
-        console.error('Error fetching trends:', err);
+        logger.error('Failed to fetch performance trends', {
+            error: err,
+            context: { userId: req.params.userId, days: req.query.days },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: err.message });
     }
 });
@@ -103,7 +116,11 @@ router.get('/achievements/:userId', authenticateToken, async (req, res) => {
             unlockedCount: unlocked.length
         });
     } catch (err) {
-        console.error('Error fetching achievements:', err);
+        logger.error('Failed to fetch achievements', {
+            error: err,
+            context: { userId: req.params.userId },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: err.message });
     }
 });
@@ -117,7 +134,11 @@ router.get('/recommendations/:userId', authenticateToken, async (req, res) => {
 
         res.json({ recommendations });
     } catch (err) {
-        console.error('Error fetching recommendations:', err);
+        logger.error('Failed to fetch recommendations', {
+            error: err,
+            context: { userId: req.params.userId },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: err.message });
     }
 });
@@ -145,7 +166,11 @@ router.get('/compare/:userId/:compareUserId', authenticateToken, async (req, res
             }
         });
     } catch (err) {
-        console.error('Error comparing users:', err);
+        logger.error('Failed to compare users', {
+            error: err,
+            context: { userId: req.params.userId, compareUserId: req.params.compareUserId },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: err.message });
     }
 });
@@ -165,7 +190,11 @@ router.put('/avatar', authenticateToken, async (req, res) => {
 
         res.json({ message: 'Avatar updated successfully', avatarUrl });
     } catch (err) {
-        console.error('Error updating avatar:', err);
+        logger.error('Failed to update avatar', {
+            error: err,
+            context: { userId: req.user.id },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: err.message });
     }
 });
@@ -186,7 +215,11 @@ router.delete('/', authenticateToken, async (req, res) => {
 
         res.json({ message: 'Account deleted successfully' });
     } catch (err) {
-        console.error('Error in delete account route:', err);
+        logger.error('Failed to delete user account', {
+            error: err,
+            context: { userId },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: err.message });
     }
 });

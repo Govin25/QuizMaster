@@ -1,5 +1,6 @@
 const { User, Quiz, Result, QuestionAttempt, UserStats, UserAchievement, UserQuizLibrary, QuizReview } = require('../models/sequelize');
 const { sequelize } = require('../models/sequelize');
+const logger = require('../utils/logger');
 
 /**
  * Service to handle account deletion requests and permanent deletion
@@ -28,7 +29,10 @@ class AccountDeletionService {
                 gracePeriodDays: 30
             };
         } catch (error) {
-            console.error('Account deletion request error:', error);
+            logger.error('Failed to request account deletion', {
+                error,
+                context: { userId }
+            });
             throw new Error('Failed to request account deletion');
         }
     }
@@ -53,7 +57,10 @@ class AccountDeletionService {
                 message: 'Account deletion request cancelled'
             };
         } catch (error) {
-            console.error('Cancel deletion error:', error);
+            logger.error('Failed to cancel deletion request', {
+                error,
+                context: { userId }
+            });
             throw new Error('Failed to cancel deletion request');
         }
     }
@@ -147,7 +154,10 @@ class AccountDeletionService {
             };
         } catch (error) {
             await transaction.rollback();
-            console.error('Permanent deletion error:', error);
+            logger.error('Failed to permanently delete account', {
+                error,
+                context: { userId, preservePublicQuizzes }
+            });
             throw new Error('Failed to permanently delete account');
         }
     }
@@ -170,7 +180,10 @@ class AccountDeletionService {
 
             return new Date() >= deletionDueDate;
         } catch (error) {
-            console.error('Check deletion due error:', error);
+            logger.error('Failed to check deletion due date', {
+                error,
+                context: { userId }
+            });
             return false;
         }
     }

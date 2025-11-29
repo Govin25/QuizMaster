@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const fs = require('fs').promises;
 const path = require('path');
+const logger = require('../utils/logger');
 const authMiddleware = require('../middleware/authMiddleware');
 const dataExportService = require('../services/dataExport');
 const accountDeletionService = require('../services/accountDeletion');
@@ -17,7 +18,10 @@ router.get('/privacy-policy', async (req, res) => {
         const content = await fs.readFile(privacyPath, 'utf-8');
         res.json({ content });
     } catch (error) {
-        console.error('Error reading privacy policy:', error);
+        logger.error('Failed to load privacy policy', {
+            error,
+            requestId: req.requestId
+        });
         res.status(500).json({ error: 'Failed to load privacy policy' });
     }
 });
@@ -32,7 +36,10 @@ router.get('/terms-of-service', async (req, res) => {
         const content = await fs.readFile(termsPath, 'utf-8');
         res.json({ content });
     } catch (error) {
-        console.error('Error reading terms of service:', error);
+        logger.error('Failed to load terms of service', {
+            error,
+            requestId: req.requestId
+        });
         res.status(500).json({ error: 'Failed to load terms of service' });
     }
 });
@@ -70,7 +77,11 @@ router.post('/accept-terms', authMiddleware, async (req, res) => {
             privacy_accepted_at: user.privacy_accepted_at
         });
     } catch (error) {
-        console.error('Accept terms error:', error);
+        logger.error('Failed to record terms acceptance', {
+            error,
+            context: { userId: req.user.id },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: 'Failed to record terms acceptance' });
     }
 });
@@ -92,7 +103,11 @@ router.get('/user/data-export', authMiddleware, async (req, res) => {
         // Send formatted JSON with 2-space indentation for readability
         res.send(JSON.stringify(dataExport, null, 2));
     } catch (error) {
-        console.error('Data export error:', error);
+        logger.error('Failed to export user data', {
+            error,
+            context: { userId: req.user.id },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: 'Failed to export user data' });
     }
 });
@@ -108,7 +123,11 @@ router.post('/user/request-deletion', authMiddleware, async (req, res) => {
         const result = await accountDeletionService.requestAccountDeletion(userId);
         res.json(result);
     } catch (error) {
-        console.error('Deletion request error:', error);
+        logger.error('Failed to request account deletion', {
+            error,
+            context: { userId: req.user.id },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: 'Failed to request account deletion' });
     }
 });
@@ -124,7 +143,11 @@ router.post('/user/cancel-deletion', authMiddleware, async (req, res) => {
         const result = await accountDeletionService.cancelDeletionRequest(userId);
         res.json(result);
     } catch (error) {
-        console.error('Cancel deletion error:', error);
+        logger.error('Failed to cancel deletion request', {
+            error,
+            context: { userId: req.user.id },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: 'Failed to cancel deletion request' });
     }
 });
@@ -155,7 +178,11 @@ router.delete('/user/account', authMiddleware, async (req, res) => {
         const result = await accountDeletionService.permanentlyDeleteAccount(userId, true);
         res.json(result);
     } catch (error) {
-        console.error('Account deletion error:', error);
+        logger.error('Failed to delete account', {
+            error,
+            context: { userId: req.user.id, immediate: req.body.immediate },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: 'Failed to delete account' });
     }
 });
@@ -190,7 +217,11 @@ router.get('/user/deletion-status', authMiddleware, async (req, res) => {
                 : null
         });
     } catch (error) {
-        console.error('Deletion status error:', error);
+        logger.error('Failed to check deletion status', {
+            error,
+            context: { userId: req.user.id },
+            requestId: req.requestId
+        });
         res.status(500).json({ error: 'Failed to check deletion status' });
     }
 });

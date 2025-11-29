@@ -1,4 +1,5 @@
 const express = require('express');
+const logger = require('../utils/logger');
 const db = require('../db');
 const authenticateToken = require('../middleware/authMiddleware');
 
@@ -21,7 +22,11 @@ router.get('/:userId', authenticateToken, (req, res) => {
 
     db.all(query, [userId], (err, rows) => {
         if (err) {
-            console.error('Results query error:', err);
+            logger.error('Failed to fetch user results', {
+                error: err,
+                context: { userId },
+                requestId: req.requestId
+            });
             return res.status(500).json({ error: 'Failed to fetch results' });
         }
         res.json(rows);
