@@ -6,9 +6,10 @@ import ConfirmDialog from './ConfirmDialog';
 
 const DataManagement = () => {
     const { user, logout } = useAuth();
-    const { showToast } = useToast();
+    const { showSuccess, showError } = useToast();
     const [deletionStatus, setDeletionStatus] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [showImmediateDeleteConfirm, setShowImmediateDeleteConfirm] = useState(false);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -54,10 +55,10 @@ const DataManagement = () => {
             window.URL.revokeObjectURL(url);
             document.body.removeChild(a);
 
-            showToast('Data exported successfully', 'success');
+            showSuccess('Data exported successfully');
         } catch (error) {
             console.error('Error exporting data:', error);
-            showToast('Failed to export data', 'error');
+            showError('Failed to export data');
         } finally {
             setLoading(false);
         }
@@ -80,11 +81,11 @@ const DataManagement = () => {
             }
 
             const data = await response.json();
-            showToast(`Account deletion requested. Your account will be deleted on ${new Date(data.deletionDate).toLocaleDateString()}`, 'success');
+            showSuccess(`Account deletion requested. Your account will be deleted on ${new Date(data.deletionDate).toLocaleDateString()}`);
             fetchDeletionStatus();
         } catch (error) {
             console.error('Error requesting deletion:', error);
-            showToast('Failed to request account deletion', 'error');
+            showError('Failed to request account deletion');
         } finally {
             setLoading(false);
             setShowDeleteConfirm(false);
@@ -107,11 +108,11 @@ const DataManagement = () => {
                 throw new Error('Failed to cancel deletion');
             }
 
-            showToast('Account deletion cancelled', 'success');
+            showSuccess('Account deletion cancelled');
             fetchDeletionStatus();
         } catch (error) {
             console.error('Error cancelling deletion:', error);
-            showToast('Failed to cancel deletion', 'error');
+            showError('Failed to cancel deletion');
         } finally {
             setLoading(false);
         }
@@ -134,16 +135,16 @@ const DataManagement = () => {
                 throw new Error('Failed to delete account');
             }
 
-            showToast('Account deleted successfully', 'success');
+            showSuccess('Account deleted successfully');
             setTimeout(() => {
                 logout();
             }, 2000);
         } catch (error) {
             console.error('Error deleting account:', error);
-            showToast('Failed to delete account', 'error');
+            showError('Failed to delete account');
         } finally {
             setLoading(false);
-            setShowDeleteConfirm(false);
+            setShowImmediateDeleteConfirm(false);
         }
     };
 
@@ -223,10 +224,10 @@ const DataManagement = () => {
             {/* Account Deletion Section */}
             <div style={sectionStyle}>
                 <h4 style={{ fontSize: '1.2rem', marginBottom: '0.75rem', color: '#fca5a5' }}>
-                    🗑️ Delete Your Account
+                    🗑️ Account Deletion Options
                 </h4>
-                <p style={{ color: 'var(--text-muted)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                    Permanently delete your account and all associated data. This action cannot be undone.
+                <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+                    Choose how you want to delete your account. You can schedule deletion with a grace period or delete immediately.
                 </p>
 
                 {deletionStatus?.hasPendingDeletion ? (
@@ -252,15 +253,62 @@ const DataManagement = () => {
                         </button>
                     </div>
                 ) : (
-                    <button
-                        style={dangerButtonStyle}
-                        onClick={() => setShowDeleteConfirm(true)}
-                        disabled={loading}
-                        onMouseEnter={(e) => !loading && (e.target.style.transform = 'translateY(-2px)')}
-                        onMouseLeave={(e) => !loading && (e.target.style.transform = 'translateY(0)')}
-                    >
-                        Delete My Account
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {/* Option 1: Scheduled Deletion */}
+                        <div style={{
+                            background: 'rgba(245, 158, 11, 0.1)',
+                            border: '1px solid rgba(245, 158, 11, 0.3)',
+                            borderRadius: '8px',
+                            padding: '1rem'
+                        }}>
+                            <h5 style={{ color: '#fbbf24', marginBottom: '0.5rem', fontSize: '1rem' }}>
+                                📅 Schedule Account Deletion (Recommended)
+                            </h5>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.75rem', lineHeight: '1.5' }}>
+                                Request account deletion with a <strong>30-day grace period</strong>. You can cancel anytime during this period.
+                                Public quizzes will be preserved (anonymized) for the community.
+                            </p>
+                            <button
+                                style={{
+                                    ...buttonStyle,
+                                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                                    color: 'white',
+                                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)'
+                                }}
+                                onClick={() => setShowDeleteConfirm(true)}
+                                disabled={loading}
+                                onMouseEnter={(e) => !loading && (e.target.style.transform = 'translateY(-2px)')}
+                                onMouseLeave={(e) => !loading && (e.target.style.transform = 'translateY(0)')}
+                            >
+                                Schedule Deletion (30-Day Grace Period)
+                            </button>
+                        </div>
+
+                        {/* Option 2: Immediate Deletion */}
+                        <div style={{
+                            background: 'rgba(220, 38, 38, 0.1)',
+                            border: '1px solid rgba(220, 38, 38, 0.3)',
+                            borderRadius: '8px',
+                            padding: '1rem'
+                        }}>
+                            <h5 style={{ color: '#ef4444', marginBottom: '0.5rem', fontSize: '1rem' }}>
+                                ⚡ Delete Account Immediately (Permanent)
+                            </h5>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '0.75rem', lineHeight: '1.5' }}>
+                                <strong>Permanently delete your account right now</strong> with no grace period.
+                                This action cannot be undone. All your data, quizzes, results, and stats will be wiped out immediately.
+                            </p>
+                            <button
+                                style={dangerButtonStyle}
+                                onClick={() => setShowImmediateDeleteConfirm(true)}
+                                disabled={loading}
+                                onMouseEnter={(e) => !loading && (e.target.style.transform = 'translateY(-2px)')}
+                                onMouseLeave={(e) => !loading && (e.target.style.transform = 'translateY(0)')}
+                            >
+                                Delete Everything Now (No Grace Period)
+                            </button>
+                        </div>
+                    </div>
                 )}
 
                 <div style={{
@@ -276,14 +324,26 @@ const DataManagement = () => {
                 </div>
             </div>
 
-            {/* Confirm Dialog */}
+            {/* Confirm Dialog for Scheduled Deletion */}
             {showDeleteConfirm && (
                 <ConfirmDialog
-                    title="Delete Account?"
-                    message="Are you sure you want to delete your account? This action cannot be undone. Your account will be permanently deleted after a 30-day grace period."
+                    title="Schedule Account Deletion?"
+                    message="Your account will be scheduled for deletion with a 30-day grace period. You can cancel anytime during this period. Are you sure you want to proceed?"
                     onConfirm={handleRequestDeletion}
                     onCancel={() => setShowDeleteConfirm(false)}
-                    confirmText="Request Deletion"
+                    confirmText="Schedule Deletion"
+                    isDangerous={true}
+                />
+            )}
+
+            {/* Confirm Dialog for Immediate Deletion */}
+            {showImmediateDeleteConfirm && (
+                <ConfirmDialog
+                    title="Delete Account Immediately?"
+                    message="⚠️ WARNING: This will PERMANENTLY delete your account RIGHT NOW with NO grace period. All your data, quizzes, results, and stats will be wiped out immediately. This action CANNOT be undone. Are you absolutely sure?"
+                    onConfirm={handlePermanentDelete}
+                    onCancel={() => setShowImmediateDeleteConfirm(false)}
+                    confirmText="Yes, Delete Everything Now"
                     isDangerous={true}
                 />
             )}

@@ -1,4 +1,4 @@
-const { User, Quiz, Result, QuestionAttempt, UserStats, UserAchievement, UserQuizLibrary } = require('../models/sequelize');
+const { User, Quiz, Result, QuestionAttempt, UserStats, UserAchievement, UserQuizLibrary, QuizReview } = require('../models/sequelize');
 const { sequelize } = require('../models/sequelize');
 
 /**
@@ -120,6 +120,12 @@ class AccountDeletionService {
             // Delete user achievements
             await UserAchievement.destroy({
                 where: { user_id: userId },
+                transaction
+            });
+
+            // Delete quiz reviews created by user
+            await QuizReview.destroy({
+                where: { reviewer_id: userId },
                 transaction
             });
 
