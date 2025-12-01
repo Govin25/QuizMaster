@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 import ConfirmDialog from './ConfirmDialog';
 import DocumentQuizGenerator from './DocumentQuizGenerator';
+import VideoQuizGenerator from './VideoQuizGenerator';
 
 const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
     const { fetchWithAuth } = useAuth();
@@ -15,6 +16,7 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
     const [reviewDetails, setReviewDetails] = useState({});
     const [deleteConfirm, setDeleteConfirm] = useState(null);
     const [showDocumentGenerator, setShowDocumentGenerator] = useState(false);
+    const [showVideoGenerator, setShowVideoGenerator] = useState(false);
 
     useEffect(() => {
         fetchQuizzes();
@@ -493,6 +495,16 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                 />
             )}
 
+            {showVideoGenerator && (
+                <VideoQuizGenerator
+                    onClose={() => setShowVideoGenerator(false)}
+                    onQuizCreated={() => {
+                        setShowVideoGenerator(false);
+                        fetchQuizzes();
+                    }}
+                />
+            )}
+
             <div className="glass-card" style={{ maxWidth: '1200px', width: '100%' }}>
                 {/* Header */}
                 <div style={{
@@ -505,6 +517,15 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                 }}>
                     <h2 style={{ margin: 0 }}>My Quizzes</h2>
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        <button onClick={() => setShowVideoGenerator(true)} style={{
+                            background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+                            padding: '0.6rem 1.2rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                        }}>
+                            🎥✨ Generate from Video
+                        </button>
                         <button onClick={() => setShowDocumentGenerator(true)} style={{
                             background: 'linear-gradient(135deg, #c084fc, #a855f7)',
                             padding: '0.6rem 1.2rem',

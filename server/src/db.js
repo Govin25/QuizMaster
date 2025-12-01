@@ -38,6 +38,7 @@ function initializeSchema() {
   FOREIGN KEY(creator_id) REFERENCES users(id)
 )`);
 
+
     // Migration for existing quizzes table
     const columnsToAdd = [
       "ALTER TABLE quizzes ADD COLUMN creator_id INTEGER REFERENCES users(id)",
@@ -45,8 +46,15 @@ function initializeSchema() {
       "ALTER TABLE quizzes ADD COLUMN status TEXT DEFAULT 'draft'",
       "ALTER TABLE quizzes ADD COLUMN created_at DATETIME",
       "ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'user'",
-      "ALTER TABLE quizzes ADD COLUMN source TEXT DEFAULT 'manual'"
+      "ALTER TABLE quizzes ADD COLUMN source TEXT DEFAULT 'manual'",
+      "ALTER TABLE quizzes ADD COLUMN video_url TEXT",
+      "ALTER TABLE quizzes ADD COLUMN video_platform TEXT",
+      "ALTER TABLE quizzes ADD COLUMN video_id TEXT",
+      "ALTER TABLE quizzes ADD COLUMN video_title TEXT",
+      "ALTER TABLE quizzes ADD COLUMN video_duration INTEGER",
+      "ALTER TABLE quizzes ADD COLUMN video_thumbnail TEXT"
     ];
+
 
     columnsToAdd.forEach(query => {
       db.run(query, (err) => {

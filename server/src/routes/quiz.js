@@ -9,11 +9,13 @@ const QuizResult = require('../models/QuizResult');
 const authenticateToken = require('../middleware/authMiddleware');
 const documentParser = require('../services/documentParser');
 const aiQuizGenerator = require('../services/aiQuizGenerator');
+const videoQuizService = require('../services/videoQuizService');
 const cache = require('../utils/cache');
 const { uploadLimiter, createQuizLimiter } = require('../middleware/rateLimiter');
 const { validateQuiz, validateQuestion, validateQuizStatus, validateId } = require('../middleware/inputValidator');
 
 const router = express.Router();
+
 
 // Configure multer for file uploads with enhanced security
 const upload = multer({
@@ -486,6 +488,246 @@ router.post('/save-document-quiz', authenticateToken, async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+// ============================================
+// VIDEO QUIZ GENERATION ENDPOINTS
+// ============================================
+
+// Validate video URL
+router.post('/video/validate', authenticateToken, async (req, res) => {
+    try {
+        const { url } = req.body;
+
+        if (!url) {
+            return res.status(400).json({ error: 'Video URL is required' });
+        }
+
+        logger.info('Validating video URL', {
+            url,
+            userId: req.user.id,
+            requestId: req.requestId
+        });
+
+        const preview = await videoQuizService.validateVideoUrl(url);
+
+        res.json(preview);
+    } catch (err) {
+        logger.error('Video URL validation failed', {
+            error: err,
+            context: { url: req.body.url, userId: req.user.id },
+            requestId: req.requestId
+        });
+
+        // User errors should return 400, server errors 500
+        const userErrorPatterns = [
+            'Invalid YouTube URL',
+            'Unsupported video platform',
+            'only English videos are supported',
+            'Playlist support'
+        ];
+
+        const isUserError = userErrorPatterns.some(pattern =>
+            err.message.includes(pattern)
+        );
+
+        res.status(isUserError ? 400 : 500).json({ error: err.message });
+    }
+});
+
+// Extract transcript from video
+router.post('/video/extract-transcript', authenticateToken, async (req, res) => {
+    try {
+        const { url } = req.body;
+
+        if (!url) {
+            return res.status(400).json({ error: 'Video URL is required' });
+        }
+
+        logger.info('Extracting transcript from video', {
+            url,
+            userId: req.user.id,
+            requestId: req.requestId
+        });
+
+        const transcript = await videoQuizService.extractTranscript(url);
+
+        res.json({
+            success: true,
+            transcript: {
+                fullText: transcript.fullText,
+                wordCount: transcript.wordCount,
+                segmentCount: transcript.segments.length,
+                duration: transcript.duration
+            }
+        });
+    } catch (err) {
+        logger.error('Transcript extraction failed', {
+            error: err,
+            context: { url: req.body.url, userId: req.user.id },
+            requestId: req.requestId
+        });
+
+        // User errors should return 400, server errors 500
+        const userErrorPatterns = [
+            'No transcript available',
+            'Transcripts are disabled',
+            'Invalid YouTube URL',
+            'Playlist support'
+        ];
+
+        const isUserError = userErrorPatterns.some(pattern =>
+            err.message.includes(pattern)
+        );
+
+        res.status(isUserError ? 400 : 500).json({ error: err.message });
+    }
+});
+
+// Generate quiz from video
+router.post('/video/generate', authenticateToken, async (req, res) => {
+    try {
+        const { url, config } = req.body;
+
+        if (!url) {
+            return res.status(400).json({ error: 'Video URL is required' });
+        }
+
+        if (!config || !config.numQuestions) {
+            return res.status(400).json({ error: 'Quiz configuration is required' });
+        }
+
+        logger.info('Generating quiz from video', {
+            url,
+            config,
+            userId: req.user.id,
+            requestId: req.requestId
+        });
+
+        const quizData = await videoQuizService.generateQuizFromVideo(
+            url,
+            config,
+            req.user.id
+        );
+
+        // Return quiz data without saving to DB (user will verify first)
+        res.status(200).json({
+            title: quizData.title,
+            category: quizData.category,
+            difficulty: quizData.difficulty,
+            questions: quizData.questions,
+            source: quizData.source,
+            videoUrl: quizData.videoUrl,
+            videoPlatform: quizData.videoPlatform,
+            videoId: quizData.videoId,
+            videoTitle: quizData.videoTitle,
+            videoDuration: quizData.videoDuration,
+            videoThumbnail: quizData.videoThumbnail
+        });
+    } catch (err) {
+        logger.error('Video quiz generation failed', {
+            error: err,
+            context: { url: req.body.url, config: req.body.config, userId: req.user.id },
+            requestId: req.requestId
+        });
+
+        // Determine if this is a user error (400) or server error (500)
+        const userErrorPatterns = [
+            'No transcript available',
+            'Transcripts are disabled',
+            'Invalid YouTube URL',
+            'Unsupported video platform',
+            'only English videos are supported',
+            'Playlist support is not yet implemented'
+        ];
+
+        const isUserError = userErrorPatterns.some(pattern =>
+            err.message.includes(pattern)
+        );
+
+        const statusCode = isUserError ? 400 : 500;
+        res.status(statusCode).json({ error: err.message });
+    }
+
+});
+
+// Save video-generated quiz (after user confirms)
+router.post('/save-video-quiz', authenticateToken, async (req, res) => {
+    try {
+        const {
+            title,
+            category,
+            difficulty,
+            questions,
+            videoUrl,
+            videoPlatform,
+            videoId,
+            videoTitle,
+            videoDuration,
+            videoThumbnail
+        } = req.body;
+
+        if (!title || !category || !questions || questions.length < 5) {
+            return res.status(400).json({ error: 'Invalid quiz data. Minimum 5 questions required.' });
+        }
+
+        if (!videoUrl || !videoPlatform || !videoId) {
+            return res.status(400).json({ error: 'Video metadata is required' });
+        }
+
+        logger.info('Saving video quiz', {
+            title,
+            category,
+            questionCount: questions.length,
+            videoUrl,
+            userId: req.user.id,
+            requestId: req.requestId
+        });
+
+        // Create quiz in database with video metadata
+        const quiz = await Quiz.create(title, category, difficulty, req.user.id, 'video');
+
+        // Update quiz with video metadata
+        const db = require('../db');
+        await new Promise((resolve, reject) => {
+            db.run(
+                `UPDATE quizzes 
+                 SET video_url = ?, video_platform = ?, video_id = ?, 
+                     video_title = ?, video_duration = ?, video_thumbnail = ?
+                 WHERE id = ?`,
+                [videoUrl, videoPlatform, videoId, videoTitle, videoDuration, videoThumbnail, quiz.id],
+                (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                }
+            );
+        });
+
+        // Add questions to quiz
+        for (const question of questions) {
+            await Quiz.addQuestion(quiz.id, question);
+        }
+
+        // Fetch complete quiz with questions
+        const completeQuiz = await Quiz.getById(quiz.id);
+
+        logger.info('Video quiz saved successfully', {
+            quizId: quiz.id,
+            title,
+            userId: req.user.id,
+            requestId: req.requestId
+        });
+
+        res.status(201).json(completeQuiz);
+    } catch (err) {
+        logger.error('Failed to save video quiz', {
+            error: err,
+            context: { title: req.body.title, userId: req.user.id },
+            requestId: req.requestId
+        });
+        res.status(500).json({ error: err.message });
+    }
+});
+
 
 // Update quiz questions (for editing generated quizzes)
 router.put('/:id/update-questions', authenticateToken, async (req, res) => {
