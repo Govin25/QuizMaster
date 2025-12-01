@@ -29,6 +29,7 @@ const AppContent = () => {
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsOfService, setShowTermsOfService] = useState(false);
   const [viewedUserId, setViewedUserId] = useState(null); // For viewing other users' profiles
+  const [previousView, setPreviousView] = useState('leaderboard'); // Track where we came from
 
   // Handle hash-based routing for legal documents
   React.useEffect(() => {
@@ -91,8 +92,9 @@ const AppContent = () => {
     setView('attempts');
   };
 
-  const viewUserProfile = (userId) => {
+  const viewUserProfile = (userId, fromView = 'leaderboard') => {
     setViewedUserId(userId);
+    setPreviousView(fromView);
     setView('public-profile');
   };
 
@@ -403,7 +405,12 @@ const AppContent = () => {
         />
       )}
       {view === 'game' && <QuizGame quizId={activeQuizId} onEndGame={endGame} onShowReport={showReport} />}
-      {view === 'leaderboard' && <Leaderboard onBack={backToMenu} onViewProfile={viewUserProfile} />}
+      {view === 'leaderboard' && (
+        <Leaderboard
+          onBack={backToMenu}
+          onViewProfile={(userId) => viewUserProfile(userId, 'leaderboard')}
+        />
+      )}
       {view === 'report' && <QuizReport resultId={activeResultId} onBackToMenu={() => setView('home')} onBackToAttempts={backToAttempts} />}
       {view === 'attempts' && <QuizAttempts quizId={activeQuizId} userId={user.id} onViewReport={showReport} onBack={() => setView('home')} />}
 
@@ -436,6 +443,7 @@ const AppContent = () => {
       {view === 'hub' && (
         <QuizHub
           onBack={backToMenu}
+          onViewProfile={(userId) => viewUserProfile(userId, 'hub')}
         />
       )}
       {view === 'ai-generator' && (
@@ -457,7 +465,7 @@ const AppContent = () => {
       {view === 'public-profile' && viewedUserId && (
         <PublicUserProfile
           userId={viewedUserId}
-          onBack={() => setView('leaderboard')}
+          onBack={() => setView(previousView)}
         />
       )}
 

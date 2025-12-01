@@ -121,6 +121,8 @@ const CreatorCard = ({ creator, rank, onViewProfile, checkIfFollowing, isCurrent
                 padding: '1rem',
                 border: '1px solid var(--glass-border)',
                 display: 'flex',
+                flexDirection: 'row',
+                flexWrap: 'wrap',
                 alignItems: 'center',
                 gap: '1rem',
                 cursor: 'pointer',
@@ -146,7 +148,7 @@ const CreatorCard = ({ creator, rank, onViewProfile, checkIfFollowing, isCurrent
             </div>
 
             {/* Creator Info */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: '1 1 200px', minWidth: 0 }}>
                 <div style={{
                     fontSize: '1rem',
                     fontWeight: '700',
@@ -173,7 +175,14 @@ const CreatorCard = ({ creator, rank, onViewProfile, checkIfFollowing, isCurrent
 
             {/* Follow Button */}
             {!isCurrentUser && (
-                <div onClick={(e) => e.stopPropagation()}>
+                <div
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                        flexShrink: 0,
+                        width: '100%',
+                        maxWidth: '140px'
+                    }}
+                >
                     <FollowButton
                         userId={creator.id}
                         initialFollowing={isFollowing}

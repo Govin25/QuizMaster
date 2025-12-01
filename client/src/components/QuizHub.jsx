@@ -4,8 +4,9 @@ import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 import TrendingQuizzes from './TrendingQuizzes';
 import TopCreators from './TopCreators';
+import PublicUserProfile from './PublicUserProfile';
 
-const QuizHub = ({ onBack }) => {
+const QuizHub = ({ onBack, onViewProfile }) => {
     const { fetchWithAuth } = useAuth();
     const { showSuccess, showError } = useToast();
     const [quizzes, setQuizzes] = useState([]);
@@ -138,6 +139,7 @@ const QuizHub = ({ onBack }) => {
     }
 
     // Quiz Details Modal
+
     if (selectedQuiz) {
         const isAdded = addedQuizzes.has(selectedQuiz.id);
         return (
@@ -261,10 +263,7 @@ const QuizHub = ({ onBack }) => {
 
             {/* Top Creators Section */}
             <div style={{ marginBottom: '2rem' }}>
-                <TopCreators onViewProfile={(userId) => {
-                    // Could navigate to user profile if implemented
-                    console.log('View profile:', userId);
-                }} />
+                <TopCreators onViewProfile={onViewProfile} />
             </div>
 
             {/* Premium Search Bar */}

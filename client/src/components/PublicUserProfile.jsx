@@ -14,7 +14,7 @@ import { FollowButton, SocialStats, LikeButton } from './SocialFeatures';
 
 const PublicUserProfile = ({ userId, onBack }) => {
     const { user: currentUser, logout, fetchWithAuth } = useAuth();
-    const { showError } = useToast();
+    const { showError, showSuccess } = useToast();
 
     const [userData, setUserData] = useState(null);
     const [statsState, setStatsState] = useState({ data: null, loading: true, error: null });
@@ -27,6 +27,7 @@ const PublicUserProfile = ({ userId, onBack }) => {
     const [socialProfile, setSocialProfile] = useState(null);
     const [userQuizzes, setUserQuizzes] = useState([]);
     const [quizzesLoading, setQuizzesLoading] = useState(true);
+    const [addedQuizzes, setAddedQuizzes] = useState(new Set());
 
     useEffect(() => {
         if (userId) {
@@ -43,6 +44,7 @@ const PublicUserProfile = ({ userId, onBack }) => {
         fetchRecommendations();
         fetchSocialProfile();
         fetchUserQuizzes();
+        fetchUserLibrary();
     };
 
     const handleFetchError = (res) => {
@@ -175,6 +177,39 @@ const PublicUserProfile = ({ userId, onBack }) => {
             console.error('Failed to fetch user quizzes:', err);
         } finally {
             setQuizzesLoading(false);
+        }
+    };
+
+    const fetchUserLibrary = async () => {
+        try {
+            const response = await fetchWithAuth(`${API_URL}/api/quizzes/my-library`);
+            if (response.ok) {
+                const data = await response.json();
+                const allLibraryQuizzes = [...data.recentlyAdded, ...data.completed];
+                const quizIds = new Set(allLibraryQuizzes.map(q => q.id));
+                setAddedQuizzes(quizIds);
+            }
+        } catch (err) {
+            console.error('Failed to fetch library:', err);
+        }
+    };
+
+    const handleAddToLibrary = async (quizId) => {
+        try {
+            const response = await fetchWithAuth(`${API_URL}/api/quizzes/${quizId}/add-to-library`, {
+                method: 'POST'
+            });
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Failed to add quiz');
+            }
+            showSuccess('Quiz added to your home!');
+            setAddedQuizzes(prev => new Set([...prev, quizId]));
+
+            // Dispatch event to notify other components
+            window.dispatchEvent(new CustomEvent('quizAddedToLibrary', { detail: { quizId } }));
+        } catch (err) {
+            showError(err.message);
         }
     };
 
@@ -367,11 +402,14 @@ const PublicUserProfile = ({ userId, onBack }) => {
                                 borderRadius: '12px',
                                 padding: '1rem',
                                 border: '1px solid var(--glass-border)',
-                                transition: 'all 0.3s'
+                                transition: 'all 0.3s',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.75rem'
                             }}
                                 className="hover-lift">
-                                <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1rem' }}>{quiz.title}</h4>
-                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+                                <h4 style={{ margin: 0, fontSize: '1rem' }}>{quiz.title}</h4>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                     <span style={{
                                         background: 'rgba(99, 102, 241, 0.2)',
                                         border: '1px solid rgba(99, 102, 241, 0.3)',
@@ -392,15 +430,37 @@ const PublicUserProfile = ({ userId, onBack }) => {
                                     }}>{quiz.difficulty}</span>
                                 </div>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                    <span>📝 {quiz.dataValues?.questionCount || 0} questions</span>
-                                    <span>❤️ {quiz.dataValues?.likesCount || 0} likes</span>
+                                    <span>📝 {quiz.questionCount || 0} questions</span>
+                                    <span>❤️ {quiz.likesCount || 0} likes</span>
                                 </div>
+                                {currentUser.id !== userId && (
+                                    <button
+                                        onClick={() => handleAddToLibrary(quiz.id)}
+                                        disabled={addedQuizzes.has(quiz.id)}
+                                        style={{
+                                            padding: '0.6rem',
+                                            borderRadius: '8px',
+                                            border: 'none',
+                                            background: addedQuizzes.has(quiz.id)
+                                                ? 'rgba(34, 197, 94, 0.2)'
+                                                : 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                                            color: addedQuizzes.has(quiz.id) ? '#22c55e' : 'white',
+                                            fontSize: '0.85rem',
+                                            fontWeight: '600',
+                                            cursor: addedQuizzes.has(quiz.id) ? 'default' : 'pointer',
+                                            transition: 'all 0.3s',
+                                            opacity: addedQuizzes.has(quiz.id) ? 0.7 : 1
+                                        }}
+                                    >
+                                        {addedQuizzes.has(quiz.id) ? '✓ Added to Home' : '+ Add to Home'}
+                                    </button>
+                                )}
                             </div>
                         ))}
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 
