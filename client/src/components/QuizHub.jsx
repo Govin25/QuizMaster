@@ -266,12 +266,12 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                 <TopCreators onViewProfile={onViewProfile} />
             </div>
 
-            {/* Premium Search Bar */}
+            {/* Browse All Quizzes Section */}
             <div style={{
                 marginBottom: '2rem',
                 position: 'relative'
             }}>
-                <h3 style={{ marginBottom: '1rem' }}>🔍 Browse All Quizzes</h3>
+                <h2 style={{ marginBottom: '1.5rem' }}>🔍 Browse All Quizzes</h2>
                 <div style={{
                     position: 'relative',
                     background: 'rgba(15, 23, 42, 0.5)',
