@@ -14,6 +14,10 @@ import AIGenerator from './components/AIGenerator';
 import QuizReview from './components/QuizReview';
 import UserProfile from './components/UserProfile';
 import PublicUserProfile from './components/PublicUserProfile';
+import ChallengeHub from './components/ChallengeHub';
+import ChallengeGame from './components/ChallengeGame';
+import ChallengeCreator from './components/ChallengeCreator';
+import ChallengeResults from './components/ChallengeResults';
 import Logo from './components/Logo';
 import LegalFooter from './components/LegalFooter';
 import PrivacyPolicy from './components/PrivacyPolicy';
@@ -21,10 +25,12 @@ import TermsOfService from './components/TermsOfService';
 
 const AppContent = () => {
   const { user, logout } = useAuth();
-  const [view, setView] = useState('home'); // home, menu, game, leaderboard, report, attempts, my-quizzes, creator, hub, ai-generator, review, profile
+  const [view, setView] = useState('home'); // home, menu, game, leaderboard, report, attempts, my-quizzes, creator, hub, ai-generator, review, profile, challenges, challenge-game, challenge-results
   const [activeQuizId, setActiveQuizId] = useState(null);
   const [activeResultId, setActiveResultId] = useState(null);
   const [editQuizId, setEditQuizId] = useState(null);
+  const [activeChallengeId, setActiveChallengeId] = useState(null);
+  const [showChallengeCreator, setShowChallengeCreator] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsOfService, setShowTermsOfService] = useState(false);
@@ -96,6 +102,23 @@ const AppContent = () => {
     setViewedUserId(userId);
     setPreviousView(fromView);
     setView('public-profile');
+  };
+
+  const startChallenge = (challengeId, quizId) => {
+    setActiveChallengeId(challengeId);
+    setActiveQuizId(quizId);
+    setView('challenge-game');
+  };
+
+  const viewChallengeResults = (challengeId) => {
+    setActiveChallengeId(challengeId);
+    setView('challenge-results');
+  };
+
+  const handleRematch = (quizId, opponentUsername) => {
+    setView('challenges');
+    setShowChallengeCreator(true);
+    // The creator modal will handle the rematch
   };
 
   return (
@@ -358,6 +381,25 @@ const AppContent = () => {
               👤 Profile
             </button>
             <button
+              onClick={() => { setView('challenges'); closeMenu(); }}
+              style={{
+                padding: '0.5rem 1rem',
+                fontSize: '0.9rem',
+                whiteSpace: 'nowrap',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                background: view === 'challenges'
+                  ? 'linear-gradient(135deg, #f59e0b, #d97706)'
+                  : 'rgba(255,255,255,0.1)',
+                color: 'white',
+                fontWeight: '500',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              ⚔️ Challenges
+            </button>
+            <button
               onClick={() => { setView('leaderboard'); closeMenu(); }}
               style={{
                 padding: '0.5rem 1rem',
@@ -466,6 +508,39 @@ const AppContent = () => {
         <PublicUserProfile
           userId={viewedUserId}
           onBack={() => setView(previousView)}
+        />
+      )}
+      {view === 'challenges' && (
+        <>
+          <ChallengeHub
+            onStartChallenge={startChallenge}
+            onViewResults={viewChallengeResults}
+            onCreateChallenge={() => setShowChallengeCreator(true)}
+          />
+          {showChallengeCreator && (
+            <ChallengeCreator
+              onClose={() => setShowChallengeCreator(false)}
+              onChallengeCreated={() => {
+                setShowChallengeCreator(false);
+                setView('challenges');
+              }}
+            />
+          )}
+        </>
+      )}
+      {view === 'challenge-game' && activeChallengeId && activeQuizId && (
+        <ChallengeGame
+          challengeId={activeChallengeId}
+          quizId={activeQuizId}
+          onEndGame={() => setView('challenges')}
+          onShowResults={viewChallengeResults}
+        />
+      )}
+      {view === 'challenge-results' && activeChallengeId && (
+        <ChallengeResults
+          challengeId={activeChallengeId}
+          onClose={() => setView('challenges')}
+          onRematch={handleRematch}
         />
       )}
 

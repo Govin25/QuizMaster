@@ -158,6 +158,51 @@ function initializeSchema() {
   FOREIGN KEY(user_id) REFERENCES users(id)
 )`);
 
+    // Challenges Table - 1v1 Quiz Challenges
+    db.run(`CREATE TABLE IF NOT EXISTS challenges(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  quiz_id INTEGER NOT NULL,
+  creator_id INTEGER NOT NULL,
+  opponent_id INTEGER NOT NULL,
+  status TEXT DEFAULT 'pending',
+  winner_id INTEGER,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  started_at DATETIME,
+  completed_at DATETIME,
+  FOREIGN KEY(quiz_id) REFERENCES quizzes(id),
+  FOREIGN KEY(creator_id) REFERENCES users(id),
+  FOREIGN KEY(opponent_id) REFERENCES users(id),
+  FOREIGN KEY(winner_id) REFERENCES users(id)
+)`);
+
+    // Challenge Participants Table - Track individual participant progress
+    db.run(`CREATE TABLE IF NOT EXISTS challenge_participants(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  challenge_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  score INTEGER DEFAULT 0,
+  total_time_seconds INTEGER DEFAULT 0,
+  completed BOOLEAN DEFAULT 0,
+  completed_at DATETIME,
+  result_id INTEGER,
+  FOREIGN KEY(challenge_id) REFERENCES challenges(id),
+  FOREIGN KEY(user_id) REFERENCES users(id),
+  FOREIGN KEY(result_id) REFERENCES results(id)
+)`);
+
+    // Challenge Stats Table - User challenge performance tracking
+    db.run(`CREATE TABLE IF NOT EXISTS challenge_stats(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL UNIQUE,
+  total_challenges INTEGER DEFAULT 0,
+  challenges_won INTEGER DEFAULT 0,
+  challenges_lost INTEGER DEFAULT 0,
+  challenges_drawn INTEGER DEFAULT 0,
+  current_win_streak INTEGER DEFAULT 0,
+  best_win_streak INTEGER DEFAULT 0,
+  FOREIGN KEY(user_id) REFERENCES users(id)
+)`);
+
     // Add profile fields to users table
     const userProfileColumns = [
       "ALTER TABLE users ADD COLUMN level INTEGER DEFAULT 1",
@@ -187,6 +232,15 @@ function initializeSchema() {
       "CREATE INDEX IF NOT EXISTS idx_user_stats_user_id ON user_stats(user_id)",
       "CREATE INDEX IF NOT EXISTS idx_quiz_reviews_quiz_id ON quiz_reviews(quiz_id)",
       "CREATE INDEX IF NOT EXISTS idx_user_achievements_user_id ON user_achievements(user_id)",
+
+      // Challenge indexes
+      "CREATE INDEX IF NOT EXISTS idx_challenges_creator_id ON challenges(creator_id)",
+      "CREATE INDEX IF NOT EXISTS idx_challenges_opponent_id ON challenges(opponent_id)",
+      "CREATE INDEX IF NOT EXISTS idx_challenges_quiz_id ON challenges(quiz_id)",
+      "CREATE INDEX IF NOT EXISTS idx_challenges_status ON challenges(status)",
+      "CREATE INDEX IF NOT EXISTS idx_challenge_participants_challenge_id ON challenge_participants(challenge_id)",
+      "CREATE INDEX IF NOT EXISTS idx_challenge_participants_user_id ON challenge_participants(user_id)",
+      "CREATE INDEX IF NOT EXISTS idx_challenge_stats_user_id ON challenge_stats(user_id)",
 
       // Composite indexes for common query patterns
       "CREATE INDEX IF NOT EXISTS idx_results_user_quiz ON results(user_id, quiz_id)",

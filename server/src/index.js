@@ -92,6 +92,8 @@ app.use('/api/results', require('./routes/results'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/legal', require('./routes/legal'));
 app.use('/api/social', require('./routes/social'));
+app.use('/api/challenges', require('./routes/challenges'));
+
 
 // Socket.io Logic
 io.on('connection', (socket) => {
@@ -222,6 +224,134 @@ io.on('connection', (socket) => {
             });
             socket.emit('result_saved', { success: false });
         }
+    });
+
+    // Challenge Socket.IO Events
+    const ChallengeRepository = require('./repositories/ChallengeRepository');
+    const ChallengeService = require('./services/challengeService');
+
+    socket.on('join_challenge', async ({ userId, challengeId }) => {
+        try {
+            socket.join(`challenge_${challengeId}`);
+
+            // Notify opponent that player joined
+            socket.to(`challenge_${challengeId}`).emit('opponent_joined', { userId });
+
+            logger.info('User joined challenge', { userId, challengeId, socketId: socket.id });
+        } catch (err) {
+            logger.error('Failed to join challenge', { error: err, userId, challengeId });
+        }
+    });
+
+    socket.on('challenge_submit_answer', async ({ challengeId, questionId, answer, timeTaken, currentQuestionIndex, userId }) => {
+        try {
+            // Get challenge details
+            const challenge = await ChallengeRepository.getChallengeById(challengeId);
+            if (!challenge) return;
+
+            // Validate answer
+            const quiz = await Quiz.getById(challenge.quiz_id);
+            const question = quiz.questions.find(q => q.id === questionId);
+
+            let isCorrect = false;
+            if (question) {
+                isCorrect = question.validateAnswer(answer);
+            }
+
+            // Get current participant score
+            const participants = await ChallengeRepository.getChallengeParticipants(challengeId);
+            const participant = participants.find(p => p.user_id === userId);
+            const newScore = (participant?.score || 0) + (isCorrect ? 10 : 0);
+
+            // Update participant score
+            await ChallengeRepository.updateParticipantScore(
+                challengeId,
+                userId,
+                newScore,
+                (participant?.total_time_seconds || 0) + (timeTaken || 0)
+            );
+
+            // Broadcast progress to opponent
+            io.to(`challenge_${challengeId}`).emit('opponent_progress', {
+                userId,
+                currentQuestion: currentQuestionIndex,
+                score: newScore,
+                isCorrect
+            });
+
+            // Send answer result to player
+            socket.emit('challenge_answer_result', {
+                correct: isCorrect,
+                correctAnswer: question.correctAnswer,
+                newScore
+            });
+
+            logger.debug('Challenge answer submitted', {
+                challengeId,
+                userId,
+                questionId,
+                isCorrect,
+                newScore
+            });
+        } catch (err) {
+            logger.error('Failed to process challenge answer', {
+                error: err,
+                challengeId,
+                questionId
+            });
+        }
+    });
+
+    socket.on('challenge_complete', async ({ challengeId, userId, finalScore, totalTime, resultId }) => {
+        try {
+            // Update participant as completed
+            await ChallengeRepository.markParticipantCompleted(challengeId, userId);
+
+            // Update final score and time
+            await ChallengeRepository.updateParticipantScore(
+                challengeId,
+                userId,
+                finalScore,
+                totalTime,
+                resultId
+            );
+
+            // Notify opponent that player finished
+            socket.to(`challenge_${challengeId}`).emit('opponent_finished', {
+                userId,
+                score: finalScore,
+                time: totalTime
+            });
+
+            // Check if both players completed
+            const completionResult = await ChallengeService.processChallengeCompletion(challengeId);
+
+            if (completionResult.completed) {
+                // Both players finished - broadcast final results
+                io.to(`challenge_${challengeId}`).emit('challenge_finished', {
+                    winnerId: completionResult.winnerId,
+                    result: completionResult.result,
+                    participants: completionResult.participants
+                });
+
+                logger.info('Challenge completed', {
+                    challengeId,
+                    winnerId: completionResult.winnerId,
+                    result: completionResult.result
+                });
+            }
+        } catch (err) {
+            logger.error('Failed to process challenge completion', {
+                error: err,
+                challengeId,
+                userId
+            });
+        }
+    });
+
+    socket.on('leave_challenge', ({ challengeId }) => {
+        socket.leave(`challenge_${challengeId}`);
+        logger.info('User left challenge', { challengeId, socketId: socket.id });
     });
 
     socket.on('disconnect', () => {
