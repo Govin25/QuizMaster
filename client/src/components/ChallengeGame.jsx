@@ -98,6 +98,7 @@ const ChallengeGame = ({ challengeId, quizId, onEndGame, onShowResults }) => {
         newSocket.on('both_players_ready', () => {
             console.log('Received both_players_ready event');
             setOpponentJoined(true);
+            setWaitingForOpponent(false); // Ensure we stop waiting
             setCountdown(3);
         });
 

@@ -99,6 +99,12 @@ app.set('io', io);
 
 
 // Socket.io Logic
+// Track players in each challenge room
+const challengeRooms = new Map(); // challengeId -> Set of userIds
+// Track socket to user/challenge mapping for cleanup
+const socketMap = new Map(); // socketId -> { userId, challengeId }
+
+// Socket.io Logic
 io.on('connection', (socket) => {
     logger.info('WebSocket connection established', { socketId: socket.id });
 
@@ -233,11 +239,6 @@ io.on('connection', (socket) => {
     const ChallengeRepository = require('./repositories/ChallengeRepository');
     const ChallengeService = require('./services/challengeService');
 
-    // Track players in each challenge room
-    const challengeRooms = new Map(); // challengeId -> Set of userIds
-    // Track socket to user/challenge mapping for cleanup
-    const socketMap = new Map(); // socketId -> { userId, challengeId }
-
     socket.on('join_challenge', async ({ userId, challengeId, username }) => {
         try {
             const roomId = `challenge_${challengeId}`;
@@ -271,32 +272,14 @@ io.on('connection', (socket) => {
             if (playersInRoom.size >= 2) {
                 logger.info('Both players ready, starting countdown', { challengeId: challengeKey });
 
-                // Wait a moment to ensure connection stability
-                setTimeout(async () => {
-                    try {
-                        // Get all sockets in the room to ensure we reach everyone
-                        const sockets = await io.in(roomId).fetchSockets();
-                        logger.info('Broadcasting to sockets', { count: sockets.length, ids: sockets.map(s => s.id) });
+                // Emit to the room immediately to ensure both players get it
+                io.to(roomId).emit('both_players_ready');
 
-                        // Emit to each socket explicitly to be safe
-                        for (const s of sockets) {
-                            s.emit('both_players_ready');
-                        }
-
-                        // Also emit to room as fallback
-                        io.to(roomId).emit('both_players_ready');
-
-                        // Start the game after 3 seconds
-                        setTimeout(() => {
-                            io.to(roomId).emit('challenge_start');
-                            logger.info('Emitted challenge_start to room', { roomId, challengeId: challengeKey });
-                        }, 3000);
-                    } catch (e) {
-                        logger.error('Error broadcasting ready state', { error: e });
-                        // Fallback
-                        io.to(roomId).emit('both_players_ready');
-                    }
-                }, 500);
+                // Start the game after 3 seconds
+                setTimeout(() => {
+                    io.to(roomId).emit('challenge_start');
+                    logger.info('Emitted challenge_start to room', { roomId, challengeId: challengeKey });
+                }, 3000);
             } else {
                 // Tell the user they are waiting
                 socket.emit('waiting_for_opponent');
@@ -466,6 +449,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('disconnect', () => {
+        handleLeave(socket.id);
         gameManager.endSession(socket.id);
         logger.info('WebSocket connection closed', { socketId: socket.id });
     });

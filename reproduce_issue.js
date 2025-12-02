@@ -1,6 +1,6 @@
 const io = require('./client/node_modules/socket.io-client');
 
-const API_URL = 'http://localhost:5000';
+const API_URL = 'http://localhost:3001';
 
 async function login(username, password) {
     try {
@@ -25,16 +25,16 @@ async function login(username, password) {
     }
 }
 
-async function createChallenge(token, opponentId, quizId) {
+async function createChallenge(token, opponentUsername, quizId) {
     try {
-        const response = await fetch(`${API_URL}/api/challenges`, {
+        const response = await fetch(`${API_URL}/api/challenges/create`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
                 'Origin': 'http://localhost:5173'
             },
-            body: JSON.stringify({ opponentId, quizId })
+            body: JSON.stringify({ opponentUsername, quizId })
         });
 
         if (!response.ok) {
@@ -49,14 +49,60 @@ async function createChallenge(token, opponentId, quizId) {
     }
 }
 
-async function getPublicQuiz() {
+async function createQuiz(token) {
     try {
-        const response = await fetch(`${API_URL}/api/quizzes/public`);
-        if (!response.ok) return null;
-        const data = await response.json();
-        return data.length > 0 ? data[0].id : 1;
-    } catch (e) {
-        return 1;
+        const response = await fetch(`${API_URL}/api/quizzes/save-document-quiz`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`,
+                'Origin': 'http://localhost:5173'
+            },
+            body: JSON.stringify({
+                title: `Test Quiz ${Date.now()}`,
+                category: 'General Knowledge',
+                difficulty: 'easy',
+                questions: [
+                    {
+                        text: "Is this a test?",
+                        type: "true_false",
+                        correctAnswer: "true"
+                    },
+                    {
+                        text: "What is 2+2?",
+                        type: "multiple_choice",
+                        options: ["3", "4", "5", "6"],
+                        correctAnswer: "4"
+                    },
+                    {
+                        text: "Is the sky blue?",
+                        type: "true_false",
+                        correctAnswer: "true"
+                    },
+                    {
+                        text: "What is 1+1?",
+                        type: "multiple_choice",
+                        options: ["1", "2", "3", "4"],
+                        correctAnswer: "2"
+                    },
+                    {
+                        text: "Is water wet?",
+                        type: "true_false",
+                        correctAnswer: "true"
+                    }
+                ]
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(err);
+        }
+        const quiz = await response.json();
+        return quiz;
+    } catch (error) {
+        console.error('Create quiz failed:', error.message);
+        process.exit(1);
     }
 }
 
@@ -69,10 +115,11 @@ async function runTest() {
     console.log(`Logged in: ${user1.user.username} (${user1.user.id}) and ${user2.user.username} (${user2.user.id})`);
 
     // 2. Create a challenge (User 1 challenges User 2)
-    const quizId = await getPublicQuiz();
+    const quiz = await createQuiz(user1.token);
+    const quizId = quiz.id;
     console.log(`Using Quiz ID: ${quizId}`);
 
-    const challenge = await createChallenge(user1.token, user2.user.id, quizId);
+    const challenge = await createChallenge(user1.token, user2.user.username, quizId);
     console.log(`Challenge created: ${challenge.id}`);
 
     // 3. Connect Sockets
@@ -80,7 +127,7 @@ async function runTest() {
     const socket2 = io(API_URL);
 
     const setupSocket = (socket, name, userId) => {
-        socket.on('connect', () => {
+        const onConnect = () => {
             console.log(`${name} connected (socket: ${socket.id})`);
 
             // Emit join immediately upon connection
@@ -90,7 +137,13 @@ async function runTest() {
                 challengeId: challenge.id,
                 username: name
             });
-        });
+        };
+
+        if (socket.connected) {
+            onConnect();
+        } else {
+            socket.on('connect', onConnect);
+        }
 
         socket.on('opponent_joined', (data) => {
             console.log(`[${name}] received opponent_joined:`, data);
