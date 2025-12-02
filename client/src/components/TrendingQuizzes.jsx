@@ -3,13 +3,12 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 
-const TrendingQuizzes = () => {
+const TrendingQuizzes = ({ onViewDetails: parentOnViewDetails, selectedQuiz, selectedQuizSource }) => {
     const { fetchWithAuth } = useAuth();
     const { showSuccess, showError } = useToast();
     const [quizzes, setQuizzes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [addedQuizzes, setAddedQuizzes] = useState(new Set());
-    const [selectedQuiz, setSelectedQuiz] = useState(null);
 
     useEffect(() => {
         fetchTrendingQuizzes();
@@ -73,17 +72,6 @@ const TrendingQuizzes = () => {
         }
     };
 
-    const handleViewDetails = async (quizId) => {
-        try {
-            const response = await fetchWithAuth(`${API_URL}/api/quizzes/${quizId}`);
-            if (!response.ok) throw new Error('Failed to fetch quiz details');
-            const data = await response.json();
-            setSelectedQuiz(data);
-        } catch (err) {
-            showError(err.message);
-        }
-    };
-
     if (loading) {
         return (
             <div className="glass-card">
@@ -104,102 +92,6 @@ const TrendingQuizzes = () => {
         return null;
     }
 
-    // Quiz Details Modal
-    if (selectedQuiz) {
-        const isAdded = addedQuizzes.has(selectedQuiz.id);
-        return (
-            <div className="glass-card">
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '2rem'
-                }}>
-                    <h2 style={{ margin: 0 }}>Quiz Details</h2>
-                    <button onClick={() => setSelectedQuiz(null)} style={{
-                        background: 'rgba(255,255,255,0.1)',
-                        padding: '0.6rem 1.2rem'
-                    }}>
-                        ← Back to Trending
-                    </button>
-                </div>
-
-                <div style={{ marginBottom: '2rem' }}>
-                    <h3>{selectedQuiz.title}</h3>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                        <span className="badge" style={{
-                            background: 'rgba(99, 102, 241, 0.2)',
-                            border: '1px solid rgba(99, 102, 241, 0.3)',
-                            color: '#a5b4fc'
-                        }}>
-                            {selectedQuiz.category}
-                        </span>
-                        <span className="badge" style={{
-                            background: 'rgba(251, 146, 60, 0.2)',
-                            border: '1px solid rgba(251, 146, 60, 0.3)',
-                            color: '#fb923c'
-                        }}>
-                            {selectedQuiz.difficulty}
-                        </span>
-                    </div>
-                </div>
-
-                <div style={{ marginBottom: '2rem' }}>
-                    <h4>Questions ({selectedQuiz.questions?.length || 0})</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {selectedQuiz.questions?.map((q, idx) => (
-                            <div key={q.id} style={{
-                                background: 'rgba(255,255,255,0.05)',
-                                padding: '1rem',
-                                borderRadius: '8px',
-                                border: '1px solid var(--glass-border)'
-                            }}>
-                                <div style={{ fontWeight: '600', marginBottom: '0.5rem' }}>
-                                    Q{idx + 1}: {q.text}
-                                </div>
-                                {q.type === 'multiple_choice' && q.options && (
-                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginLeft: '1rem' }}>
-                                        {q.options.map((opt, i) => (
-                                            <div key={i} style={{
-                                                color: opt === q.correctAnswer ? '#22c55e' : 'inherit'
-                                            }}>
-                                                {opt} {opt === q.correctAnswer && '✓'}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                {q.type === 'true_false' && (
-                                    <div style={{ fontSize: '0.9rem', color: '#22c55e', marginLeft: '1rem' }}>
-                                        Correct Answer: {q.correctAnswer}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                <button
-                    onClick={() => handleAddToLibrary(selectedQuiz.id)}
-                    disabled={isAdded}
-                    style={{
-                        width: '100%',
-                        background: isAdded
-                            ? 'rgba(34, 197, 94, 0.2)'
-                            : 'linear-gradient(135deg, var(--primary), var(--secondary))',
-                        border: isAdded ? '1px solid rgba(34, 197, 94, 0.3)' : 'none',
-                        color: isAdded ? '#22c55e' : 'white',
-                        padding: '0.75rem',
-                        fontSize: '0.95rem',
-                        cursor: isAdded ? 'default' : 'pointer',
-                        opacity: isAdded ? 0.7 : 1
-                    }}
-                >
-                    {isAdded ? '✓ Added to Home' : '+ Add to Home'}
-                </button>
-            </div>
-        );
-    }
-
     return (
         <div className="glass-card">
             <h2 style={{ marginBottom: '1.5rem' }}>🔥 Trending Quizzes</h2>
@@ -212,7 +104,7 @@ const TrendingQuizzes = () => {
                         key={quiz.id}
                         quiz={quiz}
                         onAddToLibrary={handleAddToLibrary}
-                        onViewDetails={handleViewDetails}
+                        onViewDetails={parentOnViewDetails}
                         isAdded={addedQuizzes.has(quiz.id)}
                     />
                 ))}
@@ -221,7 +113,7 @@ const TrendingQuizzes = () => {
     );
 };
 
-const QuizCard = ({ quiz, onAddToLibrary, isAdded }) => {
+const QuizCard = ({ quiz, onAddToLibrary, onViewDetails, isAdded }) => {
     const [likeCount] = useState(parseInt(quiz.likesCount) || 0);
 
     return (
@@ -235,7 +127,18 @@ const QuizCard = ({ quiz, onAddToLibrary, isAdded }) => {
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '1rem',
-                position: 'relative'
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
+            }}
+            onClick={() => onViewDetails(quiz.id)}
+            onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = 'var(--primary)';
+                e.currentTarget.style.boxShadow = '0 8px 24px rgba(99, 102, 241, 0.2)';
+            }}
+            onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = 'var(--glass-border)';
+                e.currentTarget.style.boxShadow = 'none';
             }}
         >
             {/* Trending Badge */}
@@ -334,15 +237,30 @@ const QuizCard = ({ quiz, onAddToLibrary, isAdded }) => {
                 <span>{likeCount} {likeCount === 1 ? 'Like' : 'Likes'}</span>
             </div>
 
+            {/* Click to view hint */}
+            <div style={{
+                fontSize: '0.75rem',
+                color: 'var(--text-muted)',
+                fontStyle: 'italic',
+                textAlign: 'center',
+                marginTop: 'auto',
+                paddingTop: '0.5rem',
+                borderTop: '1px solid rgba(255, 255, 255, 0.05)'
+            }}>
+                👁️ Click to view details
+            </div>
+
             {/* Action Buttons */}
             <div style={{
                 display: 'flex',
                 gap: '0.5rem',
-                marginTop: 'auto',
                 alignItems: 'center'
             }}>
                 <button
-                    onClick={() => onAddToLibrary(quiz.id)}
+                    onClick={(e) => {
+                        e.stopPropagation(); // Prevent card click
+                        onAddToLibrary(quiz.id);
+                    }}
                     disabled={isAdded}
                     style={{
                         flex: 1,

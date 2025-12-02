@@ -16,6 +16,7 @@ const QuizHub = ({ onBack, onViewProfile }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [addedQuizzes, setAddedQuizzes] = useState(new Set());
     const [selectedQuiz, setSelectedQuiz] = useState(null);
+    const [selectedQuizSource, setSelectedQuizSource] = useState(null); // 'trending' or 'browse'
 
     useEffect(() => {
         fetchPublicQuizzes();
@@ -94,12 +95,13 @@ const QuizHub = ({ onBack, onViewProfile }) => {
         }
     };
 
-    const handleViewDetails = async (quizId) => {
+    const handleViewDetails = async (quizId, source = 'browse') => {
         try {
             const response = await fetchWithAuth(`${API_URL}/api/quizzes/${quizId}`);
             if (!response.ok) throw new Error('Failed to fetch quiz details');
             const data = await response.json();
             setSelectedQuiz(data);
+            setSelectedQuizSource(source);
         } catch (err) {
             showError(err.message);
         }
@@ -142,6 +144,7 @@ const QuizHub = ({ onBack, onViewProfile }) => {
 
     if (selectedQuiz) {
         const isAdded = addedQuizzes.has(selectedQuiz.id);
+        const backText = selectedQuizSource === 'trending' ? '← Back to Trending' : '← Back to Quiz Hub';
         return (
             <div className="glass-card" style={{ maxWidth: '800px', width: '100%' }}>
                 <div style={{
@@ -151,11 +154,11 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                     marginBottom: '2rem'
                 }}>
                     <h2 style={{ margin: 0 }}>Quiz Details</h2>
-                    <button onClick={() => setSelectedQuiz(null)} style={{
+                    <button onClick={() => { setSelectedQuiz(null); setSelectedQuizSource(null); }} style={{
                         background: 'rgba(255,255,255,0.1)',
                         padding: '0.6rem 1.2rem'
                     }}>
-                        ← Back to Quiz Hub
+                        {backText}
                     </button>
                 </div>
 
@@ -258,7 +261,11 @@ const QuizHub = ({ onBack, onViewProfile }) => {
 
             {/* Trending Quizzes Section */}
             <div style={{ marginBottom: '2rem' }}>
-                <TrendingQuizzes />
+                <TrendingQuizzes
+                    onViewDetails={(quizId) => handleViewDetails(quizId, 'trending')}
+                    selectedQuiz={selectedQuiz}
+                    selectedQuizSource={selectedQuizSource}
+                />
             </div>
 
             {/* Top Creators Section */}
