@@ -52,10 +52,12 @@ class QuizRepository {
     }
 
     /**
-     * Get public quizzes
-     * @returns {Promise<Array>}
-     */
+ * Get public quizzes
+ * @returns {Promise<Array>}
+ */
     async findPublic() {
+        const { User } = require('../models/sequelize');
+
         return await Quiz.findAll({
             where: { is_public: true },
             attributes: {
@@ -63,9 +65,21 @@ class QuizRepository {
                     [
                         sequelize.literal('(SELECT COUNT(*) FROM questions WHERE questions.quiz_id = Quiz.id)'),
                         'questionCount'
+                    ],
+                    [
+                        sequelize.literal('(SELECT COUNT(*) FROM quiz_likes WHERE quiz_likes.quiz_id = Quiz.id)'),
+                        'likesCount'
                     ]
                 ]
             },
+            include: [
+                {
+                    model: User,
+                    as: 'creator',
+                    attributes: ['id', 'username']
+                }
+            ],
+            order: [['created_at', 'DESC']]
         });
     }
 

@@ -7,7 +7,7 @@ const Leaderboard = ({ onBack, onViewProfile }) => {
     const { fetchWithAuth } = useAuth();
     const [scores, setScores] = React.useState([]);
     const [filter, setFilter] = React.useState('first'); // 'first' or 'all'
-    const [myQuizzesOnly, setMyQuizzesOnly] = React.useState(false);
+    const [myQuizzesOnly, setMyQuizzesOnly] = React.useState(true); // Default to true for personalized view
     const [page, setPage] = React.useState(1);
     const [totalPages, setTotalPages] = React.useState(1);
     const [search, setSearch] = React.useState({
@@ -15,6 +15,29 @@ const Leaderboard = ({ onBack, onViewProfile }) => {
         quiz: '',
         attempt: ''
     });
+    const [initialLoadDone, setInitialLoadDone] = React.useState(false);
+
+    // Fetch user's most recent quiz on mount to pre-populate search
+    React.useEffect(() => {
+        const fetchRecentQuiz = async () => {
+            try {
+                const response = await fetchWithAuth(`${API_URL}/api/quizzes/my-library`);
+                if (response.ok) {
+                    const data = await response.json();
+                    // Get the most recent completed quiz
+                    if (data.completed && data.completed.length > 0) {
+                        const mostRecent = data.completed[0];
+                        setSearch(prev => ({ ...prev, quiz: mostRecent.title }));
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch recent quiz:', err);
+            } finally {
+                setInitialLoadDone(true);
+            }
+        };
+        fetchRecentQuiz();
+    }, [fetchWithAuth]);
 
     // Debounce search
     const [debouncedSearch, setDebouncedSearch] = React.useState(search);
@@ -28,6 +51,9 @@ const Leaderboard = ({ onBack, onViewProfile }) => {
     }, [search]);
 
     React.useEffect(() => {
+        // Don't fetch until initial load is done (to avoid double fetch)
+        if (!initialLoadDone) return;
+
         const queryParams = new URLSearchParams({
             filter,
             page,
@@ -50,7 +76,7 @@ const Leaderboard = ({ onBack, onViewProfile }) => {
                 }
             })
             .catch(err => console.error(err));
-    }, [filter, page, debouncedSearch, myQuizzesOnly, fetchWithAuth]);
+    }, [filter, page, debouncedSearch, myQuizzesOnly, fetchWithAuth, initialLoadDone]);
 
     const handleSearchChange = (field, value) => {
         setSearch(prev => ({ ...prev, [field]: value }));

@@ -343,27 +343,76 @@ router.get('/:id/review-details', authenticateToken, async (req, res) => {
 // Generate Quiz with AI
 router.post('/generate', authenticateToken, async (req, res) => {
     try {
-        const { topic, difficulty } = req.body;
-        // TODO: Integrate with actual AI service
-        // For now, create a mock quiz
-        const title = `AI Generated: ${topic}`;
+        const { topic, difficulty, numQuestions = 10 } = req.body;
+
+        if (!topic || topic.trim().length === 0) {
+            return res.status(400).json({ error: 'Topic is required' });
+        }
+
+        logger.info('AI quiz generation requested', {
+            topic,
+            difficulty,
+            numQuestions,
+            userId: req.user.id,
+            requestId: req.requestId
+        });
+
+        // Create a context prompt for the AI based on the topic
+        const contextPrompt = `
+            Generate a comprehensive quiz about the following topic: "${topic}".
+            
+            The quiz should cover key concepts, important facts, and relevant details about this topic.
+            Ensure questions are educational, accurate, and appropriate for the specified difficulty level.
+            
+            Topic: ${topic}
+            Difficulty: ${difficulty || 'medium'}
+        `;
+
+        // Generate questions using AI
+        const config = {
+            numQuestions: parseInt(numQuestions) || 10,
+            difficulty: difficulty || 'medium',
+            questionTypes: ['multiple_choice', 'true_false']
+        };
+
+        const questions = await aiQuizGenerator.generateQuiz(contextPrompt, config);
+
+        if (!questions || questions.length === 0) {
+            throw new Error('Failed to generate questions from topic');
+        }
+
+        logger.info('AI questions generated', {
+            count: questions.length,
+            topic,
+            requestId: req.requestId
+        });
+
+        // Create quiz
+        const title = `${topic} - AI Generated Quiz`;
         const category = 'AI Generated';
+        const quiz = await Quiz.create(title, category, difficulty || 'medium', req.user.id, 'ai');
 
-        const quiz = await Quiz.create(title, category, difficulty, req.user.id, 'ai');
-
-        // Add some mock questions
-        const mockQuestions = [
-            { type: 'true_false', text: `Is ${topic} interesting?`, correctAnswer: 'true' },
-            { type: 'multiple_choice', text: `What is the best thing about ${topic}?`, options: ['Everything', 'Nothing', 'Something', 'Idk'], correctAnswer: 'Everything' }
-        ];
-
-        for (const q of mockQuestions) {
+        // Add generated questions to quiz
+        const formattedQuestions = aiQuizGenerator.formatQuestionsForDB(questions);
+        for (const q of formattedQuestions) {
             await Quiz.addQuestion(quiz.id, q);
         }
 
+        logger.info('AI quiz created successfully', {
+            quizId: quiz.id,
+            questionCount: formattedQuestions.length,
+            topic,
+            requestId: req.requestId
+        });
+
         res.status(201).json(quiz);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        logger.error('AI quiz generation failed', {
+            error: err,
+            context: { topic: req.body.topic, userId: req.user.id },
+            requestId: req.requestId
+        });
+        res.status(500).json({ error: 'Failed to generate AI quiz: ' + err.message });
     }
 });
 

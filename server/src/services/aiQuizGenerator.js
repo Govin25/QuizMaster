@@ -1,4 +1,5 @@
 const logger = require('../utils/logger');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 /**
  * AI Quiz Generator Service
@@ -23,8 +24,14 @@ class AIQuizGenerator {
         } = config;
 
         try {
-            // In production, this would call an actual AI API (OpenAI, Claude, Gemini, etc.)
-            // For now, we'll use an enhanced mock implementation
+            // Check for API key
+            const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+
+            if (apiKey) {
+                return await this.generateWithGemini(text, config, apiKey);
+            }
+
+            logger.warn('No AI API key found, using mock generator');
             return await this.mockGenerateQuiz(text, config);
         } catch (error) {
             logger.error('Failed to generate quiz from text', {
@@ -54,6 +61,15 @@ class AIQuizGenerator {
                 segmentCount: transcript.segments?.length,
                 config
             });
+
+            // Check for API key
+            const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+
+            if (apiKey) {
+                return await this.generateWithGemini(transcript.fullText, config, apiKey);
+            }
+
+            logger.warn('No AI API key found, using mock generator for video');
 
             // Extract topics from full transcript
             const topics = this.extractVideoTopics(transcript.fullText);
@@ -391,6 +407,86 @@ class AIQuizGenerator {
         };
 
         return baseTemplates[difficulty] || baseTemplates.medium;
+    }
+
+    /**
+     * Generate quiz using Google Gemini API
+     * @param {string} text - Content text
+     * @param {object} config - Quiz configuration
+     * @param {string} apiKey - API Key
+     */
+    async generateWithGemini(text, config, apiKey) {
+        try {
+            const genAI = new GoogleGenerativeAI(apiKey);
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+
+            const {
+                numQuestions = 10,
+                difficulty = 'medium',
+                questionTypes = ['multiple_choice', 'true_false']
+            } = config;
+
+            const prompt = `
+                You are an expert quiz generator. Create a high-quality, in-depth quiz based on the following text.
+                
+                Configuration:
+                - Number of questions: ${numQuestions}
+                - Difficulty: ${difficulty} (adjust complexity accordingly)
+                - Question Types: ${questionTypes.join(', ')}
+                
+                Requirements:
+                1. Questions must be highly relevant to the specific content provided.
+                2. For "hard" difficulty, ask about implications, analysis, and synthesis of ideas, not just facts.
+                3. For "medium" difficulty, focus on understanding and application.
+                4. Ensure distractors (wrong answers) are plausible but clearly incorrect based on the text.
+                5. Return the result as a valid JSON array of question objects.
+                
+                Output Format (JSON Array):
+                [
+                    {
+                        "type": "multiple_choice",
+                        "text": "Question text here?",
+                        "options": ["Option A", "Option B", "Option C", "Option D"],
+                        "correctAnswer": "Option B"
+                    },
+                    {
+                        "type": "true_false",
+                        "text": "Statement here.",
+                        "correctAnswer": "true" // or "false"
+                    }
+                ]
+
+                Text Content:
+                ${text.substring(0, 30000)} // Limit context window if needed
+            `;
+
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const textResponse = response.text();
+
+            // Extract JSON from response (handle potential markdown code blocks)
+            const jsonMatch = textResponse.match(/\[[\s\S]*\]/);
+            if (!jsonMatch) {
+                throw new Error('Failed to parse AI response as JSON');
+            }
+
+            const questions = JSON.parse(jsonMatch[0]);
+
+            // Validate and format
+            const validated = this.validateQuestions(questions);
+
+            logger.info('Generated quiz with Gemini', {
+                count: validated.length,
+                difficulty
+            });
+
+            return validated.slice(0, numQuestions);
+
+        } catch (error) {
+            logger.error('Gemini generation failed', { error: error.message });
+            // Fallback to mock if AI fails
+            return this.mockGenerateQuiz(text, config);
+        }
     }
 
     /**

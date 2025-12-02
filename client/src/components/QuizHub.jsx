@@ -346,13 +346,40 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                                     border: '1px solid var(--glass-border)',
                                     display: 'flex',
                                     flexDirection: 'column',
-                                    gap: '1rem'
+                                    gap: '1rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease'
+                                }}
+                                onClick={() => handleViewDetails(quiz.id)}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.borderColor = 'var(--primary)';
+                                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(99, 102, 241, 0.2)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.borderColor = 'var(--glass-border)';
+                                    e.currentTarget.style.boxShadow = 'none';
                                 }}
                             >
-                                {/* Category Badge */}
+                                {/* Title */}
+                                <h3 style={{
+                                    margin: 0,
+                                    fontSize: '1.25rem',
+                                    color: 'white',
+                                    lineHeight: '1.4',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    display: '-webkit-box',
+                                    WebkitLineClamp: 2,
+                                    WebkitBoxOrient: 'vertical',
+                                    wordBreak: 'break-word'
+                                }}>
+                                    {quiz.title}
+                                </h3>
+
+                                {/* Meta Info */}
                                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                     <span style={{
-                                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))',
+                                        background: 'rgba(99, 102, 241, 0.2)',
                                         border: '1px solid rgba(99, 102, 241, 0.3)',
                                         color: '#a5b4fc',
                                         padding: '0.25rem 0.75rem',
@@ -375,15 +402,19 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                                     </span>
                                 </div>
 
-                                {/* Title */}
-                                <h3 style={{
-                                    margin: 0,
-                                    fontSize: '1.25rem',
-                                    color: 'white',
-                                    lineHeight: '1.4'
-                                }}>
-                                    {quiz.title}
-                                </h3>
+                                {/* Creator Info */}
+                                {quiz.creator && (
+                                    <div style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.5rem',
+                                        color: 'var(--text-muted)',
+                                        fontSize: '0.85rem'
+                                    }}>
+                                        <span>👤</span>
+                                        <span>by {quiz.creator.username}</span>
+                                    </div>
+                                )}
 
                                 {/* Question Count */}
                                 <div style={{
@@ -397,44 +428,66 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                                     <span>{quiz.questionCount || 0} Questions</span>
                                 </div>
 
-                                {/* Action Buttons */}
+                                {/* Like Count */}
                                 <div style={{
-                                    marginTop: 'auto',
                                     display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '0.5rem'
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    color: 'var(--text-muted)',
+                                    fontSize: '0.9rem'
                                 }}>
-                                    <button
-                                        onClick={() => handleViewDetails(quiz.id)}
-                                        style={{
-                                            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))',
-                                            border: '1px solid rgba(99, 102, 241, 0.3)',
-                                            color: '#a5b4fc',
-                                            padding: '0.75rem',
-                                            fontSize: '0.9rem'
-                                        }}
-                                    >
-                                        👁️ View Details
-                                    </button>
-                                    <button
-                                        onClick={() => handleAddToLibrary(quiz.id)}
-                                        disabled={isAdded}
-                                        style={{
-                                            width: '100%',
-                                            background: isAdded
-                                                ? 'rgba(34, 197, 94, 0.2)'
-                                                : 'linear-gradient(135deg, var(--primary), var(--secondary))',
-                                            border: isAdded ? '1px solid rgba(34, 197, 94, 0.3)' : 'none',
-                                            color: isAdded ? '#22c55e' : 'white',
-                                            padding: '0.75rem',
-                                            fontSize: '0.95rem',
-                                            cursor: isAdded ? 'default' : 'pointer',
-                                            opacity: isAdded ? 0.7 : 1
-                                        }}
-                                    >
-                                        {isAdded ? '✓ Added to Home' : '+ Add to Home'}
-                                    </button>
+                                    <span style={{ fontSize: '1.1rem' }}>❤️</span>
+                                    <span>{parseInt(quiz.likesCount) || 0} {parseInt(quiz.likesCount) === 1 ? 'Like' : 'Likes'}</span>
                                 </div>
+
+                                {/* Click to view hint */}
+                                <div style={{
+                                    fontSize: '0.75rem',
+                                    color: 'var(--text-muted)',
+                                    fontStyle: 'italic',
+                                    textAlign: 'center',
+                                    marginTop: 'auto',
+                                    paddingTop: '0.5rem',
+                                    borderTop: '1px solid rgba(255, 255, 255, 0.05)'
+                                }}>
+                                    👁️ Click to view details
+                                </div>
+
+                                {/* Action Button */}
+                                <button
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Prevent card click
+                                        handleAddToLibrary(quiz.id);
+                                    }}
+                                    disabled={isAdded}
+                                    style={{
+                                        width: '100%',
+                                        background: isAdded
+                                            ? 'rgba(34, 197, 94, 0.2)'
+                                            : 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                                        border: isAdded ? '1px solid rgba(34, 197, 94, 0.3)' : 'none',
+                                        color: isAdded ? '#22c55e' : 'white',
+                                        padding: '0.75rem',
+                                        fontSize: '0.95rem',
+                                        borderRadius: '12px',
+                                        fontWeight: '600',
+                                        cursor: isAdded ? 'default' : 'pointer',
+                                        transition: 'all 0.3s',
+                                        opacity: isAdded ? 0.7 : 1
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        if (!isAdded) {
+                                            e.target.style.transform = 'scale(1.02)';
+                                            e.target.style.boxShadow = '0 8px 20px rgba(99, 102, 241, 0.3)';
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.target.style.transform = 'scale(1)';
+                                        e.target.style.boxShadow = 'none';
+                                    }}
+                                >
+                                    {isAdded ? '✓ Added to Home' : '+ Add to Home'}
+                                </button>
                             </div>
                         );
                     })}

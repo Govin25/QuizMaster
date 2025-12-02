@@ -157,11 +157,15 @@ const UserProfile = ({ onBack }) => {
                     </div>
                 )}
 
-                <QuickStats
-                    stats={statsState.data}
-                    loading={statsState.loading}
-                    error={statsState.error}
-                />
+                {/* Quick Stats */}
+                <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--glass-border)' }}>
+                    <h3 style={{ margin: '0 0 1rem 0' }}>Performance Stats</h3>
+                    <QuickStats
+                        stats={statsState.data}
+                        loading={statsState.loading}
+                        error={statsState.error}
+                    />
+                </div>
             </div>
 
             {/* Tabs */}
