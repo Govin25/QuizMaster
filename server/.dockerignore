@@ -1,0 +1,15 @@
+node_modules
+npm-debug.log
+.env
+.git
+.gitignore
+README.md
+.DS_Store
+*.log
+test
+load-tests
+test_*.js
+reproduce_issue.js
+quizmaster.db
+cache/*
+uploads/*

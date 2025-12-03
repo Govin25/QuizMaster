@@ -15,6 +15,12 @@ if (SECRET_KEY === 'secret_key') {
     });
 }
 
+// Health check endpoint for Docker and monitoring
+router.get('/health', (req, res) => {
+    res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+
 router.post('/signup', authLimiter, validateAuth, async (req, res) => {
     try {
         const { username, password, acceptedTerms, acceptedPrivacy } = req.body;

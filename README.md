@@ -364,7 +364,39 @@ Users have the right to:
 
 ## 🚀 Deployment
 
+### Docker Deployment (Recommended)
+
+The easiest way to deploy QuizMaster is using Docker containers. Both client and server can be deployed independently or together using docker-compose.
+
+**Quick Start with Docker Compose:**
+```bash
+# Create environment file
+cp .env.example .env
+# Edit .env with your secrets
+
+# Start both services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+```
+
+**Or use the interactive script:**
+```bash
+./docker-commands.sh
+```
+
+For detailed Docker deployment instructions, including:
+- Individual container deployment
+- Production configuration
+- Backup and restore procedures
+- Troubleshooting
+- Resource management
+
+See the comprehensive [Docker Deployment Guide](DOCKER.md).
+
 ### Vercel Deployment
+
 
 This project is configured for easy deployment to Vercel.
 
