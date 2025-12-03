@@ -1,7 +1,10 @@
 const sqlite3 = require('sqlite3').verbose();
 const logger = require('./utils/logger');
 
-const db = new sqlite3.Database('./quizmaster.db', (err) => {
+const path = require('path');
+const dbPath = path.resolve(__dirname, '../quizmaster.db');
+
+const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     logger.error('Failed to connect to database', {
       error: err
@@ -9,7 +12,7 @@ const db = new sqlite3.Database('./quizmaster.db', (err) => {
     process.exit(1);
   } else {
     logger.info('Connected to SQLite database', {
-      database: 'quizmaster.db'
+      database: dbPath
     });
     initializeSchema();
   }

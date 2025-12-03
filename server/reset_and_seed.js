@@ -214,6 +214,46 @@ async function resetAndSeed() {
             console.log('✓ Cleared user_quiz_library');
 
             await new Promise((resolve, reject) => {
+                db.run('DELETE FROM quiz_likes', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared quiz_likes');
+
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM user_achievements', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared user_achievements');
+
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM user_stats', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared user_stats');
+
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM user_follows', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared user_follows');
+
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM user_social_stats', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared user_social_stats');
+
+            await new Promise((resolve, reject) => {
                 db.run('DELETE FROM questions', (err) => {
                     if (err) reject(err);
                     else resolve();

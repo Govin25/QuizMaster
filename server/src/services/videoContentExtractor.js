@@ -20,7 +20,7 @@ class VideoContentExtractor {
     async getInnertube() {
         if (!this.innertube) {
             this.innertube = await Innertube.create({
-                cache: new UniversalCache(false),
+                cache: new UniversalCache(true, './cache'),
                 generate_session_locally: true
             });
         }
