@@ -4,7 +4,7 @@ import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 
 const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
-    const { fetchWithAuth } = useAuth();
+    const { user, fetchWithAuth } = useAuth();
     const { showSuccess, showError } = useToast();
 
     const [step, setStep] = useState(1);
@@ -16,6 +16,8 @@ const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchFilter, setSearchFilter] = useState('all');
     const [isSearching, setIsSearching] = useState(false);
+    const [suggestedUsers, setSuggestedUsers] = useState([]);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(false);
 
     useEffect(() => {
         fetchQuizzes();
@@ -74,6 +76,34 @@ const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
             showError(err.message);
         } finally {
             setIsSearching(false);
+        }
+    };
+
+    const fetchSuggestedUsers = async () => {
+        try {
+            setLoadingSuggestions(true);
+            const [followersRes, followingRes] = await Promise.all([
+                fetchWithAuth(`${API_URL}/api/social/followers/${user.id}?limit=10`),
+                fetchWithAuth(`${API_URL}/api/social/following/${user.id}?limit=10`)
+            ]);
+
+            const followers = followersRes.ok ? await followersRes.json() : [];
+            const following = followingRes.ok ? await followingRes.json() : [];
+
+            // Combine and deduplicate
+            const combined = [...followers, ...following];
+            const uniqueUsers = Array.from(
+                new Map(combined.map(u => [u.id, u])).values()
+            );
+
+            // Filter out admins
+            const nonAdminUsers = uniqueUsers.filter(u => u.role !== 'admin');
+
+            setSuggestedUsers(nonAdminUsers.slice(0, 8)); // Show max 8 suggestions
+        } catch (err) {
+            console.error('Failed to fetch suggestions:', err);
+        } finally {
+            setLoadingSuggestions(false);
         }
     };
 
@@ -367,6 +397,11 @@ const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
                     type="text"
                     value={opponentUsername}
                     onChange={(e) => setOpponentUsername(e.target.value)}
+                    onFocus={() => {
+                        if (suggestedUsers.length === 0 && !loadingSuggestions) {
+                            fetchSuggestedUsers();
+                        }
+                    }}
                     placeholder="Enter username..."
                     style={{
                         width: '100%',
@@ -379,13 +414,73 @@ const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
                     }}
                     autoFocus
                 />
-                <div style={{
-                    fontSize: '0.75rem',
-                    color: 'var(--text-muted)',
-                    marginTop: '0.5rem'
-                }}>
-                    💡 Enter the exact username of the person you want to challenge
-                </div>
+
+                {/* Suggested Users */}
+                {suggestedUsers.length > 0 && !opponentUsername && (
+                    <div style={{ marginTop: '1rem' }}>
+                        <div style={{
+                            fontSize: '0.85rem',
+                            color: 'var(--text-muted)',
+                            marginBottom: '0.75rem',
+                            fontWeight: '600'
+                        }}>
+                            💡 Suggested opponents (from your network):
+                        </div>
+                        <div style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '0.5rem'
+                        }}>
+                            {suggestedUsers.map(user => (
+                                <button
+                                    key={user.id}
+                                    onClick={() => setOpponentUsername(user.username)}
+                                    style={{
+                                        padding: '0.5rem 1rem',
+                                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))',
+                                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                                        borderRadius: '20px',
+                                        color: 'white',
+                                        fontSize: '0.85rem',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s',
+                                        fontWeight: '500'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.target.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3))';
+                                        e.target.style.transform = 'translateY(-2px)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.target.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))';
+                                        e.target.style.transform = 'translateY(0)';
+                                    }}
+                                >
+                                    @{user.username}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {loadingSuggestions && (
+                    <div style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        marginTop: '0.5rem'
+                    }}>
+                        Loading suggestions...
+                    </div>
+                )}
+
+                {!loadingSuggestions && suggestedUsers.length === 0 && !opponentUsername && (
+                    <div style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        marginTop: '0.5rem'
+                    }}>
+                        💡 Enter the exact username of the person you want to challenge
+                    </div>
+                )}
             </div>
 
             <div style={{ display: 'flex', gap: '1rem' }}>

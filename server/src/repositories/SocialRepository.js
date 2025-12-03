@@ -70,7 +70,7 @@ class SocialRepository {
             include: [{
                 model: User,
                 as: 'follower',
-                attributes: ['id', 'username', 'level', 'xp', 'avatar_url']
+                attributes: ['id', 'username', 'role', 'level', 'xp', 'avatar_url']
             }],
             limit,
             offset,
@@ -93,7 +93,7 @@ class SocialRepository {
             include: [{
                 model: User,
                 as: 'followingUser',
-                attributes: ['id', 'username', 'level', 'xp', 'avatar_url']
+                attributes: ['id', 'username', 'role', 'level', 'xp', 'avatar_url']
             }],
             limit,
             offset,

@@ -23,7 +23,7 @@ class ChallengeService {
 
         // Get opponent by username
         const opponent = await new Promise((resolve, reject) => {
-            db.get('SELECT id, username FROM users WHERE username = ?', [opponentUsername], (err, row) => {
+            db.get('SELECT id, username, role FROM users WHERE username = ?', [opponentUsername], (err, row) => {
                 if (err) reject(err);
                 else resolve(row);
             });
@@ -35,6 +35,19 @@ class ChallengeService {
 
         if (opponent.id === creatorId) {
             throw new Error('You cannot challenge yourself');
+        }
+
+        // Get creator's role
+        const creator = await new Promise((resolve, reject) => {
+            db.get('SELECT role FROM users WHERE id = ?', [creatorId], (err, row) => {
+                if (err) reject(err);
+                else resolve(row);
+            });
+        });
+
+        // Prevent normal users from challenging admin users
+        if (creator && creator.role !== 'admin' && opponent.role === 'admin') {
+            throw new Error('You cannot challenge admin users');
         }
 
         // Check for existing active challenge with same quiz and opponent
