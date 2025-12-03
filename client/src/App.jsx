@@ -23,6 +23,7 @@ import Logo from './components/Logo';
 import LegalFooter from './components/LegalFooter';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
+import InstallPWA from './components/InstallPWA';
 
 const AppContent = () => {
   const { user, logout } = useAuth();
@@ -636,6 +637,7 @@ const AppContent = () => {
       )}
 
       <LegalFooter />
+      <InstallPWA />
     </div>
   );
 };
