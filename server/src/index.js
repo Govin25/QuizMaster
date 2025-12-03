@@ -265,8 +265,23 @@ io.on('connection', (socket) => {
                 players: Array.from(playersInRoom)
             });
 
-            // Notify opponent that player joined
+            // Notify opponent that player joined (in the room)
             socket.to(roomId).emit('opponent_joined', { userId, username });
+
+            // ALSO Notify globally so ChallengeHub sees it (for the opponent waiting in the hub)
+            // We need to know who the opponent is to filter on client side, or just send challengeId
+            // and let client check if they are part of it.
+            // Better: Fetch challenge to know participants
+            const challenge = await ChallengeRepository.getChallengeById(challengeId);
+            if (challenge) {
+                const opponentId = challenge.creator_id === userId ? challenge.opponent_id : challenge.creator_id;
+                io.emit('opponent_joined_lobby', {
+                    challengeId,
+                    joinedUserId: userId,
+                    joinedUsername: username,
+                    targetUserId: opponentId
+                });
+            }
 
             // Check if both players have joined
             if (playersInRoom.size >= 2) {

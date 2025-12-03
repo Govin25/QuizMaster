@@ -55,10 +55,12 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
         });
 
         // Listen for opponent joining lobby
-        socket.on('opponent_joined', ({ userId: opponentUserId, username }) => {
-            // Only show notification if the opponent is not the current user
-            if (opponentUserId !== user.id) {
-                showSuccess(`🎮 ${username} joined the lobby! Get ready!`);
+        socket.on('opponent_joined_lobby', ({ challengeId, joinedUserId, joinedUsername, targetUserId }) => {
+            // Only show notification if this user is the target opponent
+            if (targetUserId === user.id) {
+                showSuccess(`🎮 ${joinedUsername} joined the lobby! Get ready!`);
+                // Optional: Refresh challenges to show "In Lobby" status if we had that in the UI
+                fetchChallenges();
             }
         });
 
