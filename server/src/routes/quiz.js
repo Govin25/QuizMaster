@@ -13,6 +13,7 @@ const videoQuizService = require('../services/videoQuizService');
 const cache = require('../utils/cache');
 const { uploadLimiter, createQuizLimiter } = require('../middleware/rateLimiter');
 const { validateQuiz, validateQuestion, validateQuizStatus, validateId } = require('../middleware/inputValidator');
+const { handleError } = require('../utils/errorHandler');
 
 const router = express.Router();
 
@@ -71,7 +72,7 @@ router.get('/public', async (req, res) => {
 
         res.json(quizzes);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -81,7 +82,7 @@ router.get('/my-quizzes', authenticateToken, async (req, res) => {
         const quizzes = await Quiz.getUserQuizzes(req.user.id);
         res.json(quizzes);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -102,7 +103,7 @@ router.post('/:id/add-to-library', authenticateToken, async (req, res) => {
         if (err.message === 'Quiz already in library') {
             return res.status(400).json({ error: err.message });
         }
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -123,7 +124,7 @@ router.delete('/:id/remove-from-library', authenticateToken, async (req, res) =>
             wasInLibrary
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -189,7 +190,7 @@ router.delete('/delete/:id', authenticateToken, async (req, res) => {
             context: { quizId: req.params.id, userId: req.user.id },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -212,7 +213,7 @@ router.get('/my-library', authenticateToken, async (req, res) => {
 
         res.json(library);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -240,7 +241,7 @@ router.get('/search-for-challenge', authenticateToken, async (req, res) => {
             context: { query: req.query.query, userId: req.user.id },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -254,7 +255,7 @@ router.get('/', async (req, res) => {
         const quizzes = await Quiz.getAll();
         res.json(quizzes);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -277,7 +278,7 @@ router.get('/:id', async (req, res) => {
 
         res.json(quiz);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -311,7 +312,7 @@ router.post('/:id/publish', authenticateToken, async (req, res) => {
         await Quiz.updateStatus(quizId, 'pending_review', 0);
         res.json({ message: 'Quiz submitted for review' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -347,7 +348,7 @@ router.post('/:id/review', authenticateToken, async (req, res) => {
 
         res.json({ message: `Quiz ${status}` });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -364,7 +365,7 @@ router.get('/:id/review-details', authenticateToken, async (req, res) => {
 
         res.json(review || {});
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -530,7 +531,7 @@ router.post('/generate-from-document', authenticateToken, uploadLimiter, upload.
             }
         }
 
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -562,7 +563,7 @@ router.post('/save-document-quiz', authenticateToken, async (req, res) => {
             context: { title: req.body.title, userId: req.user.id },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -801,7 +802,7 @@ router.post('/save-video-quiz', authenticateToken, async (req, res) => {
             context: { title: req.body.title, userId: req.user.id },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -836,7 +837,7 @@ router.put('/:id/update-questions', authenticateToken, async (req, res) => {
             context: { quizId: req.params.id, userId: req.user.id },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -900,7 +901,7 @@ router.put('/questions/:questionId', authenticateToken, async (req, res) => {
 
         res.json({ message: 'Question updated successfully' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -936,7 +937,7 @@ router.delete('/questions/:questionId', authenticateToken, async (req, res) => {
 
         res.json({ message: 'Question deleted successfully' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -948,7 +949,7 @@ router.get('/results/:resultId/report', async (req, res) => {
         if (!report) return res.status(404).json({ error: 'Report not found' });
         res.json(report);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -960,7 +961,7 @@ router.get('/questions/:questionId/analysis', async (req, res) => {
         if (!analysis) return res.status(404).json({ error: 'Question not found' });
         res.json(analysis);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -970,7 +971,7 @@ router.get('/:quizId/attempts/:userId', async (req, res) => {
         const attempts = await QuizResult.getUserQuizAttempts(req.params.quizId, req.params.userId);
         res.json(attempts);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 

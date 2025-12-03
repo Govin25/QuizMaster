@@ -3,6 +3,7 @@ const db = require('../db');
 const { authenticateToken } = require('../middleware/authMiddleware');
 const cache = require('../utils/cache');
 const { validateSearch } = require('../middleware/inputValidator');
+const { handleError } = require('../utils/errorHandler');
 
 const router = express.Router();
 
@@ -105,14 +106,14 @@ router.get('/', authenticateToken, validateSearch, (req, res) => {
         querySQL += ` ORDER BY percentage DESC, score DESC, completed_at DESC LIMIT ? OFFSET ?`;
 
         db.get(countQuery, params, (err, countResult) => {
-            if (err) return res.status(500).json({ error: err.message });
+            if (err) return res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
 
             const total = countResult ? countResult.total : 0;
             const totalPages = Math.ceil(total / limit);
             const dataParams = [...params, limit, offset];
 
             db.all(querySQL, dataParams, (err, rows) => {
-                if (err) return res.status(500).json({ error: err.message });
+                if (err) return res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
                 const result = {
                     data: rows,
                     meta: { total, page, limit, totalPages }
@@ -169,14 +170,14 @@ router.get('/', authenticateToken, validateSearch, (req, res) => {
         firstQuery += ` ORDER BY percentage DESC, r.score DESC LIMIT ? OFFSET ?`;
 
         db.get(firstCountQuery, params, (err, countResult) => {
-            if (err) return res.status(500).json({ error: err.message });
+            if (err) return res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
 
             const total = countResult ? countResult.total : 0;
             const totalPages = Math.ceil(total / limit);
             const dataParams = [...params, limit, offset];
 
             db.all(firstQuery, dataParams, (err, rows) => {
-                if (err) return res.status(500).json({ error: err.message });
+                if (err) return res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
                 const result = {
                     data: rows,
                     meta: { total, page, limit, totalPages }

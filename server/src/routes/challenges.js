@@ -4,6 +4,7 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 const ChallengeRepository = require('../repositories/ChallengeRepository');
 const ChallengeService = require('../services/challengeService');
 const logger = require('../utils/logger');
+const { handleError } = require('../utils/errorHandler');
 
 // Create a new challenge
 router.post('/create', authenticateToken, async (req, res) => {
@@ -86,7 +87,7 @@ router.get('/my-challenges', authenticateToken, async (req, res) => {
             context: { userId: req.user.id },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -114,7 +115,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
             context: { challengeId: req.params.id, userId: req.user.id },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -180,7 +181,7 @@ router.post('/:id/accept', authenticateToken, async (req, res) => {
             context: { challengeId: req.params.id, userId: req.user.id },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -249,7 +250,7 @@ router.post('/:id/decline', authenticateToken, async (req, res) => {
             context: { challengeId: req.params.id, userId: req.user.id },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -313,7 +314,7 @@ router.get('/stats/:userId', authenticateToken, async (req, res) => {
             context: { userId: req.params.userId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 

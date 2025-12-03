@@ -4,6 +4,7 @@ const { authenticateToken, optionalAuthenticateToken } = require('../middleware/
 const socialService = require('../services/socialService');
 const SocialRepository = require('../repositories/SocialRepository');
 const logger = require('../utils/logger');
+const { handleError } = require('../utils/errorHandler');
 
 // Follow a user
 router.post('/follow/:userId', authenticateToken, async (req, res) => {
@@ -34,7 +35,7 @@ router.post('/follow/:userId', authenticateToken, async (req, res) => {
         if (err.message === 'Already following this user' || err.message === 'User not found') {
             return res.status(400).json({ error: err.message });
         }
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -63,7 +64,7 @@ router.delete('/unfollow/:userId', authenticateToken, async (req, res) => {
             context: { userId: req.params.userId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -82,7 +83,7 @@ router.get('/followers/:userId', async (req, res) => {
             context: { userId: req.params.userId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -101,7 +102,7 @@ router.get('/following/:userId', async (req, res) => {
             context: { userId: req.params.userId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -119,7 +120,7 @@ router.get('/is-following/:userId', authenticateToken, async (req, res) => {
             context: { userId: req.params.userId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -150,7 +151,7 @@ router.post('/quizzes/:quizId/like', authenticateToken, async (req, res) => {
             err.message === 'Can only like public quizzes') {
             return res.status(400).json({ error: err.message });
         }
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -179,7 +180,7 @@ router.delete('/quizzes/:quizId/unlike', authenticateToken, async (req, res) => 
             context: { quizId: req.params.quizId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -197,7 +198,7 @@ router.get('/quizzes/:quizId/likes', async (req, res) => {
             context: { quizId: req.params.quizId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -215,7 +216,7 @@ router.get('/quizzes/:quizId/has-liked', authenticateToken, async (req, res) => 
             context: { quizId: req.params.quizId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -232,7 +233,7 @@ router.get('/trending', async (req, res) => {
             error: err,
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -248,7 +249,7 @@ router.get('/top-creators', async (req, res) => {
             error: err,
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -270,7 +271,7 @@ router.get('/profile/:userId', optionalAuthenticateToken, async (req, res) => {
         if (err.message === 'User not found') {
             return res.status(404).json({ error: err.message });
         }
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -289,7 +290,7 @@ router.get('/profile/:userId/quizzes', async (req, res) => {
             context: { userId: req.params.userId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 

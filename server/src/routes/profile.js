@@ -4,6 +4,7 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 const analyticsService = require('../services/analyticsService');
 const achievementService = require('../services/achievementService');
 const cache = require('../utils/cache');
+const { handleError } = require('../utils/errorHandler');
 
 const router = express.Router();
 
@@ -26,7 +27,7 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
             context: { userId: req.params.userId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -74,7 +75,7 @@ router.get('/stats/:userId', authenticateToken, async (req, res) => {
             context: { userId: req.params.userId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -98,7 +99,7 @@ router.get('/activity/:userId', authenticateToken, async (req, res) => {
             context: { userId: req.params.userId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -117,7 +118,7 @@ router.get('/trends/:userId', authenticateToken, async (req, res) => {
             context: { userId: req.params.userId, days: req.query.days },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -144,7 +145,7 @@ router.get('/achievements/:userId', authenticateToken, async (req, res) => {
             context: { userId: req.params.userId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -162,7 +163,7 @@ router.get('/recommendations/:userId', authenticateToken, async (req, res) => {
             context: { userId: req.params.userId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -194,7 +195,7 @@ router.get('/compare/:userId/:compareUserId', authenticateToken, async (req, res
             context: { userId: req.params.userId, compareUserId: req.params.compareUserId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -218,7 +219,7 @@ router.put('/avatar', authenticateToken, async (req, res) => {
             context: { userId: req.user.id },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
@@ -243,7 +244,7 @@ router.delete('/', authenticateToken, async (req, res) => {
             context: { userId },
             requestId: req.requestId
         });
-        res.status(500).json({ error: err.message });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
