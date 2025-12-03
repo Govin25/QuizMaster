@@ -15,6 +15,7 @@ const { sequelize } = require('./models/sequelize');
 
 const authRoutes = require('./routes/auth');
 const quizRoutes = require('./routes/quiz');
+const adminRoutes = require('./routes/admin');
 const gameManager = require('./managers/GameManager');
 const Quiz = require('./models/Quiz');
 const QuizResult = require('./models/QuizResult');
@@ -93,6 +94,7 @@ app.use('/api/profile', require('./routes/profile'));
 app.use('/api/legal', require('./routes/legal'));
 app.use('/api/social', require('./routes/social'));
 app.use('/api/challenges', require('./routes/challenges'));
+app.use('/api/admin', adminRoutes); // Registered admin routes
 
 // Make io available to routes
 app.set('io', io);

@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken } = require('../middleware/authMiddleware');
+const { authenticateToken, requirePermission } = require('../middleware/authMiddleware');
 const ChallengeRepository = require('../repositories/ChallengeRepository');
 const ChallengeService = require('../services/challengeService');
 const logger = require('../utils/logger');
 const { handleError } = require('../utils/errorHandler');
 
 // Create a new challenge
-router.post('/create', authenticateToken, async (req, res) => {
+router.post('/create', authenticateToken, requirePermission('challenge:create'), async (req, res) => {
     try {
         const { quizId, opponentUsername } = req.body;
         const creatorId = req.user.id;

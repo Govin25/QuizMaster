@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const logger = require('../utils/logger');
 const Quiz = require('../models/Quiz');
 const QuizResult = require('../models/QuizResult');
-const { authenticateToken } = require('../middleware/authMiddleware');
+const { authenticateToken, requirePermission } = require('../middleware/authMiddleware');
 const documentParser = require('../services/documentParser');
 const aiQuizGenerator = require('../services/aiQuizGenerator');
 const videoQuizService = require('../services/videoQuizService');
@@ -283,9 +283,9 @@ router.get('/:id', async (req, res) => {
 });
 
 // Create a new quiz
-router.post('/', authenticateToken, createQuizLimiter, validateQuiz, async (req, res) => {
+router.post('/create', authenticateToken, requirePermission('quiz:create'), createQuizLimiter, async (req, res) => {
     try {
-        const { title, category, difficulty } = req.body;
+        const { title, category, difficulty, questions, is_public, source, video_url } = req.body;
         const quiz = await Quiz.create(title, category, difficulty, req.user.id);
         res.status(201).json(quiz);
     } catch (err) {

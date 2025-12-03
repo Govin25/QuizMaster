@@ -206,6 +206,77 @@ function initializeSchema() {
   FOREIGN KEY(user_id) REFERENCES users(id)
 )`);
 
+    // RBAC Tables
+
+    // Roles Table
+    db.run(`CREATE TABLE IF NOT EXISTS roles(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE NOT NULL,
+  description TEXT,
+  is_system BOOLEAN DEFAULT 0,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`);
+
+    // Permissions Table
+    db.run(`CREATE TABLE IF NOT EXISTS permissions(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE NOT NULL,
+  resource TEXT NOT NULL,
+  action TEXT NOT NULL,
+  description TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`);
+
+    // Role Permissions Association
+    db.run(`CREATE TABLE IF NOT EXISTS role_permissions(
+  role_id INTEGER NOT NULL,
+  permission_id INTEGER NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (role_id, permission_id),
+  FOREIGN KEY(role_id) REFERENCES roles(id) ON DELETE CASCADE,
+  FOREIGN KEY(permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+)`);
+
+    // User Groups Table
+    db.run(`CREATE TABLE IF NOT EXISTS user_groups(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT UNIQUE NOT NULL,
+  description TEXT,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`);
+
+    // Group Members Association
+    db.run(`CREATE TABLE IF NOT EXISTS group_members(
+  group_id INTEGER NOT NULL,
+  user_id INTEGER NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (group_id, user_id),
+  FOREIGN KEY(group_id) REFERENCES user_groups(id) ON DELETE CASCADE,
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+)`);
+
+    // Group Permissions Association
+    db.run(`CREATE TABLE IF NOT EXISTS group_permissions(
+  group_id INTEGER NOT NULL,
+  permission_id INTEGER NOT NULL,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (group_id, permission_id),
+  FOREIGN KEY(group_id) REFERENCES user_groups(id) ON DELETE CASCADE,
+  FOREIGN KEY(permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+)`);
+
+    // User Permissions (Direct Whitelist/Blacklist)
+    db.run(`CREATE TABLE IF NOT EXISTS user_permissions(
+  user_id INTEGER NOT NULL,
+  permission_id INTEGER NOT NULL,
+  granted BOOLEAN DEFAULT 1,
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (user_id, permission_id),
+  FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY(permission_id) REFERENCES permissions(id) ON DELETE CASCADE
+)`);
+
     // Add profile fields to users table
     const userProfileColumns = [
       "ALTER TABLE users ADD COLUMN level INTEGER DEFAULT 1",

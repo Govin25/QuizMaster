@@ -13,6 +13,13 @@ const UserStatsModel = require('./UserStats.model');
 const UserFollowModel = require('./UserFollow.model');
 const QuizLikeModel = require('./QuizLike.model');
 const UserSocialStatsModel = require('./UserSocialStats.model');
+const RoleModel = require('./Role.model');
+const PermissionModel = require('./Permission.model');
+const RolePermissionModel = require('./RolePermission.model');
+const UserGroupModel = require('./UserGroup.model');
+const GroupMemberModel = require('./GroupMember.model');
+const GroupPermissionModel = require('./GroupPermission.model');
+const UserPermissionModel = require('./UserPermission.model');
 
 // Initialize models
 const User = UserModel(sequelize);
@@ -27,6 +34,13 @@ const UserStats = UserStatsModel(sequelize);
 const UserFollow = UserFollowModel(sequelize);
 const QuizLike = QuizLikeModel(sequelize);
 const UserSocialStats = UserSocialStatsModel(sequelize);
+const Role = RoleModel(sequelize);
+const Permission = PermissionModel(sequelize);
+const RolePermission = RolePermissionModel(sequelize);
+const UserGroup = UserGroupModel(sequelize);
+const GroupMember = GroupMemberModel(sequelize);
+const GroupPermission = GroupPermissionModel(sequelize);
+const UserPermission = UserPermissionModel(sequelize);
 
 // Define associations
 
@@ -92,6 +106,28 @@ QuizLike.belongsTo(Quiz, { foreignKey: 'quiz_id', as: 'quiz' });
 // UserSocialStats associations
 UserSocialStats.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 
+// RBAC associations
+
+// User-Role association (via role field in users table)
+User.belongsTo(Role, { foreignKey: 'role', targetKey: 'name', as: 'userRole' });
+Role.hasMany(User, { foreignKey: 'role', sourceKey: 'name', as: 'users' });
+
+// Role-Permission many-to-many
+Role.belongsToMany(Permission, { through: RolePermission, foreignKey: 'role_id', as: 'permissions' });
+Permission.belongsToMany(Role, { through: RolePermission, foreignKey: 'permission_id', as: 'roles' });
+
+// User-Group many-to-many
+User.belongsToMany(UserGroup, { through: GroupMember, foreignKey: 'user_id', as: 'groups' });
+UserGroup.belongsToMany(User, { through: GroupMember, foreignKey: 'group_id', as: 'members' });
+
+// Group-Permission many-to-many
+UserGroup.belongsToMany(Permission, { through: GroupPermission, foreignKey: 'group_id', as: 'permissions' });
+Permission.belongsToMany(UserGroup, { through: GroupPermission, foreignKey: 'permission_id', as: 'groups' });
+
+// User-Permission many-to-many (direct permissions)
+User.belongsToMany(Permission, { through: UserPermission, foreignKey: 'user_id', as: 'directPermissions' });
+Permission.belongsToMany(User, { through: UserPermission, foreignKey: 'permission_id', as: 'usersWithPermission' });
+
 // Export models and sequelize instance
 module.exports = {
     sequelize,
@@ -107,4 +143,11 @@ module.exports = {
     UserFollow,
     QuizLike,
     UserSocialStats,
+    Role,
+    Permission,
+    RolePermission,
+    UserGroup,
+    GroupMember,
+    GroupPermission,
+    UserPermission,
 };

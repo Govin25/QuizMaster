@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
-import AuthForm from './components/AuthForm';
+import { RbacProvider } from './context/RbacContext'; // Added RbacProvider import
+import AuthForm from './components/AuthForm'; // This will be replaced by Login/Register in a later step, keeping for now
 import Home from './components/Home';
 import QuizGame from './components/QuizGame';
 import Leaderboard from './components/Leaderboard';
