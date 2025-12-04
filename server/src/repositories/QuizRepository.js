@@ -28,10 +28,31 @@ class QuizRepository {
             {
                 model: Question,
                 as: 'questions',
+            },
+            {
+                model: User,
+                as: 'creator',
+                attributes: ['id', 'username']
             }
-        ] : [];
+        ] : [
+            {
+                model: User,
+                as: 'creator',
+                attributes: ['id', 'username']
+            }
+        ];
 
-        return await Quiz.findByPk(id, { include });
+        return await Quiz.findByPk(id, {
+            include,
+            attributes: {
+                include: [
+                    [
+                        sequelize.literal('(SELECT COUNT(*) FROM quiz_likes WHERE quiz_likes.quiz_id = Quiz.id)'),
+                        'likesCount'
+                    ]
+                ]
+            }
+        });
     }
 
     /**

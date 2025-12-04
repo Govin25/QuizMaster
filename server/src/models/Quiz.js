@@ -2,7 +2,7 @@ const QuizRepository = require('../repositories/QuizRepository');
 const { MultipleChoiceQuestion, TrueFalseQuestion } = require('./Question');
 
 class Quiz {
-    constructor(id, title, category, difficulty, questions = [], creator_id = null, is_public = false, status = 'draft', created_at = null, source = 'manual') {
+    constructor(id, title, category, difficulty, questions = [], creator_id = null, is_public = false, status = 'draft', created_at = null, source = 'manual', creator = null, likesCount = 0) {
         this.id = id;
         this.title = title;
         this.category = category;
@@ -13,11 +13,13 @@ class Quiz {
         this.status = status;
         this.created_at = created_at;
         this.source = source;
+        this.creator = creator;
+        this.likesCount = likesCount;
     }
 
     static async create(title, category, difficulty, creator_id = null, source = 'manual') {
         const quiz = await QuizRepository.create({ title, category, difficulty, creator_id, source });
-        return new Quiz(quiz.id, title, category, difficulty, [], creator_id, false, 'draft', quiz.created_at, source);
+        return new Quiz(quiz.id, title, category, difficulty, [], creator_id, false, 'draft', quiz.created_at, source, null, 0);
     }
 
     static async addQuestion(quizId, questionData) {
@@ -52,7 +54,9 @@ class Quiz {
             quiz.is_public,
             quiz.status,
             quiz.created_at,
-            quiz.source
+            quiz.source,
+            quiz.creator,
+            quiz.dataValues?.likesCount || 0
         );
     }
 

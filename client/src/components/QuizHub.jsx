@@ -162,81 +162,171 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                     </button>
                 </div>
 
-                <div style={{ marginBottom: '2rem' }}>
-                    <h3>{selectedQuiz.title}</h3>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                {/* Quiz Header */}
+                <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+                    <h1 style={{
+                        fontSize: '2.5rem',
+                        marginBottom: '1rem',
+                        background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)',
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent'
+                    }}>
+                        {selectedQuiz.title}
+                    </h1>
+
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: '1rem',
+                        marginBottom: '1.5rem',
+                        flexWrap: 'wrap'
+                    }}>
                         <span className="badge" style={{
                             background: 'rgba(99, 102, 241, 0.2)',
                             border: '1px solid rgba(99, 102, 241, 0.3)',
-                            color: '#a5b4fc'
+                            color: '#a5b4fc',
+                            padding: '0.5rem 1rem',
+                            fontSize: '1rem'
                         }}>
                             {selectedQuiz.category}
                         </span>
                         <span className="badge" style={{
                             background: 'rgba(251, 146, 60, 0.2)',
                             border: '1px solid rgba(251, 146, 60, 0.3)',
-                            color: '#fb923c'
+                            color: '#fb923c',
+                            padding: '0.5rem 1rem',
+                            fontSize: '1rem'
                         }}>
                             {selectedQuiz.difficulty}
                         </span>
                     </div>
+
+                    {selectedQuiz.creator && (
+                        <div style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>
+                            Created by <span style={{ color: 'white', fontWeight: '600' }}>{selectedQuiz.creator.username}</span>
+                        </div>
+                    )}
                 </div>
 
-                <div style={{ marginBottom: '2rem' }}>
-                    <h4>Questions ({selectedQuiz.questions?.length || 0})</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        {selectedQuiz.questions?.map((q, idx) => (
-                            <div key={q.id} style={{
-                                background: 'rgba(255,255,255,0.05)',
-                                padding: '1rem',
-                                borderRadius: '8px',
-                                border: '1px solid var(--glass-border)'
-                            }}>
-                                <div style={{ fontWeight: '600', marginBottom: '0.5rem' }}>
-                                    Q{idx + 1}: {q.text}
-                                </div>
-                                {q.type === 'multiple_choice' && q.options && (
-                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginLeft: '1rem' }}>
-                                        {q.options.map((opt, i) => (
-                                            <div key={i} style={{
-                                                color: opt === q.correctAnswer ? '#22c55e' : 'inherit'
-                                            }}>
-                                                {opt} {opt === q.correctAnswer && '✓'}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                                {q.type === 'true_false' && (
-                                    <div style={{ fontSize: '0.9rem', color: '#22c55e', marginLeft: '1rem' }}>
-                                        Correct Answer: {q.correctAnswer}
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                {/* Stats Grid */}
+                <div className="grid" style={{
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+                    gap: '1rem',
+                    marginBottom: '2rem'
+                }}>
+                    <div style={{
+                        background: 'rgba(255,255,255,0.03)',
+                        padding: '1.5rem',
+                        borderRadius: '12px',
+                        textAlign: 'center',
+                        border: '1px solid var(--glass-border)'
+                    }}>
+                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📝</div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                            {selectedQuiz.questions?.length || 0}
+                        </div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Questions</div>
+                    </div>
+                    <div style={{
+                        background: 'rgba(255,255,255,0.03)',
+                        padding: '1.5rem',
+                        borderRadius: '12px',
+                        textAlign: 'center',
+                        border: '1px solid var(--glass-border)'
+                    }}>
+                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>❤️</div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                            {selectedQuiz.likesCount || 0}
+                        </div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Likes</div>
+                    </div>
+                    <div style={{
+                        background: 'rgba(255,255,255,0.03)',
+                        padding: '1.5rem',
+                        borderRadius: '12px',
+                        textAlign: 'center',
+                        border: '1px solid var(--glass-border)'
+                    }}>
+                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📅</div>
+                        <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>
+                            {new Date(selectedQuiz.created_at).toLocaleDateString()}
+                        </div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Created</div>
                     </div>
                 </div>
 
-                {/* Add to Home Button in Details View */}
-                <button
-                    onClick={() => handleAddToLibrary(selectedQuiz.id)}
-                    disabled={isAdded}
-                    style={{
-                        width: '100%',
-                        background: isAdded
-                            ? 'rgba(34, 197, 94, 0.2)'
-                            : 'linear-gradient(135deg, var(--primary), var(--secondary))',
-                        border: isAdded ? '1px solid rgba(34, 197, 94, 0.3)' : 'none',
-                        color: isAdded ? '#22c55e' : 'white',
-                        padding: '0.75rem',
-                        fontSize: '0.95rem',
-                        cursor: isAdded ? 'default' : 'pointer',
-                        opacity: isAdded ? 0.7 : 1
-                    }}
-                >
-                    {isAdded ? '✓ Added to Home' : '+ Add to Home'}
-                </button>
+                {/* Description & Takeaways */}
+                <div style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    padding: '2rem',
+                    borderRadius: '16px',
+                    marginBottom: '2rem',
+                    border: '1px solid var(--glass-border)'
+                }}>
+                    <h3 style={{ marginTop: 0, marginBottom: '1rem', color: '#c084fc' }}>✨ About this Quiz</h3>
+                    <p style={{ lineHeight: '1.6', color: 'var(--text-muted)', marginBottom: '2rem' }}>
+                        Ready to challenge yourself? Dive into this <strong>{selectedQuiz.difficulty}</strong> level quiz designed to test your mastery of <strong>{selectedQuiz.category}</strong>.
+                        {selectedQuiz.creator ? ` Created by community member ${selectedQuiz.creator.username}, ` : ' '}
+                        this quiz features {selectedQuiz.questions?.length || 0} carefully selected questions to help you sharpen your skills and learn something new.
+                    </p>
+
+                    <h4 style={{ marginBottom: '1rem', color: 'white' }}>🎯 What you'll get:</h4>
+                    <ul style={{
+                        listStyle: 'none',
+                        padding: 0,
+                        margin: 0,
+                        display: 'grid',
+                        gap: '0.8rem'
+                    }}>
+                        <li style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', color: 'var(--text-muted)' }}>
+                            <span style={{ color: '#22c55e' }}>✓</span>
+                            Test your knowledge in {selectedQuiz.category}
+                        </li>
+                        <li style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', color: 'var(--text-muted)' }}>
+                            <span style={{ color: '#22c55e' }}>✓</span>
+                            Challenge yourself with {selectedQuiz.difficulty} level questions
+                        </li>
+                        <li style={{ display: 'flex', gap: '0.8rem', alignItems: 'center', color: 'var(--text-muted)' }}>
+                            <span style={{ color: '#22c55e' }}>✓</span>
+                            Track your progress and improve over time
+                        </li>
+                    </ul>
+                </div>
+
+                {/* Add to Home Button */}
+                <div style={{ textAlign: 'center' }}>
+                    <button
+                        onClick={() => handleAddToLibrary(selectedQuiz.id)}
+                        disabled={isAdded}
+                        style={{
+                            width: '100%',
+                            maxWidth: '400px',
+                            background: isAdded
+                                ? 'rgba(34, 197, 94, 0.2)'
+                                : 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                            border: isAdded ? '1px solid rgba(34, 197, 94, 0.3)' : 'none',
+                            color: isAdded ? '#22c55e' : 'white',
+                            padding: '1rem 2rem',
+                            fontSize: '1.1rem',
+                            borderRadius: '12px',
+                            cursor: isAdded ? 'default' : 'pointer',
+                            opacity: isAdded ? 0.7 : 1,
+                            fontWeight: '600',
+                            boxShadow: isAdded ? 'none' : '0 4px 15px rgba(99, 102, 241, 0.3)',
+                            transition: 'all 0.3s'
+                        }}
+                    >
+                        {isAdded ? '✓ Added to Home' : '➕ Add to Home'}
+                    </button>
+                    {!isAdded && (
+                        <p style={{ marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                            Add this quiz to your personal library to take it anytime!
+                        </p>
+                    )}
+                </div>
             </div>
         );
+
     }
 
     return (

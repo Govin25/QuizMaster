@@ -266,7 +266,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const quizId = req.params.id;
-        const cacheKey = `quiz_${quizId}`;
+        const cacheKey = `quiz_details_v2_${quizId}`; // Changed key to invalidate old cache
 
         // Check cache first
         if (cache.has(cacheKey)) {
@@ -275,6 +275,15 @@ router.get('/:id', async (req, res) => {
 
         const quiz = await Quiz.getById(quizId);
         if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
+
+        // Log the fetched quiz to verify creator and likes
+        logger.debug('Fetched quiz details', {
+            quizId,
+            hasCreator: !!quiz.creator,
+            creatorUsername: quiz.creator?.username,
+            likesCount: quiz.likesCount,
+            requestId: req.requestId
+        });
 
         // Cache for 5 minutes
         cache.set(cacheKey, quiz, 5 * 60 * 1000);
