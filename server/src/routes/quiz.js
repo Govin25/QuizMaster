@@ -147,12 +147,13 @@ router.delete('/delete/:id', authenticateToken, async (req, res) => {
         // Check if quiz exists
         const quiz = await Quiz.getById(quizId);
         if (!quiz) {
-            logger.warn('Quiz deletion failed - quiz not found', {
+            // Idempotent: If quiz doesn't exist, it's already deleted - return success
+            logger.info('Quiz deletion - already deleted', {
                 quizId,
                 userId,
                 requestId: req.requestId
             });
-            return res.status(404).json({ error: 'Quiz not found' });
+            return res.json({ message: 'Quiz deleted successfully' });
         }
 
         // Check if user owns the quiz (if creator_id exists)
@@ -284,8 +285,8 @@ router.get('/:id', async (req, res) => {
     }
 });
 
-// Create a new quiz
-router.post('/create', authenticateToken, requirePermission('quiz:create'), createQuizLimiter, async (req, res) => {
+// Create a new quiz (POST /api/quizzes)
+router.post('/', authenticateToken, requirePermission('quiz:create'), createQuizLimiter, async (req, res) => {
     try {
         const { title, category, difficulty, questions, is_public, source, video_url } = req.body;
         const quiz = await Quiz.create(title, category, difficulty, req.user.id);

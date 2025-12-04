@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import API_URL from '../config';
 import { useAuth } from '../context/AuthContext';
+import quizSessionManager from '../utils/quizSessionManager';
 
 const QuizGame = ({ quizId, onEndGame, onShowReport }) => {
     const { user, fetchWithAuth } = useAuth();
@@ -69,6 +70,15 @@ const QuizGame = ({ quizId, onEndGame, onShowReport }) => {
 
         return () => newSocket.close();
     }, [quiz, quizId, user.id]);
+
+    // Cleanup quiz session on unmount
+    useEffect(() => {
+        return () => {
+            if (quizId) {
+                quizSessionManager.releaseQuiz(quizId, fetchWithAuth);
+            }
+        };
+    }, [quizId, fetchWithAuth]);
 
     // Reset question start time when question changes
     useEffect(() => {

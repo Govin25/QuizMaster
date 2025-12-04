@@ -116,7 +116,8 @@ class SocialRepository {
         });
 
         if (existing) {
-            throw new Error('Already liked this quiz');
+            // Already liked - return existing record (idempotent operation)
+            return existing;
         }
 
         return await QuizLike.create({

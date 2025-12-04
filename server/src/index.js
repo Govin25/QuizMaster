@@ -157,6 +157,7 @@ app.use('/api/social', require('./routes/social'));
 app.use('/api/challenges', require('./routes/challenges'));
 app.use('/api/usage', require('./routes/usage')); // NEW: Usage tracking
 app.use('/api/subscription', require('./routes/subscription')); // NEW: Subscription management
+app.use('/api/quiz-sessions', require('./routes/quizSession')); // NEW: Quiz session management
 app.use('/api/admin', adminRoutes); // Registered admin routes
 
 // Make io available to routes

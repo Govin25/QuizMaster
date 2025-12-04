@@ -15,6 +15,19 @@ const Home = ({ onStartQuiz, onViewReport }) => {
         fetchLibrary();
     }, []);
 
+    // Listen for cross-tab updates (when quiz is completed in another tab)
+    useEffect(() => {
+        const handleStorageChange = (e) => {
+            // Refresh library when quiz is completed in another tab
+            if (e.key === 'quiz_completed_event' || e.key?.startsWith('quiz_session_')) {
+                fetchLibrary();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+        return () => window.removeEventListener('storage', handleStorageChange);
+    }, []);
+
     const fetchLibrary = async () => {
         try {
             const response = await fetchWithAuth(`${API_URL}/api/quizzes/my-library`);

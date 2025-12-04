@@ -20,6 +20,7 @@ const UserGroupModel = require('./UserGroup.model');
 const GroupMemberModel = require('./GroupMember.model');
 const GroupPermissionModel = require('./GroupPermission.model');
 const UserPermissionModel = require('./UserPermission.model');
+const ActiveQuizSessionModel = require('./ActiveQuizSession.model');
 
 // Initialize models
 const User = UserModel(sequelize);
@@ -41,6 +42,7 @@ const UserGroup = UserGroupModel(sequelize);
 const GroupMember = GroupMemberModel(sequelize);
 const GroupPermission = GroupPermissionModel(sequelize);
 const UserPermission = UserPermissionModel(sequelize);
+const ActiveQuizSession = ActiveQuizSessionModel(sequelize);
 
 // Define associations
 
@@ -128,6 +130,12 @@ Permission.belongsToMany(UserGroup, { through: GroupPermission, foreignKey: 'per
 User.belongsToMany(Permission, { through: UserPermission, foreignKey: 'user_id', as: 'directPermissions' });
 Permission.belongsToMany(User, { through: UserPermission, foreignKey: 'permission_id', as: 'usersWithPermission' });
 
+// ActiveQuizSession associations
+ActiveQuizSession.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+ActiveQuizSession.belongsTo(Quiz, { foreignKey: 'quiz_id', as: 'quiz' });
+User.hasMany(ActiveQuizSession, { foreignKey: 'user_id', as: 'activeSessions' });
+Quiz.hasMany(ActiveQuizSession, { foreignKey: 'quiz_id', as: 'activeSessions' });
+
 // Export models and sequelize instance
 module.exports = {
     sequelize,
@@ -150,4 +158,5 @@ module.exports = {
     GroupMember,
     GroupPermission,
     UserPermission,
+    ActiveQuizSession,
 };

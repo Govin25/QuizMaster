@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import API_URL from '../config';
 import { useAuth } from '../context/AuthContext';
+import quizSessionManager from '../utils/quizSessionManager';
 
 const ChallengeGame = ({ challengeId, quizId, onEndGame, onShowResults }) => {
     const { user, fetchWithAuth } = useAuth();
@@ -145,6 +146,10 @@ const ChallengeGame = ({ challengeId, quizId, onEndGame, onShowResults }) => {
 
         // Listen for challenge finished
         newSocket.on('challenge_finished', ({ winnerId, result, participants }) => {
+            // Release session and notify other tabs
+            quizSessionManager.releaseChallenge(challengeId, fetchWithAuth);
+            quizSessionManager.notifyQuizCompleted(challengeId); // Reuse for cross-tab sync
+
             // Directly navigate to results without showing intermediate screen
             onShowResults(challengeId);
         });
@@ -185,6 +190,15 @@ const ChallengeGame = ({ challengeId, quizId, onEndGame, onShowResults }) => {
             newSocket.close();
         };
     }, [quiz, challenge, challengeId, user.id]);
+
+    // Cleanup challenge session on unmount
+    useEffect(() => {
+        return () => {
+            if (challengeId) {
+                quizSessionManager.releaseChallenge(challengeId, fetchWithAuth);
+            }
+        };
+    }, [challengeId, fetchWithAuth]);
 
     // Reset question start time when question changes
     useEffect(() => {

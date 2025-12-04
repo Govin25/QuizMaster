@@ -52,7 +52,7 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
         res.cookie('auth_token', token, {
             httpOnly: true,  // Prevents JavaScript access (XSS protection)
             secure: process.env.NODE_ENV === 'production',  // HTTPS only in production
-            sameSite: 'strict',  // CSRF protection
+            sameSite: 'lax',  // CSRF protection while allowing same-site navigation
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
         });
 
@@ -101,7 +101,7 @@ router.post('/login', authLimiter, async (req, res) => {
         res.cookie('auth_token', token, {
             httpOnly: true,  // Prevents JavaScript access (XSS protection)
             secure: process.env.NODE_ENV === 'production',  // HTTPS only in production
-            sameSite: 'strict',  // CSRF protection
+            sameSite: 'lax',  // CSRF protection while allowing same-site navigation
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
         });
 
@@ -127,7 +127,7 @@ router.post('/logout', (req, res) => {
     res.clearCookie('auth_token', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        sameSite: 'lax'
     });
     res.json({ message: 'Logged out successfully' });
 });

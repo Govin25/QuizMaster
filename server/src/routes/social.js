@@ -146,8 +146,7 @@ router.post('/quizzes/:quizId/like', authenticateToken, async (req, res) => {
             requestId: req.requestId
         });
 
-        if (err.message === 'Already liked this quiz' ||
-            err.message === 'Quiz not found' ||
+        if (err.message === 'Quiz not found' ||
             err.message === 'Can only like public quizzes') {
             return res.status(400).json({ error: err.message });
         }

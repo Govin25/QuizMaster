@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { ToastProvider } from './context/ToastContext';
+import { ToastProvider, useToast } from './context/ToastContext';
 import { RbacProvider } from './context/RbacContext'; // Added RbacProvider import
 import AuthForm from './components/AuthForm'; // This will be replaced by Login/Register in a later step, keeping for now
 import LandingPage from './components/LandingPage';
@@ -25,9 +25,11 @@ import LegalFooter from './components/LegalFooter';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import InstallPWA from './components/InstallPWA';
+import quizSessionManager from './utils/quizSessionManager';
 
 const AppContent = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, fetchWithAuth } = useAuth();
+  const { showError } = useToast();
 
   // Helper to get persisted state
   const getPersistedState = (key, defaultValue) => {
@@ -148,12 +150,26 @@ const AppContent = () => {
     );
   }
 
-  const startQuiz = (quizId) => {
+  const startQuiz = async (quizId) => {
+    // Check if quiz can be started (server-side check across all devices)
+    const canStart = await quizSessionManager.canStartQuiz(quizId, fetchWithAuth);
+
+    if (!canStart) {
+      showError('This quiz is already active in another session. Please close it first.');
+      return;
+    }
+
     setActiveQuizId(quizId);
     setView('game');
   };
 
-  const endGame = () => {
+  const endGame = async () => {
+    // Release quiz session and notify other tabs
+    if (activeQuizId) {
+      await quizSessionManager.releaseQuiz(activeQuizId, fetchWithAuth);
+      quizSessionManager.notifyQuizCompleted(activeQuizId);
+    }
+
     setActiveQuizId(null);
     setView('home');
   };
@@ -186,7 +202,15 @@ const AppContent = () => {
     setView('public-profile');
   };
 
-  const startChallenge = (challengeId, quizId) => {
+  const startChallenge = async (challengeId, quizId) => {
+    // Check if challenge can be started (server-side check across all devices)
+    const canStart = await quizSessionManager.canStartChallenge(challengeId, fetchWithAuth);
+
+    if (!canStart) {
+      showError('This challenge is already active in another session. Please close it first.');
+      return;
+    }
+
     setActiveChallengeId(challengeId);
     setActiveQuizId(quizId);
     setView('challenge-game');
