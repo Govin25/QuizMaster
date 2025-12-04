@@ -48,8 +48,15 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
             { expiresIn: '7d' } // Extended for better UX
         );
 
+        // Set secure httpOnly cookie
+        res.cookie('auth_token', token, {
+            httpOnly: true,  // Prevents JavaScript access (XSS protection)
+            secure: process.env.NODE_ENV === 'production',  // HTTPS only in production
+            sameSite: 'strict',  // CSRF protection
+            maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
+        });
+
         res.status(201).json({
-            token,
             user: {
                 id: user.id,
                 username: user.username,
@@ -90,8 +97,15 @@ router.post('/login', authLimiter, async (req, res) => {
             { expiresIn: '7d' }
         );
 
+        // Set secure httpOnly cookie
+        res.cookie('auth_token', token, {
+            httpOnly: true,  // Prevents JavaScript access (XSS protection)
+            secure: process.env.NODE_ENV === 'production',  // HTTPS only in production
+            sameSite: 'strict',  // CSRF protection
+            maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
+        });
+
         res.json({
-            token,
             user: {
                 id: user.id,
                 username: user.username,
@@ -106,6 +120,29 @@ router.post('/login', authLimiter, async (req, res) => {
         });
         res.status(500).json({ error: 'Login failed' });
     }
+});
+
+// Logout endpoint - clears the auth cookie
+router.post('/logout', (req, res) => {
+    res.clearCookie('auth_token', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+    });
+    res.json({ message: 'Logged out successfully' });
+});
+
+// Verify authentication status (for client-side checks)
+const { authenticateToken } = require('../middleware/authMiddleware');
+router.get('/verify', authenticateToken, (req, res) => {
+    res.json({
+        authenticated: true,
+        user: {
+            id: req.user.id,
+            username: req.user.username,
+            role: req.user.role
+        }
+    });
 });
 
 module.exports = router;

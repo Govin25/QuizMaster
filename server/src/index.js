@@ -5,10 +5,12 @@ const compression = require('compression');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const logger = require('./utils/logger');
 const requestLogger = require('./middleware/requestLogger');
 const cache = require('./utils/cache');
 const { apiLimiter } = require('./middleware/rateLimiter');
+const { httpsRedirect, securityLogger, validateProductionSecurity } = require('./middleware/securityMiddleware');
 
 // Initialize Sequelize models
 const { sequelize } = require('./models/sequelize');
@@ -37,6 +39,15 @@ const io = new Server(server, {
     }
 });
 
+// Validate production security configuration
+validateProductionSecurity();
+
+// HTTPS redirect middleware (production only)
+app.use(httpsRedirect);
+
+// Security event logging
+app.use(securityLogger);
+
 // Security headers with helmet
 app.use(helmet({
     contentSecurityPolicy: {
@@ -45,8 +56,15 @@ app.use(helmet({
             styleSrc: ["'self'", "'unsafe-inline'"],
             scriptSrc: ["'self'"],
             imgSrc: ["'self'", "data:", "https:"],
+            upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+            blockAllMixedContent: process.env.NODE_ENV === 'production' ? [] : null,
         },
     },
+    hsts: process.env.NODE_ENV === 'production' ? {
+        maxAge: 31536000, // 1 year in seconds
+        includeSubDomains: true,
+        preload: true
+    } : false,
     crossOriginEmbedderPolicy: false, // Allow embedding for development
 }));
 
@@ -65,6 +83,9 @@ app.use(cors({
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }));
+
+// Cookie parser middleware
+app.use(cookieParser());
 
 // Request size limits to prevent DoS
 app.use(express.json({ limit: '10mb' }));

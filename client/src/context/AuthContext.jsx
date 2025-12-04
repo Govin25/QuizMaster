@@ -1,26 +1,46 @@
 import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { useToast } from './ToastContext';
+import API_URL from '../config';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(localStorage.getItem('token'));
+    const [loading, setLoading] = useState(true);
     const { showError } = useToast();
 
+    // Verify authentication on mount by checking with server
     useEffect(() => {
-        if (token) {
-            const storedUser = localStorage.getItem('user');
-            if (storedUser) {
-                setUser(JSON.parse(storedUser));
-            }
-        }
-    }, [token]);
+        verifyAuth();
+    }, []);
 
-    const login = useCallback((userData, authToken, isNewUser = false) => {
+    const verifyAuth = async () => {
+        try {
+            const response = await fetch(`${API_URL}/api/auth/verify`, {
+                credentials: 'include'  // Send cookies
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setUser(data.user);
+                // Store user data (not token) in localStorage for quick access
+                localStorage.setItem('user', JSON.stringify(data.user));
+            } else {
+                // Not authenticated
+                setUser(null);
+                localStorage.removeItem('user');
+            }
+        } catch (error) {
+            console.error('Auth verification failed:', error);
+            setUser(null);
+            localStorage.removeItem('user');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const login = useCallback((userData, isNewUser = false) => {
         setUser(userData);
-        setToken(authToken);
-        localStorage.setItem('token', authToken);
         localStorage.setItem('user', JSON.stringify(userData));
 
         // For new signups, set initial view to quiz-hub
@@ -29,10 +49,18 @@ export const AuthProvider = ({ children }) => {
         }
     }, []);
 
-    const logout = useCallback(() => {
+    const logout = useCallback(async () => {
+        try {
+            // Call server logout endpoint to clear cookie
+            await fetch(`${API_URL}/api/auth/logout`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+        } catch (error) {
+            console.error('Logout request failed:', error);
+        }
+
         setUser(null);
-        setToken(null);
-        localStorage.removeItem('token');
         localStorage.removeItem('user');
     }, []);
 
@@ -46,12 +74,12 @@ export const AuthProvider = ({ children }) => {
             headers['Content-Type'] = 'application/json';
         }
 
-        if (token) {
-            headers['Authorization'] = `Bearer ${token}`;
-        }
-
         try {
-            const response = await fetch(url, { ...options, headers });
+            const response = await fetch(url, {
+                ...options,
+                headers,
+                credentials: 'include'  // Always send cookies
+            });
 
             if (response.status === 401 || response.status === 403) {
                 showError('Session expired. Please login again.');
@@ -63,13 +91,14 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             throw error;
         }
-    }, [token, logout, showError]);
+    }, [logout, showError]);
 
     return (
-        <AuthContext.Provider value={{ user, token, login, logout, fetchWithAuth }}>
+        <AuthContext.Provider value={{ user, login, logout, fetchWithAuth, loading }}>
             {children}
         </AuthContext.Provider>
     );
 };
 
 export const useAuth = () => useContext(AuthContext);
+

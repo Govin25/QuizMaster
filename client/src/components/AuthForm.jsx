@@ -47,6 +47,7 @@ const AuthForm = ({ defaultMode = 'signup' }) => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody),
+                credentials: 'include'  // Send and receive cookies
             });
 
             const data = await response.json();
@@ -71,11 +72,13 @@ const AuthForm = ({ defaultMode = 'signup' }) => {
             }
 
             // Pass isNewUser flag for signups to redirect to quiz-hub
-            login(data.user, data.token, !isLogin);
+            // No longer need to pass token - it's in the cookie
+            login(data.user, !isLogin);
         } catch (err) {
             setError(err.message);
         }
     };
+
 
     return (
         <div className="glass-card" style={{

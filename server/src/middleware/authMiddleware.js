@@ -3,8 +3,14 @@ const jwt = require('jsonwebtoken');
 const SECRET_KEY = process.env.JWT_SECRET || 'secret_key';
 
 const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    // Try to get token from cookie first (more secure)
+    let token = req.cookies?.auth_token;
+
+    // Fallback to Authorization header for API clients
+    if (!token) {
+        const authHeader = req.headers['authorization'];
+        token = authHeader && authHeader.split(' ')[1];
+    }
 
     if (!token) {
         return res.status(401).json({ error: 'Access token required' });
@@ -19,9 +25,17 @@ const authenticateToken = (req, res, next) => {
     });
 };
 
+
+
 const optionalAuthenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    // Try to get token from cookie first
+    let token = req.cookies?.auth_token;
+
+    // Fallback to Authorization header
+    if (!token) {
+        const authHeader = req.headers['authorization'];
+        token = authHeader && authHeader.split(' ')[1];
+    }
 
     if (!token) {
         return next();
@@ -34,6 +48,7 @@ const optionalAuthenticateToken = (req, res, next) => {
         next();
     });
 };
+
 
 const rbacService = require('../services/rbacService');
 const { handleError } = require('../utils/errorHandler');
