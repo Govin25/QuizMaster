@@ -50,23 +50,63 @@ app.use(securityLogger);
 
 // Security headers with helmet
 app.use(helmet({
+    // Content Security Policy
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             scriptSrc: ["'self'"],
             imgSrc: ["'self'", "data:", "https:"],
+            connectSrc: ["'self'"],
+            fontSrc: ["'self'", "data:"],
+            objectSrc: ["'none'"],
+            mediaSrc: ["'self'"],
+            frameSrc: ["'none'"],
             upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
             blockAllMixedContent: process.env.NODE_ENV === 'production' ? [] : null,
         },
     },
+    // HTTP Strict Transport Security
     hsts: process.env.NODE_ENV === 'production' ? {
         maxAge: 31536000, // 1 year in seconds
         includeSubDomains: true,
         preload: true
     } : false,
+    // X-Frame-Options: Prevent clickjacking
+    frameguard: {
+        action: 'deny'  // or 'sameorigin' if you need to embed in iframes
+    },
+    // X-Content-Type-Options: Prevent MIME type sniffing
+    noSniff: true,
+    // Referrer-Policy: Control referrer information
+    referrerPolicy: {
+        policy: 'strict-origin-when-cross-origin'
+    },
+    // Permissions-Policy: Control browser features
+    permissionsPolicy: {
+        features: {
+            geolocation: ["'none'"],
+            microphone: ["'none'"],
+            camera: ["'none'"],
+            payment: ["'none'"],
+            usb: ["'none'"],
+            magnetometer: ["'none'"],
+            gyroscope: ["'none'"],
+            accelerometer: ["'none'"]
+        }
+    },
+    // X-DNS-Prefetch-Control
+    dnsPrefetchControl: {
+        allow: false
+    },
+    // X-Download-Options for IE8+
+    ieNoOpen: true,
+    // X-Permitted-Cross-Domain-Policies
     crossOriginEmbedderPolicy: false, // Allow embedding for development
+    // Hide X-Powered-By header
+    hidePoweredBy: true
 }));
+
 
 
 app.use(cors({
