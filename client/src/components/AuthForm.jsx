@@ -4,8 +4,8 @@ import API_URL from '../config';
 import PrivacyPolicy from './PrivacyPolicy';
 import TermsOfService from './TermsOfService';
 
-const AuthForm = () => {
-    const [isLogin, setIsLogin] = useState(true);
+const AuthForm = ({ defaultMode = 'signup' }) => {
+    const [isLogin, setIsLogin] = useState(defaultMode === 'login');
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -70,7 +70,8 @@ const AuthForm = () => {
                 throw new Error(data.error || 'Authentication failed');
             }
 
-            login(data.user, data.token);
+            // Pass isNewUser flag for signups to redirect to quiz-hub
+            login(data.user, data.token, !isLogin);
         } catch (err) {
             setError(err.message);
         }
@@ -104,12 +105,12 @@ const AuthForm = () => {
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent'
                 }}>
-                    {isLogin ? 'Welcome Back!' : 'Join QuizMaster'}
+                    {isLogin ? 'Welcome Back!' : 'Join Quainy'}
                 </h2>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                     {isLogin
                         ? 'Enter your credentials to access your account'
-                        : 'Start your journey to becoming a Quiz Master'}
+                        : 'Start your journey to smarter learning'}
                 </p>
             </div>
 

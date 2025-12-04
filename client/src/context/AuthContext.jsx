@@ -17,11 +17,16 @@ export const AuthProvider = ({ children }) => {
         }
     }, [token]);
 
-    const login = useCallback((userData, authToken) => {
+    const login = useCallback((userData, authToken, isNewUser = false) => {
         setUser(userData);
         setToken(authToken);
         localStorage.setItem('token', authToken);
         localStorage.setItem('user', JSON.stringify(userData));
+
+        // For new signups, set initial view to quiz-hub
+        if (isNewUser) {
+            localStorage.setItem('app_view', JSON.stringify('quiz-hub'));
+        }
     }, []);
 
     const logout = useCallback(() => {

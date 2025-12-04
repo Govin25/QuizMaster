@@ -147,16 +147,16 @@ const LandingPage = () => {
             name: "Free",
             price: "$0",
             period: "forever",
-            description: "Perfect for individual learners",
+            description: "Try everything with usage limits",
             features: [
+                "5 AI quiz generations/month",
+                "3 document quiz generations/month",
+                "2 video quiz generations/month",
+                "Unlimited manual quizzes",
                 "Unlimited quiz attempts",
-                "AI quiz generation",
-                "Create custom quizzes",
-                "Real-time challenges",
-                "Comprehensive analytics",
-                "Achievement system",
-                "Quiz Hub access",
-                "PWA support"
+                "Real-time 1v1 challenges",
+                "Leaderboards & analytics",
+                "Achievement system"
             ],
             cta: "Get Started",
             highlighted: false,
@@ -167,52 +167,57 @@ const LandingPage = () => {
             price: "$9",
             period: "per month",
             description: "For power users and educators",
-            badge: "Coming Soon",
+            badge: "Most Popular",
             features: [
+                "50 AI quiz generations/month",
+                "30 doc quiz generations/month",
+                "20 video quiz generations/month",
                 "Everything in Free",
-                "Advanced AI models",
-                "Custom branding",
-                "Priority support",
+                "Priority processing",
                 "Advanced analytics",
-                "Team collaboration",
                 "Export to PDF",
-                "Ad-free experience"
+                "Custom branding",
+                "Priority support"
             ],
-            cta: "Join Waitlist",
+            cta: "Coming Soon",
             highlighted: true,
             available: false
         },
         {
-            name: "Enterprise",
-            price: "Custom",
-            period: "contact us",
-            description: "For organizations and institutions",
+            name: "Premium",
+            price: "$19",
+            period: "per month",
+            description: "Unlimited learning & creation",
             features: [
+                "200 AI quiz generations/month",
+                "100 doc quiz generations/month",
+                "75 video quiz generations/month",
                 "Everything in Pro",
-                "Dedicated support",
-                "Custom integrations",
-                "SSO authentication",
-                "Advanced security",
-                "SLA guarantee",
-                "Training sessions",
-                "Custom features"
+                "Bulk generation",
+                "API access",
+                "White-label option",
+                "Team collaboration",
+                "Early feature access"
             ],
-            cta: "Contact Sales",
+            cta: "Coming Soon",
             highlighted: false,
             available: false
         }
     ];
 
-    // Animate counters on scroll
+    // Animate counters on scroll - optimized with passive listener
     useEffect(() => {
         const observer = new IntersectionObserver(
             (entries) => {
                 if (entries[0].isIntersecting && !hasAnimated) {
                     setHasAnimated(true);
-                    animateCounters();
+                    // Defer animation to next frame for better performance
+                    requestAnimationFrame(() => {
+                        animateCounters();
+                    });
                 }
             },
-            { threshold: 0.5 }
+            { threshold: 0.3, rootMargin: '50px' } // Start earlier for smoother UX
         );
 
         if (statsRef.current) {
@@ -223,8 +228,8 @@ const LandingPage = () => {
     }, [hasAnimated]);
 
     const animateCounters = () => {
-        const duration = 2000;
-        const steps = 60;
+        const duration = 1500; // Reduced from 2000ms for faster animation
+        const steps = 40; // Reduced from 60 for better performance
         const interval = duration / steps;
 
         const targets = { users: 10000, quizzes: 50000, attempts: 500000 };
@@ -248,13 +253,13 @@ const LandingPage = () => {
         }, interval);
     };
 
-    // Auto-rotate testimonials
+    // Auto-rotate testimonials - optimized
     useEffect(() => {
         const timer = setInterval(() => {
             setActiveTestimonial((prev) => (prev + 1) % testimonials.length);
         }, 5000);
         return () => clearInterval(timer);
-    }, []);
+    }, [testimonials.length]);
 
     const scrollToAuth = () => {
         setShowAuthModal(true);

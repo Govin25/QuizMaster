@@ -21,7 +21,6 @@ import ChallengeGame from './components/ChallengeGame';
 import ChallengeCreator from './components/ChallengeCreator';
 import ChallengeResults from './components/ChallengeResults';
 import Logo from './components/Logo';
-import UserAvatar from './components/UserAvatar';
 import LegalFooter from './components/LegalFooter';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
@@ -54,6 +53,9 @@ const AppContent = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsOfService, setShowTermsOfService] = useState(false);
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const closeMenu = () => setIsMenuOpen(false);
 
   // Persist state changes
   React.useEffect(() => {
@@ -138,9 +140,6 @@ const AppContent = () => {
     window.scrollTo(0, 0);
   }, [view]);
 
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
-  const closeMenu = () => setIsMenuOpen(false);
-
   if (!user) {
     return (
       <>
@@ -200,141 +199,159 @@ const AppContent = () => {
 
   return (
     <div className="container">
-      <header className="app-header">
-        <div className="header-container">
-          {/* Logo and Brand */}
-          <div
-            className="header-logo-section"
-            onClick={() => { setView('home'); closeMenu(); }}
-          >
-            <Logo size={40} />
-            <h1 className="brand-name">Quainy</h1>
-          </div>
-
-          {/* Desktop Navigation */}
-          <nav className="header-nav desktop-nav">
-            <button
-              onClick={() => setView('home')}
-              className={`nav-item ${view === 'home' ? 'active' : ''}`}
+      <style>
+        {`
+          .nav-menu {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-start;
+            flex-wrap: wrap;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+          }
+          .nav-menu::-webkit-scrollbar {
+            display: none;
+          }
+          .menu-toggle {
+            display: none;
+          }
+          
+          @media (max-width: 768px) {
+            .nav-menu {
+              display: ${isMenuOpen ? 'flex' : 'none'};
+              flex-direction: column;
+              width: 100%;
+              overflow-x: visible;
+              padding-bottom: 0;
+            }
+            .menu-toggle {
+              display: block;
+              background: rgba(255, 255, 255, 0.1);
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              color: white;
+              padding: 0.5rem;
+              border-radius: 8px;
+              cursor: pointer;
+              font-size: 1.2rem;
+            }
+            .user-greeting {
+              display: none;
+            }
+            .mobile-greeting {
+              display: block;
+              color: var(--text-muted);
+              font-size: 0.9rem;
+              padding: 0.5rem 0;
+              border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+              margin-bottom: 0.5rem;
+            }
+          }
+          @media (min-width: 769px) {
+            .mobile-greeting {
+              display: none;
+            }
+          }
+        `}
+      </style>
+      <header style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
+        background: 'rgba(10, 10, 20, 0.95)',
+        backdropFilter: 'blur(10px)',
+        width: '100%',
+        marginBottom: '2rem',
+        padding: '1rem',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+      }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+          width: '100%',
+          maxWidth: '1200px',
+          margin: '0 auto'
+        }}>
+          {/* Top row: Logo, Greeting, Toggle */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '1rem',
+            flexWrap: 'wrap'
+          }}>
+            <div
+              onClick={() => { setView('home'); closeMenu(); }}
+              className="hover-scale"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '1rem',
+                cursor: 'pointer',
+                userSelect: 'none',
+                padding: '0.5rem',
+                borderRadius: '12px',
+                transition: 'background 0.3s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+              onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
             >
-              🏠 Home
-            </button>
-            <button
-              onClick={() => setView('hub')}
-              className={`nav-item ${view === 'hub' ? 'active' : ''}`}
-            >
-              🌐 Quiz Hub
-            </button>
-            <button
-              onClick={() => setView('my-quizzes')}
-              className={`nav-item ${view === 'my-quizzes' ? 'active' : ''}`}
-            >
-              📝 My Quizzes
-            </button>
-            <button
-              onClick={() => setView('ai-generator')}
-              className={`nav-item ${view === 'ai-generator' ? 'active' : ''}`}
-            >
-              ✨ AI Generate
-            </button>
-            <button
-              onClick={() => setView('challenges')}
-              className={`nav-item ${view === 'challenges' ? 'active' : ''}`}
-            >
-              ⚔️ Challenges
-            </button>
-            <button
-              onClick={() => setView('leaderboard')}
-              className={`nav-item ${view === 'leaderboard' ? 'active' : ''}`}
-            >
-              🏆 Leaderboard
-            </button>
-            {user.role === 'admin' && (
-              <button
-                onClick={() => setView('review')}
-                className={`nav-item ${view === 'review' ? 'active' : ''}`}
-              >
-                👁️ Review
-              </button>
-            )}
-          </nav>
-
-          {/* User Section */}
-          <div className="header-user-section">
-            <div className="user-info" onClick={() => setView('profile')}>
-              <UserAvatar username={user.username} size={32} />
-              <span className="username">{user.username}</span>
+              <Logo size={40} />
+              <h1 style={{ margin: 0, fontSize: '1.8rem' }}>Quainy</h1>
             </div>
-            <button className="logout-btn" onClick={handleLogout}>
-              Logout
-            </button>
-            <button className="mobile-menu-toggle" onClick={toggleMenu}>
+            <div className="user-greeting" style={{
+              color: 'var(--text-muted)',
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem'
+            }}>
+              <span>👋</span>
+              <span>Welcome, <strong style={{ color: 'white' }}>{user.username}</strong></span>
+            </div>
+            <button className="menu-toggle" onClick={toggleMenu}>
               {isMenuOpen ? '✕' : '☰'}
             </button>
           </div>
-        </div>
 
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <nav className="mobile-nav">
-            <button
-              onClick={() => { setView('home'); closeMenu(); }}
-              className={`nav-item ${view === 'home' ? 'active' : ''}`}
-            >
+          {/* Navigation Menu */}
+          <nav className="nav-menu">
+            <div className="mobile-greeting">
+              👋 Welcome, <strong>{user.username}</strong>
+            </div>
+            <button onClick={() => { setView('home'); closeMenu(); }} className={view === 'home' ? 'active' : ''}>
               🏠 Home
             </button>
-            <button
-              onClick={() => { setView('hub'); closeMenu(); }}
-              className={`nav-item ${view === 'hub' ? 'active' : ''}`}
-            >
+            <button onClick={() => { setView('hub'); closeMenu(); }} className={view === 'hub' ? 'active' : ''}>
               🌐 Quiz Hub
             </button>
-            <button
-              onClick={() => { setView('my-quizzes'); closeMenu(); }}
-              className={`nav-item ${view === 'my-quizzes' ? 'active' : ''}`}
-            >
+            <button onClick={() => { setView('my-quizzes'); closeMenu(); }} className={view === 'my-quizzes' ? 'active' : ''}>
               📝 My Quizzes
             </button>
-            <button
-              onClick={() => { setView('ai-generator'); closeMenu(); }}
-              className={`nav-item ${view === 'ai-generator' ? 'active' : ''}`}
-            >
+            <button onClick={() => { setView('ai-generator'); closeMenu(); }} className={view === 'ai-generator' ? 'active' : ''}>
               ✨ AI Generate
             </button>
+            <button onClick={() => { setView('challenges'); closeMenu(); }} className={view === 'challenges' ? 'active' : ''}>
+              ⚔️ Challenges
+            </button>
+            <button onClick={() => { setView('leaderboard'); closeMenu(); }} className={view === 'leaderboard' ? 'active' : ''}>
+              🏆 Leaderboard
+            </button>
             {user.role === 'admin' && (
-              <button
-                onClick={() => { setView('review'); closeMenu(); }}
-                className={`nav-item ${view === 'review' ? 'active' : ''}`}
-              >
+              <button onClick={() => { setView('review'); closeMenu(); }} className={view === 'review' ? 'active' : ''}>
                 👁️ Review
               </button>
             )}
-            <button
-              onClick={() => { setView('challenges'); closeMenu(); }}
-              className={`nav-item ${view === 'challenges' ? 'active' : ''}`}
-            >
-              ⚔️ Challenges
-            </button>
-            <button
-              onClick={() => { setView('leaderboard'); closeMenu(); }}
-              className={`nav-item ${view === 'leaderboard' ? 'active' : ''}`}
-            >
-              🏆 Leaderboard
-            </button>
-            <button
-              onClick={() => { setView('profile'); closeMenu(); }}
-              className={`nav-item ${view === 'profile' ? 'active' : ''}`}
-            >
+            <button onClick={() => { setView('profile'); closeMenu(); }} className={view === 'profile' ? 'active' : ''}>
               👤 Profile
             </button>
-            <button
-              onClick={() => { handleLogout(); closeMenu(); }}
-              className="nav-item logout-mobile"
-            >
+            <button onClick={() => { handleLogout(); closeMenu(); }} style={{ marginLeft: 'auto' }}>
               🚪 Logout
             </button>
           </nav>
-        )}
+        </div>
       </header>
 
       {view === 'home' && (

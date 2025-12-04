@@ -49,6 +49,30 @@ module.exports = (sequelize) => {
             type: DataTypes.DATE,
             allowNull: true,
         },
+        subscription_tier: {
+            type: DataTypes.STRING,
+            defaultValue: 'free',
+        },
+        subscription_status: {
+            type: DataTypes.STRING,
+            defaultValue: 'active',
+        },
+        subscription_start_date: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        subscription_end_date: {
+            type: DataTypes.DATE,
+            allowNull: true,
+        },
+        stripe_customer_id: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
+        stripe_subscription_id: {
+            type: DataTypes.STRING,
+            allowNull: true,
+        },
     }, {
         tableName: 'users',
         timestamps: false,
