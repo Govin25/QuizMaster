@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
+import { handleConcurrencyError } from '../utils/concurrencyHandler';
 
 const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) => {
     const { user, fetchWithAuth } = useAuth();
@@ -108,11 +109,25 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
 
     const handleAcceptChallenge = async (challengeId) => {
         try {
+            const challenge = challenges.find(c => c.id === challengeId);
+            const version = challenge?.version;
+
             const response = await fetchWithAuth(`${API_URL}/api/challenges/${challengeId}/accept`, {
-                method: 'POST'
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ version })
             });
 
-            if (!response.ok) throw new Error('Failed to accept challenge');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+
+                // Handle concurrency error
+                if (await handleConcurrencyError(errorData, 'challenge', fetchChallenges, showSuccess)) {
+                    return;
+                }
+
+                throw new Error('Failed to accept challenge');
+            }
 
             showSuccess('Challenge accepted! Ready to play!');
             setActiveTab('active'); // Switch to active tab
@@ -125,11 +140,25 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
 
     const handleDeclineChallenge = async (challengeId) => {
         try {
+            const challenge = challenges.find(c => c.id === challengeId);
+            const version = challenge?.version;
+
             const response = await fetchWithAuth(`${API_URL}/api/challenges/${challengeId}/decline`, {
-                method: 'POST'
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ version })
             });
 
-            if (!response.ok) throw new Error('Failed to decline challenge');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+
+                // Handle concurrency error
+                if (await handleConcurrencyError(errorData, 'challenge', fetchChallenges, showSuccess)) {
+                    return;
+                }
+
+                throw new Error('Failed to decline challenge');
+            }
 
             showSuccess('Challenge declined');
             fetchChallenges();
@@ -140,11 +169,25 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
 
     const handleCancelChallenge = async (challengeId) => {
         try {
+            const challenge = challenges.find(c => c.id === challengeId);
+            const version = challenge?.version;
+
             const response = await fetchWithAuth(`${API_URL}/api/challenges/${challengeId}/cancel`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ version })
             });
 
-            if (!response.ok) throw new Error('Failed to cancel challenge');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+
+                // Handle concurrency error
+                if (await handleConcurrencyError(errorData, 'challenge', fetchChallenges, showSuccess)) {
+                    return;
+                }
+
+                throw new Error('Failed to cancel challenge');
+            }
 
             showSuccess('Challenge cancelled');
             fetchChallenges();

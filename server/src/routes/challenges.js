@@ -124,6 +124,7 @@ router.post('/:id/accept', authenticateToken, async (req, res) => {
     try {
         const challengeId = req.params.id;
         const userId = req.user.id;
+        const { version } = req.body; // Extract version for optimistic locking
 
         const challenge = await ChallengeRepository.getChallengeById(challengeId);
 
@@ -131,22 +132,20 @@ router.post('/:id/accept', authenticateToken, async (req, res) => {
             return res.status(404).json({ error: 'Challenge not found' });
         }
 
-        // Verify user is the opponent
         if (challenge.opponent_id !== userId) {
-            return res.status(403).json({ error: 'Only the challenged user can accept' });
+            return res.status(403).json({ error: 'Only the challenged user can accept this challenge' });
         }
 
-        // Verify challenge is pending
         if (challenge.status !== 'pending') {
-            return res.status(400).json({ error: 'Challenge is not pending' });
+            return res.status(400).json({ error: 'Challenge is not in pending status' });
         }
 
-        // Update status to active
-        await ChallengeRepository.updateChallengeStatus(challengeId, 'active');
+        // Update challenge status to active with version check
+        await ChallengeRepository.updateChallengeStatus(challengeId, 'active', {}, version);
 
-        // Reset participant scores to 0 for a fresh start
-        const db = require('../db');
+        // Reset scores for both participants
         await new Promise((resolve, reject) => {
+            const db = require('../db');
             db.run(
                 'UPDATE challenge_participants SET score = 0, total_time_seconds = 0, completed = 0, completed_at = NULL WHERE challenge_id = ?',
                 [challengeId],
@@ -190,6 +189,7 @@ router.post('/:id/decline', authenticateToken, async (req, res) => {
     try {
         const challengeId = req.params.id;
         const userId = req.user.id;
+        const { version } = req.body; // Extract version for optimistic locking
 
         const challenge = await ChallengeRepository.getChallengeById(challengeId);
 
@@ -207,23 +207,8 @@ router.post('/:id/decline', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Challenge is not pending' });
         }
 
-        // Delete the challenge instead of marking as declined
-        // First delete participants
-        const db = require('../db');
-        await new Promise((resolve, reject) => {
-            db.run('DELETE FROM challenge_participants WHERE challenge_id = ?', [challengeId], (err) => {
-                if (err) reject(err);
-                else resolve();
-            });
-        });
-
-        // Then delete challenge
-        await new Promise((resolve, reject) => {
-            db.run('DELETE FROM challenges WHERE id = ?', [challengeId], (err) => {
-                if (err) reject(err);
-                else resolve();
-            });
-        });
+        // Delete the challenge instead of marking as declined (with version check)
+        await ChallengeRepository.deleteChallenge(challengeId, userId, version);
 
         logger.info('Challenge declined and deleted', {
             challengeId,
@@ -259,11 +244,12 @@ router.delete('/:id/cancel', authenticateToken, async (req, res) => {
     try {
         const challengeId = req.params.id;
         const userId = req.user.id;
+        const { version } = req.body; // Extract version for optimistic locking
 
         // Get challenge details before deletion for notification
         const challenge = await ChallengeRepository.getChallengeById(challengeId);
 
-        await ChallengeRepository.deleteChallenge(challengeId, userId);
+        await ChallengeRepository.deleteChallenge(challengeId, userId, version);
 
         logger.info('Challenge cancelled', {
             challengeId,

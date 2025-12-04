@@ -135,10 +135,12 @@ router.delete('/delete/:id', authenticateToken, async (req, res) => {
         const QuizRepository = require('../repositories/QuizRepository');
         const quizId = req.params.id;
         const userId = req.user.id;
+        const { version } = req.body; // Extract version for optimistic locking
 
         logger.debug('Quiz deletion requested', {
             quizId,
             userId,
+            version,
             requestId: req.requestId
         });
 
@@ -176,8 +178,8 @@ router.delete('/delete/:id', authenticateToken, async (req, res) => {
             });
         }
 
-        // Delete quiz
-        await QuizRepository.deleteQuiz(quizId);
+        // Delete quiz with version check
+        await QuizRepository.deleteQuiz(quizId, version);
         logger.info('Quiz deleted successfully', {
             quizId,
             userId,
@@ -302,6 +304,8 @@ router.post('/create', authenticateToken, requirePermission('quiz:create'), crea
 router.post('/:id/publish', authenticateToken, async (req, res) => {
     try {
         const quizId = req.params.id;
+        const { version } = req.body; // Extract version for optimistic locking
+
         // Verify ownership
         const quiz = await Quiz.getById(quizId);
         if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
@@ -309,7 +313,7 @@ router.post('/:id/publish', authenticateToken, async (req, res) => {
             return res.status(403).json({ error: 'You can only publish your own quizzes' });
         }
 
-        await Quiz.updateStatus(quizId, 'pending_review', 0);
+        await Quiz.updateStatus(quizId, 'pending_review', 0, version);
         res.json({ message: 'Quiz submitted for review' });
     } catch (err) {
         res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
@@ -320,14 +324,14 @@ router.post('/:id/publish', authenticateToken, async (req, res) => {
 router.post('/:id/review', authenticateToken, async (req, res) => {
     try {
         const quizId = req.params.id;
-        const { status, comments } = req.body; // status: 'approved' or 'rejected'
+        const { status, comments, version } = req.body; // status: 'approved' or 'rejected', version for optimistic locking
 
         if (!['approved', 'rejected'].includes(status)) {
             return res.status(400).json({ error: 'Invalid status' });
         }
 
         const isPublic = status === 'approved' ? 1 : 0;
-        await Quiz.updateStatus(quizId, status, isPublic);
+        await Quiz.updateStatus(quizId, status, isPublic, version);
 
         // Log review in quiz_reviews table
         const { QuizReview } = require('../models/sequelize');
@@ -811,7 +815,7 @@ router.post('/save-video-quiz', authenticateToken, async (req, res) => {
 router.put('/:id/update-questions', authenticateToken, async (req, res) => {
     try {
         const quizId = req.params.id;
-        const { questions } = req.body;
+        const { questions, version } = req.body; // Extract version for optimistic locking
 
         // Verify ownership
         const quiz = await Quiz.getById(quizId);
@@ -824,8 +828,8 @@ router.put('/:id/update-questions', authenticateToken, async (req, res) => {
 
         const QuizRepository = require('../repositories/QuizRepository');
 
-        // Update all questions
-        await QuizRepository.updateQuestions(quizId, questions);
+        // Update all questions with version check
+        await QuizRepository.updateQuestions(quizId, questions, version);
 
         // Fetch updated quiz
         const updatedQuiz = await Quiz.getById(quizId);
@@ -846,6 +850,8 @@ router.put('/:id/update-questions', authenticateToken, async (req, res) => {
 router.post('/:id/questions', authenticateToken, validateQuestion, async (req, res) => {
     try {
         const quizId = req.params.id;
+        const { version, ...questionData } = req.body; // Extract version separately from question data
+
         // Verify ownership
         const quiz = await Quiz.getById(quizId);
         if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
@@ -853,7 +859,7 @@ router.post('/:id/questions', authenticateToken, validateQuestion, async (req, r
             return res.status(403).json({ error: 'You can only add questions to your own quizzes' });
         }
 
-        const questionId = await Quiz.addQuestion(quizId, req.body);
+        const questionId = await Quiz.addQuestion(quizId, questionData, version);
 
         // Invalidate cache for this quiz to ensure fresh data
         cache.delete(`quiz_${quizId}`);

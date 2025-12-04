@@ -39,13 +39,23 @@ module.exports = (sequelize) => {
             type: DataTypes.STRING,
             defaultValue: 'manual',
         },
+        version: {
+            type: DataTypes.INTEGER,
+            allowNull: false,
+            defaultValue: 1,
+        },
         created_at: {
+            type: DataTypes.DATE,
+            defaultValue: DataTypes.NOW,
+        },
+        updated_at: {
             type: DataTypes.DATE,
             defaultValue: DataTypes.NOW,
         },
     }, {
         tableName: 'quizzes',
         timestamps: false,
+        version: true, // Enable Sequelize optimistic locking
     });
 
     return Quiz;

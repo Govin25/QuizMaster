@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
+import { handleConcurrencyError } from '../utils/concurrencyHandler';
 
 const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
     const { fetchWithAuth } = useAuth();
@@ -24,6 +25,7 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
     const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
     const [loading, setLoading] = useState(!!editQuizId);
     const [validationErrors, setValidationErrors] = useState({});
+    const [quizVersion, setQuizVersion] = useState(null);
 
     // Load quiz data if editing
     useEffect(() => {
@@ -33,8 +35,11 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
     }, [editQuizId]);
 
     const fetchQuizData = async () => {
+        const idToFetch = editQuizId || createdQuizId;
+        if (!idToFetch) return;
+
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/quizzes/${editQuizId}`);
+            const response = await fetchWithAuth(`${API_URL}/api/quizzes/${idToFetch}`);
             if (!response.ok) throw new Error('Failed to fetch quiz');
             const data = await response.json();
 
@@ -43,8 +48,11 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
                 category: data.category,
                 difficulty: data.difficulty
             });
-            setCreatedQuizId(editQuizId);
+            if (!createdQuizId) setCreatedQuizId(data.id);
             setExistingQuestions(data.questions || []);
+            setQuizVersion(data.version); // Store version
+            setExistingQuestions(data.questions || []);
+            setQuizVersion(data.version); // Store version
             const count = data.questions?.length || 0;
             setQuestionCount(count); // Update question count
             setStep(2); // Go directly to adding questions
@@ -81,6 +89,7 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
             }
             const data = await response.json();
             setCreatedQuizId(data.id);
+            setQuizVersion(data.version || 1); // Initialize version
             setStep(2);
             showSuccess('Quiz created! Now add some questions.');
         } catch (err) {
@@ -96,16 +105,23 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
                 type: currentQuestion.type,
                 text: currentQuestion.text,
                 correctAnswer: currentQuestion.correctAnswer,
-                options: currentQuestion.type === 'multiple_choice' ? currentQuestion.options : null
+                options: currentQuestion.type === 'multiple_choice' ? currentQuestion.options : null,
+                version: quizVersion // Include version for optimistic locking
             };
 
             const response = await fetchWithAuth(`${API_URL}/api/quizzes/${createdQuizId}/questions`, {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(questionPayload)
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+
+                // Handle concurrency error
+                if (await handleConcurrencyError(errorData, 'quiz', fetchQuizData, showSuccess)) {
+                    return;
+                }
 
                 // Handle validation errors
                 if (errorData.details && Array.isArray(errorData.details)) {
@@ -130,10 +146,8 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
             });
             setQuestionCount(prev => prev + 1);
 
-            // Refresh existing questions if editing
-            if (editQuizId) {
-                await fetchQuizData();
-            }
+            // Always refresh to get new version
+            await fetchQuizData();
 
             showSuccess('Question added successfully!');
         } catch (err) {
@@ -145,11 +159,18 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
         try {
             const response = await fetchWithAuth(`${API_URL}/api/quizzes/questions/${questionId}`, {
                 method: 'PUT',
-                body: JSON.stringify(questionData)
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...questionData, version: quizVersion }) // Include version
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+
+                // Handle concurrency error
+                if (await handleConcurrencyError(errorData, 'quiz', fetchQuizData, showSuccess)) {
+                    return;
+                }
+
                 throw new Error(errorData.error || 'Failed to update question');
             }
 
@@ -172,11 +193,19 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
 
         try {
             const response = await fetchWithAuth(`${API_URL}/api/quizzes/questions/${questionId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ version: quizVersion }) // Include version
             });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+
+                // Handle concurrency error
+                if (await handleConcurrencyError(errorData, 'quiz', fetchQuizData, showSuccess)) {
+                    return;
+                }
+
                 throw new Error(errorData.error || 'Failed to delete question');
             }
 

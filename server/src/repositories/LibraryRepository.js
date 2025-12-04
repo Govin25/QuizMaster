@@ -9,15 +9,29 @@ class LibraryRepository {
      * @returns {Promise<Object>}
      */
     async addToLibrary(userId, quizId) {
+        // Check if already in library (idempotent operation)
+        const existing = await UserQuizLibrary.findOne({
+            where: { user_id: userId, quiz_id: quizId }
+        });
+
+        if (existing) {
+            // Already in library - return existing entry (idempotent)
+            return existing;
+        }
+
         try {
             return await UserQuizLibrary.create({
                 user_id: userId,
                 quiz_id: quizId,
             });
         } catch (error) {
-            // Handle unique constraint violation
+            // Handle race condition - if created between check and insert
             if (error.name === 'SequelizeUniqueConstraintError') {
-                throw new Error('Quiz already in library');
+                // Fetch and return the existing entry
+                const entry = await UserQuizLibrary.findOne({
+                    where: { user_id: userId, quiz_id: quizId }
+                });
+                return entry;
             }
             throw error;
         }

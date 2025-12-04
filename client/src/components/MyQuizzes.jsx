@@ -5,6 +5,7 @@ import API_URL from '../config';
 import ConfirmDialog from './ConfirmDialog';
 import DocumentQuizGenerator from './DocumentQuizGenerator';
 import VideoQuizGenerator from './VideoQuizGenerator';
+import { handleConcurrencyError } from '../utils/concurrencyHandler';
 
 const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
     const { fetchWithAuth } = useAuth();
@@ -62,11 +63,23 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
 
     const handlePublish = async (quizId) => {
         try {
+            const quiz = quizzes.find(q => q.id === quizId);
+            const version = quiz?.version;
+
             const response = await fetchWithAuth(`${API_URL}/api/quizzes/${quizId}/publish`, {
-                method: 'POST'
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ version })
             });
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+
+                // Handle concurrency error
+                if (await handleConcurrencyError(errorData, 'quiz', fetchQuizzes, showSuccess)) {
+                    return;
+                }
+
                 throw new Error(errorData.error || 'Failed to publish quiz');
             }
             showSuccess('Quiz submitted for review!');
@@ -89,13 +102,24 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
 
     const handleDelete = async (quizId) => {
         try {
+            const quiz = quizzes.find(q => q.id === quizId);
+            const version = quiz?.version;
+
             const response = await fetchWithAuth(`${API_URL}/api/quizzes/delete/${quizId}`, {
-                method: 'DELETE'
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ version })
             });
 
             const data = await response.json().catch(() => ({}));
 
             if (!response.ok) {
+                // Handle concurrency error
+                if (await handleConcurrencyError(data, 'quiz', fetchQuizzes, showSuccess)) {
+                    setDeleteConfirm(null);
+                    return;
+                }
+
                 throw new Error(data.error || `Failed to delete quiz (${response.status})`);
             }
 

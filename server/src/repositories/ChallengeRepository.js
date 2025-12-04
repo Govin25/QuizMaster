@@ -149,7 +149,25 @@ class ChallengeRepository {
     /**
      * Update challenge status
      */
-    static async updateChallengeStatus(challengeId, status, additionalFields = {}) {
+    static async updateChallengeStatus(challengeId, status, additionalFields = {}, expectedVersion = null) {
+        const ConcurrencyError = require('../utils/ConcurrencyError');
+
+        // If version checking is enabled, validate version first
+        if (expectedVersion !== null) {
+            const currentChallenge = await this.getChallengeById(challengeId);
+            if (!currentChallenge) {
+                throw new Error('Challenge not found');
+            }
+
+            if (currentChallenge.version !== expectedVersion) {
+                throw new ConcurrencyError(
+                    `Challenge has been modified by another session. Expected version ${expectedVersion}, but current version is ${currentChallenge.version}.`,
+                    'challenge',
+                    expectedVersion,
+                    currentChallenge.version
+                );
+            }
+        }
         return new Promise((resolve, reject) => {
             let updates = ['status = ?'];
             let params = [status];
@@ -184,7 +202,25 @@ class ChallengeRepository {
     /**
      * Update participant score and time
      */
-    static async updateParticipantScore(challengeId, userId, score, timeTaken, resultId = null) {
+    static async updateParticipantScore(challengeId, userId, score, timeTaken, resultId = null, expectedVersion = null) {
+        const ConcurrencyError = require('../utils/ConcurrencyError');
+
+        // If version checking is enabled, validate version first
+        if (expectedVersion !== null) {
+            const currentChallenge = await this.getChallengeById(challengeId);
+            if (!currentChallenge) {
+                throw new Error('Challenge not found');
+            }
+
+            if (currentChallenge.version !== expectedVersion) {
+                throw new ConcurrencyError(
+                    `Challenge has been modified by another session. Expected version ${expectedVersion}, but current version is ${currentChallenge.version}.`,
+                    'challenge',
+                    expectedVersion,
+                    currentChallenge.version
+                );
+            }
+        }
         return new Promise((resolve, reject) => {
             const query = `
         UPDATE challenge_participants 
@@ -355,7 +391,25 @@ class ChallengeRepository {
     /**
      * Delete a challenge (only if pending)
      */
-    static async deleteChallenge(challengeId, userId) {
+    static async deleteChallenge(challengeId, userId, expectedVersion = null) {
+        const ConcurrencyError = require('../utils/ConcurrencyError');
+
+        // If version checking is enabled, validate version first
+        if (expectedVersion !== null) {
+            const currentChallenge = await this.getChallengeById(challengeId);
+            if (!currentChallenge) {
+                throw new Error('Challenge not found');
+            }
+
+            if (currentChallenge.version !== expectedVersion) {
+                throw new ConcurrencyError(
+                    `Challenge has been modified by another session. Expected version ${expectedVersion}, but current version is ${currentChallenge.version}.`,
+                    'challenge',
+                    expectedVersion,
+                    currentChallenge.version
+                );
+            }
+        }
         return new Promise((resolve, reject) => {
             // First check if user is creator and challenge is pending
             const checkQuery = `

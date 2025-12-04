@@ -1,4 +1,5 @@
 const logger = require('./logger');
+const ConcurrencyError = require('./ConcurrencyError');
 
 /**
  * User-friendly error messages mapped to common error scenarios
@@ -30,6 +31,9 @@ const ERROR_MESSAGES = {
     // Data-specific
     DATA_EXPORT_FAILED: 'Failed to export data. Please try again.',
     DELETION_FAILED: 'Failed to process deletion request. Please try again.',
+
+    // Concurrency-specific
+    CONCURRENCY_CONFLICT: 'This resource was modified by another session. Please refresh and try again.',
 };
 
 /**
@@ -40,6 +44,25 @@ const ERROR_MESSAGES = {
  * @returns {Object} - Object with user-friendly error message
  */
 function handleError(error, context = {}, userMessage = null) {
+    // Handle ConcurrencyError specially
+    if (error instanceof ConcurrencyError) {
+        logger.warn('Concurrency conflict detected', {
+            resource: error.resource,
+            expectedVersion: error.expectedVersion,
+            actualVersion: error.actualVersion,
+            context: context
+        });
+
+        return {
+            error: error.message,
+            statusCode: 409,
+            shouldRefresh: true,
+            resource: error.resource,
+            expectedVersion: error.expectedVersion,
+            actualVersion: error.actualVersion,
+        };
+    }
+
     // Log the full technical error
     logger.error('Error occurred', {
         error: error,
@@ -87,7 +110,9 @@ function errorMiddleware(err, req, res, next) {
         requestId: req.requestId
     });
 
-    res.status(err.status || 500).json(response);
+    // Use error's statusCode if it's a ConcurrencyError, otherwise use err.status or 500
+    const statusCode = err instanceof ConcurrencyError ? 409 : (err.status || 500);
+    res.status(statusCode).json(response);
 }
 
 module.exports = {

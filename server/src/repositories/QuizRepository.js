@@ -139,22 +139,68 @@ class QuizRepository {
      * @param {number} id 
      * @param {string} status 
      * @param {boolean} isPublic 
+     * @param {number} expectedVersion - Expected version for optimistic locking
      * @returns {Promise<number>}
      */
-    async updateStatus(id, status, isPublic) {
-        const [affectedRows] = await Quiz.update(
-            { status, is_public: isPublic },
-            { where: { id } }
-        );
-        return affectedRows;
+    async updateStatus(id, status, isPublic, expectedVersion = null) {
+        const ConcurrencyError = require('../utils/ConcurrencyError');
+
+        // If version checking is enabled, validate version first
+        if (expectedVersion !== null) {
+            const currentQuiz = await this.findById(id, false);
+            if (!currentQuiz) {
+                throw new Error('Quiz not found');
+            }
+
+            if (currentQuiz.version !== expectedVersion) {
+                throw new ConcurrencyError(
+                    `Quiz has been modified by another session. Expected version ${expectedVersion}, but current version is ${currentQuiz.version}.`,
+                    'quiz',
+                    expectedVersion,
+                    currentQuiz.version
+                );
+            }
+        }
+
+        return new Promise((resolve, reject) => {
+            const db = require('../db');
+            db.run(
+                'UPDATE quizzes SET status = ?, is_public = ? WHERE id = ?',
+                [status, isPublic ? 1 : 0, id],
+                function (err) {
+                    if (err) reject(err);
+                    else resolve(this.changes);
+                }
+            );
+        });
     }
 
     /**
      * Delete quiz and all related records
      * @param {number} id 
+     * @param {number} expectedVersion - Expected version for optimistic locking
      * @returns {Promise<boolean>}
      */
-    async deleteQuiz(id) {
+    async deleteQuiz(id, expectedVersion = null) {
+        const ConcurrencyError = require('../utils/ConcurrencyError');
+
+        // If version checking is enabled, validate version first
+        if (expectedVersion !== null) {
+            const currentQuiz = await this.findById(id, false);
+            if (!currentQuiz) {
+                throw new Error('Quiz not found');
+            }
+
+            if (currentQuiz.version !== expectedVersion) {
+                throw new ConcurrencyError(
+                    `Quiz has been modified by another session. Expected version ${expectedVersion}, but current version is ${currentQuiz.version}.`,
+                    'quiz',
+                    expectedVersion,
+                    currentQuiz.version
+                );
+            }
+        }
+
         const transaction = await sequelize.transaction();
 
         try {
@@ -210,9 +256,29 @@ class QuizRepository {
      * Add question to quiz
      * @param {number} quizId 
      * @param {Object} questionData 
+     * @param {number} expectedVersion - Expected version for optimistic locking
      * @returns {Promise<Object>}
      */
-    async addQuestion(quizId, { type, text, options, correctAnswer }) {
+    async addQuestion(quizId, { type, text, options, correctAnswer }, expectedVersion = null) {
+        const ConcurrencyError = require('../utils/ConcurrencyError');
+
+        // If version checking is enabled, validate version first
+        if (expectedVersion !== null) {
+            const currentQuiz = await this.findById(quizId, false);
+            if (!currentQuiz) {
+                throw new Error('Quiz not found');
+            }
+
+            if (currentQuiz.version !== expectedVersion) {
+                throw new ConcurrencyError(
+                    `Quiz has been modified by another session. Expected version ${expectedVersion}, but current version is ${currentQuiz.version}.`,
+                    'quiz',
+                    expectedVersion,
+                    currentQuiz.version
+                );
+            }
+        }
+
         return await Question.create({
             quiz_id: quizId,
             type,
@@ -226,9 +292,29 @@ class QuizRepository {
      * Update all questions for a quiz
      * @param {number} quizId 
      * @param {Array} questions 
+     * @param {number} expectedVersion - Expected version for optimistic locking
      * @returns {Promise<Array>}
      */
-    async updateQuestions(quizId, questions) {
+    async updateQuestions(quizId, questions, expectedVersion = null) {
+        const ConcurrencyError = require('../utils/ConcurrencyError');
+
+        // If version checking is enabled, validate version first
+        if (expectedVersion !== null) {
+            const currentQuiz = await this.findById(quizId, false);
+            if (!currentQuiz) {
+                throw new Error('Quiz not found');
+            }
+
+            if (currentQuiz.version !== expectedVersion) {
+                throw new ConcurrencyError(
+                    `Quiz has been modified by another session. Expected version ${expectedVersion}, but current version is ${currentQuiz.version}.`,
+                    'quiz',
+                    expectedVersion,
+                    currentQuiz.version
+                );
+            }
+        }
+
         const transaction = await sequelize.transaction();
 
         try {
