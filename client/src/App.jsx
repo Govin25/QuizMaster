@@ -382,6 +382,7 @@ const AppContent = () => {
         <Home
           onStartQuiz={startQuiz}
           onViewReport={showReport}
+          onViewAllAttempts={backToAttempts}
         />
       )}
       {view === 'game' && <QuizGame quizId={activeQuizId} onEndGame={endGame} onShowReport={showReport} />}

@@ -4,7 +4,7 @@ import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 import { LikeButton } from './SocialFeatures';
 
-const Home = ({ onStartQuiz, onViewReport }) => {
+const Home = ({ onStartQuiz, onViewReport, onViewAllAttempts }) => {
     const { fetchWithAuth } = useAuth();
     const { showSuccess, showError } = useToast();
     const [library, setLibrary] = useState({ recentlyAdded: [], completed: [] });
@@ -253,7 +253,7 @@ const Home = ({ onStartQuiz, onViewReport }) => {
                         </button>
                     )}
                     <button
-                        onClick={() => isCompleted ? onViewReport(quiz.result_id) : onStartQuiz(quiz.id)}
+                        onClick={() => isCompleted ? onViewAllAttempts(quiz.id) : onStartQuiz(quiz.id)}
                         style={{
                             flex: 1,
                             background: isCompleted
