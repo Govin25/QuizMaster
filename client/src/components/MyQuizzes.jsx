@@ -518,7 +518,7 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                     <h2 style={{ margin: 0 }}>My Quizzes</h2>
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                         <button onClick={() => setShowVideoGenerator(true)} style={{
-                            background: 'linear-gradient(135deg, #f43f5e, #ec4899)',
+                            background: 'linear-gradient(135deg, #a855f7, #ec4899)',
                             padding: '0.6rem 1.2rem',
                             display: 'flex',
                             alignItems: 'center',

@@ -1,7 +1,7 @@
 {
-    "name": "QuizMaster - Interactive Quiz Platform",
-    "short_name": "QuizMaster",
-    "description": "Challenge yourself and others with interactive quizzes. Create, play, and compete!",
+    "name": "Quainy - Memory Retention Platform",
+    "short_name": "Quainy",
+    "description": "Retain More, Learn Smarter. Boost your memory retention through personalized AI-powered quizzes. Create, play, and compete!",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#0f172a",

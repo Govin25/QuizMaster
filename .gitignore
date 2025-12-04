@@ -42,3 +42,13 @@ coverage/
 .cache/
 server/node_modules/
 client/node_modules/
+
+
+#Docker files
+DOCKER.md
+docker-compose.yml
+docker-commands.sh
+server/Dockerfile
+client/Dockerfile
+server/.dockerignore
+client/.dockerignore
