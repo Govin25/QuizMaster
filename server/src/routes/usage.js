@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { authenticateToken } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/authMiddleware');
 const { getUsageWithLimits, getUsageHistory, resetUsage } = require('../services/usageService');
 const { getSubscription } = require('../services/subscriptionService');
 
