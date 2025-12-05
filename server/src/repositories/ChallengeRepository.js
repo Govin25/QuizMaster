@@ -389,6 +389,38 @@ class ChallengeRepository {
     }
 
     /**
+     * Get previous challenge opponents for a user (for suggestions when creating new challenges)
+     */
+    static async getPreviousOpponents(userId, limit = 10) {
+        return new Promise((resolve, reject) => {
+            const query = `
+                SELECT DISTINCT 
+                    u.id,
+                    u.username,
+                    u.role,
+                    MAX(c.created_at) as last_challenged
+                FROM challenges c
+                JOIN users u ON (
+                    (c.creator_id = ? AND c.opponent_id = u.id) OR
+                    (c.opponent_id = ? AND c.creator_id = u.id)
+                )
+                WHERE u.role != 'admin'
+                GROUP BY u.id, u.username, u.role
+                ORDER BY last_challenged DESC
+                LIMIT ?
+            `;
+
+            db.all(query, [userId, userId, limit], (err, rows) => {
+                if (err) {
+                    logger.error('Failed to get previous opponents', { error: err, userId });
+                    return reject(err);
+                }
+                resolve(rows || []);
+            });
+        });
+    }
+
+    /**
      * Delete a challenge (only if pending)
      */
     static async deleteChallenge(challengeId, userId, expectedVersion = null) {

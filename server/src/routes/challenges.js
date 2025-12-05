@@ -91,6 +91,25 @@ router.get('/my-challenges', authenticateToken, async (req, res) => {
     }
 });
 
+// Get previous challenge opponents (for suggestions)
+router.get('/previous-opponents', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const limit = parseInt(req.query.limit) || 10;
+
+        const opponents = await ChallengeRepository.getPreviousOpponents(userId, limit);
+
+        res.json(opponents);
+    } catch (err) {
+        logger.error('Failed to get previous opponents', {
+            error: err,
+            context: { userId: req.user.id },
+            requestId: req.requestId
+        });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
+    }
+});
+
 // Get challenge by ID
 router.get('/:id', authenticateToken, async (req, res) => {
     try {

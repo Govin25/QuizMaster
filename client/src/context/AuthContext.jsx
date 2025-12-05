@@ -81,17 +81,32 @@ export const AuthProvider = ({ children }) => {
                 credentials: 'include'  // Always send cookies
             });
 
-            if (response.status === 401 || response.status === 403) {
-                showError('Session expired. Please login again.');
-                logout();
-                return response;
+            // Only treat 401/403 as session expired if we think we're logged in
+            if ((response.status === 401 || response.status === 403) && user) {
+                // Verify if session is truly expired by checking with server
+                try {
+                    const verifyResponse = await fetch(`${API_URL}/api/auth/verify`, {
+                        credentials: 'include'
+                    });
+
+                    if (!verifyResponse.ok) {
+                        // Session is truly expired
+                        showError('Session expired. Please login again.');
+                        logout();
+                    }
+                    // If verify succeeds, the original 401/403 was likely due to
+                    // permissions (not auth), so don't logout - just return the response
+                } catch (verifyError) {
+                    // Network error on verify - don't logout, might be temporary
+                    console.warn('Auth verification failed:', verifyError);
+                }
             }
 
             return response;
         } catch (error) {
             throw error;
         }
-    }, [logout, showError]);
+    }, [logout, showError, user]);
 
     return (
         <AuthContext.Provider value={{ user, login, logout, fetchWithAuth, loading }}>

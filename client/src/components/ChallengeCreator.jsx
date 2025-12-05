@@ -82,24 +82,37 @@ const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
     const fetchSuggestedUsers = async () => {
         try {
             setLoadingSuggestions(true);
-            const [followersRes, followingRes] = await Promise.all([
+
+            // Fetch previous opponents, followers, and following in parallel
+            const [opponentsRes, followersRes, followingRes] = await Promise.all([
+                fetchWithAuth(`${API_URL}/api/challenges/previous-opponents?limit=5`),
                 fetchWithAuth(`${API_URL}/api/social/followers/${user.id}?limit=10`),
                 fetchWithAuth(`${API_URL}/api/social/following/${user.id}?limit=10`)
             ]);
 
+            const previousOpponents = opponentsRes.ok ? await opponentsRes.json() : [];
             const followers = followersRes.ok ? await followersRes.json() : [];
             const following = followingRes.ok ? await followingRes.json() : [];
 
-            // Combine and deduplicate
-            const combined = [...followers, ...following];
-            const uniqueUsers = Array.from(
-                new Map(combined.map(u => [u.id, u])).values()
+            // Mark previous opponents with a special property
+            const markedOpponents = previousOpponents.map(u => ({ ...u, isPreviousOpponent: true }));
+
+            // Combine social connections
+            const socialUsers = [...followers, ...following];
+            const uniqueSocialUsers = Array.from(
+                new Map(socialUsers.map(u => [u.id, u])).values()
             );
 
-            // Filter out admins
-            const nonAdminUsers = uniqueUsers.filter(u => u.role !== 'admin');
+            // Filter out admins and users already in opponents list
+            const opponentIds = new Set(previousOpponents.map(u => u.id));
+            const filteredSocialUsers = uniqueSocialUsers
+                .filter(u => u.role !== 'admin' && !opponentIds.has(u.id))
+                .slice(0, 5);
 
-            setSuggestedUsers(nonAdminUsers.slice(0, 8)); // Show max 8 suggestions
+            // Combine: previous opponents first, then social connections
+            const combined = [...markedOpponents, ...filteredSocialUsers];
+
+            setSuggestedUsers(combined.slice(0, 10)); // Show max 10 suggestions
         } catch (err) {
             console.error('Failed to fetch suggestions:', err);
         } finally {
@@ -418,47 +431,84 @@ const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
                 {/* Suggested Users */}
                 {suggestedUsers.length > 0 && !opponentUsername && (
                     <div style={{ marginTop: '1rem' }}>
-                        <div style={{
-                            fontSize: '0.85rem',
-                            color: 'var(--text-muted)',
-                            marginBottom: '0.75rem',
-                            fontWeight: '600'
-                        }}>
-                            💡 Suggested opponents (from your network):
-                        </div>
-                        <div style={{
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: '0.5rem'
-                        }}>
-                            {suggestedUsers.map(user => (
-                                <button
-                                    key={user.id}
-                                    onClick={() => setOpponentUsername(user.username)}
-                                    style={{
-                                        padding: '0.5rem 1rem',
-                                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))',
-                                        border: '1px solid rgba(99, 102, 241, 0.3)',
-                                        borderRadius: '20px',
-                                        color: 'white',
-                                        fontSize: '0.85rem',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s',
-                                        fontWeight: '500'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.target.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3))';
-                                        e.target.style.transform = 'translateY(-2px)';
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.target.style.background = 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))';
-                                        e.target.style.transform = 'translateY(0)';
-                                    }}
-                                >
-                                    @{user.username}
-                                </button>
-                            ))}
-                        </div>
+                        {/* Previous Opponents */}
+                        {suggestedUsers.some(u => u.isPreviousOpponent) && (
+                            <>
+                                <div style={{
+                                    fontSize: '0.85rem',
+                                    color: 'var(--text-muted)',
+                                    marginBottom: '0.5rem',
+                                    fontWeight: '600'
+                                }}>
+                                    🔄 Recent opponents:
+                                </div>
+                                <div style={{
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    gap: '0.5rem',
+                                    marginBottom: '1rem'
+                                }}>
+                                    {suggestedUsers.filter(u => u.isPreviousOpponent).map(u => (
+                                        <button
+                                            key={u.id}
+                                            onClick={() => setOpponentUsername(u.username)}
+                                            style={{
+                                                padding: '0.5rem 1rem',
+                                                background: 'linear-gradient(135deg, rgba(251, 146, 60, 0.2), rgba(245, 158, 11, 0.2))',
+                                                border: '1px solid rgba(251, 146, 60, 0.4)',
+                                                borderRadius: '20px',
+                                                color: '#fbbf24',
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                fontWeight: '500'
+                                            }}
+                                        >
+                                            ⚔️ @{u.username}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
+
+                        {/* Network Suggestions */}
+                        {suggestedUsers.some(u => !u.isPreviousOpponent) && (
+                            <>
+                                <div style={{
+                                    fontSize: '0.85rem',
+                                    color: 'var(--text-muted)',
+                                    marginBottom: '0.5rem',
+                                    fontWeight: '600'
+                                }}>
+                                    👥 From your network:
+                                </div>
+                                <div style={{
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    gap: '0.5rem'
+                                }}>
+                                    {suggestedUsers.filter(u => !u.isPreviousOpponent).map(u => (
+                                        <button
+                                            key={u.id}
+                                            onClick={() => setOpponentUsername(u.username)}
+                                            style={{
+                                                padding: '0.5rem 1rem',
+                                                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))',
+                                                border: '1px solid rgba(99, 102, 241, 0.3)',
+                                                borderRadius: '20px',
+                                                color: 'white',
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                fontWeight: '500'
+                                            }}
+                                        >
+                                            @{u.username}
+                                        </button>
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
 
