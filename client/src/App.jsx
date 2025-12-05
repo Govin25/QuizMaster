@@ -42,8 +42,37 @@ const AppContent = () => {
     }
   };
 
-  // Initialize state from localStorage
-  const [view, setView] = useState(() => getPersistedState('app_view', 'home'));
+  // Views that require specific associated data - these shouldn't be restored without that data
+  const VIEWS_REQUIRING_DATA = ['game', 'report', 'attempts', 'challenge-game', 'challenge-results', 'public-profile', 'creator'];
+
+  // Validate persisted view - only restore safe views
+  const getValidatedView = () => {
+    const savedView = getPersistedState('app_view', 'home');
+
+    // Check if this view requires associated data
+    if (VIEWS_REQUIRING_DATA.includes(savedView)) {
+      // For these views, we also need the associated ID to be valid
+      const quizId = getPersistedState('app_activeQuizId', null);
+      const resultId = getPersistedState('app_activeResultId', null);
+      const challengeId = getPersistedState('app_activeChallengeId', null);
+      const userId = getPersistedState('app_viewedUserId', null);
+      const editId = getPersistedState('app_editQuizId', null);
+
+      // Validate each view type
+      if (savedView === 'game' && !quizId) return 'home';
+      if (savedView === 'report' && !resultId) return 'home';
+      if (savedView === 'attempts' && !quizId) return 'home';
+      if (savedView === 'challenge-game' && (!challengeId || !quizId)) return 'challenges';
+      if (savedView === 'challenge-results' && !challengeId) return 'challenges';
+      if (savedView === 'public-profile' && !userId) return 'home';
+      if (savedView === 'creator' && !editId) return 'my-quizzes'; // For new quiz, go to my-quizzes instead
+    }
+
+    return savedView;
+  };
+
+  // Initialize state from localStorage with validation
+  const [view, setView] = useState(() => getValidatedView());
   const [activeQuizId, setActiveQuizId] = useState(() => getPersistedState('app_activeQuizId', null));
   const [activeResultId, setActiveResultId] = useState(() => getPersistedState('app_activeResultId', null));
   const [editQuizId, setEditQuizId] = useState(() => getPersistedState('app_editQuizId', null));
@@ -71,7 +100,7 @@ const AppContent = () => {
   }, [view, activeQuizId, activeResultId, editQuizId, activeChallengeId, viewedUserId, previousView]);
 
   const handleLogout = () => {
-    // Clear app state on logout
+    // Clear ALL app state on logout
     localStorage.removeItem('app_view');
     localStorage.removeItem('app_activeQuizId');
     localStorage.removeItem('app_activeResultId');
@@ -79,6 +108,13 @@ const AppContent = () => {
     localStorage.removeItem('app_activeChallengeId');
     localStorage.removeItem('app_viewedUserId');
     localStorage.removeItem('app_previousView');
+
+    // Reset state variables too
+    setActiveQuizId(null);
+    setActiveResultId(null);
+    setEditQuizId(null);
+    setActiveChallengeId(null);
+    setViewedUserId(null);
 
     logout();
     setView('home');

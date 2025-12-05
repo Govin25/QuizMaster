@@ -71,6 +71,10 @@ const AuthForm = ({ defaultMode = 'signup' }) => {
                 throw new Error(data.error || 'Authentication failed');
             }
 
+            // Small delay to ensure the Set-Cookie header is fully processed by the browser
+            // before we trigger state changes that cause API calls
+            await new Promise(resolve => setTimeout(resolve, 100));
+
             // Pass isNewUser flag for signups to redirect to quiz-hub
             // No longer need to pass token - it's in the cookie
             login(data.user, !isLogin);

@@ -7,7 +7,11 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [loginTimestamp, setLoginTimestamp] = useState(null); // Track when user logged in
     const { showError } = useToast();
+
+    // Grace period in ms - don't logout during this time after login
+    const LOGIN_GRACE_PERIOD = 5000;
 
     // Verify authentication on mount by checking with server
     useEffect(() => {
@@ -41,6 +45,7 @@ export const AuthProvider = ({ children }) => {
 
     const login = useCallback((userData, isNewUser = false) => {
         setUser(userData);
+        setLoginTimestamp(Date.now()); // Track login time
         localStorage.setItem('user', JSON.stringify(userData));
 
         // For new signups, set initial view to quiz-hub
@@ -83,6 +88,15 @@ export const AuthProvider = ({ children }) => {
 
             // Only treat 401/403 as session expired if we think we're logged in
             if ((response.status === 401 || response.status === 403) && user) {
+                // Check if we're in the grace period after login
+                const isInGracePeriod = loginTimestamp && (Date.now() - loginTimestamp) < LOGIN_GRACE_PERIOD;
+
+                if (isInGracePeriod) {
+                    // During grace period, don't logout - cookie might still be setting up
+                    console.log('Auth error during grace period, not logging out');
+                    return response;
+                }
+
                 // Verify if session is truly expired by checking with server
                 try {
                     const verifyResponse = await fetch(`${API_URL}/api/auth/verify`, {
@@ -106,7 +120,7 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             throw error;
         }
-    }, [logout, showError, user]);
+    }, [logout, showError, user, loginTimestamp, LOGIN_GRACE_PERIOD]);
 
     return (
         <AuthContext.Provider value={{ user, login, logout, fetchWithAuth, loading }}>
