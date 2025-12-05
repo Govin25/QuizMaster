@@ -176,21 +176,37 @@ io.on('connection', (socket) => {
 
     socket.on('join_game', ({ userId, quizId }) => {
         gameManager.startSession(socket.id, userId, quizId);
-        socket.join(`quiz_${quizId} `);
+        socket.join(`quiz_${quizId}`); // Fixed: removed trailing space
         logger.info('User joined quiz game', { userId, quizId, socketId: socket.id });
     });
 
     socket.on('submit_answer', async ({ quizId, questionId, answer, timeTaken }) => {
         const session = gameManager.getSession(socket.id);
-        if (!session) return;
+        if (!session) {
+            // If session missing, try to restore or log error
+            logger.warn('Session missing for submit_answer', { socketId: socket.id, quizId });
+            return;
+        }
 
         // Validate answer
         const quiz = await Quiz.getById(quizId);
-        const question = quiz.questions.find(q => q.id === questionId);
+        if (!quiz) {
+            logger.error('Quiz not found during submit_answer', { quizId });
+            return;
+        }
+
+        // Ensure IDs are comparable (both strings or both numbers)
+        const question = quiz.questions.find(q => String(q.id) === String(questionId));
 
         let isCorrect = false;
+        let correctAnswer = null;
+
         if (question) {
             isCorrect = question.validateAnswer(answer);
+            correctAnswer = question.correctAnswer;
+        } else {
+            logger.error('Question not found during submit_answer', { quizId, questionId });
+            // Should probably error out, but safe fallback avoids crash
         }
 
         if (isCorrect) {
@@ -216,7 +232,7 @@ io.on('connection', (socket) => {
             });
         }
 
-        socket.emit('answer_result', { correct: isCorrect, correctAnswer: question.correctAnswer });
+        socket.emit('answer_result', { correct: isCorrect, correctAnswer: correctAnswer });
     });
 
     socket.on('save_result', async ({ quizId, score, timeTaken }) => {

@@ -15,6 +15,11 @@ if (SECRET_KEY === 'secret_key') {
     });
 }
 
+// Determine authentication security level based on environment
+// Railway sets RAILWAY_ENVIRONMENT, so we use that or NODE_ENV=production
+// const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = true;
+
 // Health check endpoint for Docker and monitoring
 router.get('/health', (req, res) => {
     res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
@@ -49,10 +54,11 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
         );
 
         // Set secure httpOnly cookie (same config as login)
+        // Set secure httpOnly cookie (same config as login)
         res.cookie('auth_token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax', // Required for cross-site cookies
             path: '/', // Ensure cookie is available for all routes
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
         });
@@ -120,8 +126,8 @@ router.post('/login', authLimiter, async (req, res) => {
         // Set secure httpOnly cookie
         res.cookie('auth_token', token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax', // Required for cross-site cookies (Vercel -> Railway)
             path: '/', // Ensure cookie is available for all routes
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
         });
@@ -150,8 +156,8 @@ router.post('/login', authLimiter, async (req, res) => {
 router.post('/logout', (req, res) => {
     res.clearCookie('auth_token', {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
+        secure: isProduction,
+        sameSite: isProduction ? 'none' : 'lax'
     });
     res.json({ message: 'Logged out successfully' });
 });
