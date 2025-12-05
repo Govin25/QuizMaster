@@ -411,13 +411,13 @@ class ChallengeRepository {
             }
         }
         return new Promise((resolve, reject) => {
-            // First check if user is creator and challenge is pending
+            // First check if user is creator or opponent and challenge is pending
             const checkQuery = `
         SELECT * FROM challenges 
-        WHERE id = ? AND creator_id = ? AND status = 'pending'
+        WHERE id = ? AND (creator_id = ? OR opponent_id = ?) AND status = 'pending'
       `;
 
-            db.get(checkQuery, [challengeId, userId], (err, row) => {
+            db.get(checkQuery, [challengeId, userId, userId], (err, row) => {
                 if (err) {
                     logger.error('Failed to check challenge for deletion', { error: err, challengeId });
                     return reject(err);

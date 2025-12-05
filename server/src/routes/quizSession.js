@@ -19,6 +19,13 @@ router.post('/start', authenticateToken, async (req, res) => {
         const { quizId, challengeId } = req.body;
         const userId = req.user.id;
 
+        logger.info('Session start request received', {
+            userId,
+            quizId,
+            challengeId,
+            requestId: req.requestId
+        });
+
         // Validate: must have either quizId or challengeId, not both
         if ((!quizId && !challengeId) || (quizId && challengeId)) {
             return res.status(400).json({ error: 'Must provide either quizId or challengeId' });
@@ -38,31 +45,70 @@ router.post('/start', authenticateToken, async (req, res) => {
             const isStale = Date.now() - lastHeartbeat > SESSION_TIMEOUT;
 
             if (!isStale) {
-                logger.warn('Session already active', {
+                // For challenges, check if user has actually started (submitted any answers)
+                if (challengeId) {
+                    const db = require('../db');
+                    const participant = await new Promise((resolve, reject) => {
+                        db.get(
+                            'SELECT score, completed FROM challenge_participants WHERE challenge_id = ? AND user_id = ?',
+                            [challengeId, userId],
+                            (err, row) => {
+                                if (err) reject(err);
+                                else resolve(row);
+                            }
+                        );
+                    });
+
+                    // If user hasn't submitted any answers yet (score is 0 and not completed),
+                    // allow them to rejoin by removing the old session
+                    if (participant && participant.score === 0 && participant.completed === 0) {
+                        await existing.destroy();
+                        logger.info('Removed lobby session to allow rejoin', {
+                            userId,
+                            challengeId,
+                            requestId: req.requestId
+                        });
+                        // Continue to create new session below
+                    } else {
+                        // User has already started answering - block rejoin
+                        logger.warn('Challenge already started with answers', {
+                            userId,
+                            challengeId,
+                            score: participant?.score,
+                            requestId: req.requestId
+                        });
+
+                        return res.status(409).json({
+                            canStart: false,
+                            message: 'Challenge has already started. Cannot rejoin after submitting answers.',
+                            sessionToken: null
+                        });
+                    }
+                } else {
+                    // For regular quizzes, keep existing behavior
+                    logger.warn('Session already active', {
+                        userId,
+                        quizId,
+                        sessionToken: existing.session_token,
+                        requestId: req.requestId
+                    });
+
+                    return res.status(409).json({
+                        canStart: false,
+                        message: 'Quiz is already active in another session. Please close it first.',
+                        sessionToken: null
+                    });
+                }
+            } else {
+                // Remove stale session
+                await existing.destroy();
+                logger.info('Removed stale session', {
                     userId,
                     quizId,
                     challengeId,
-                    sessionToken: existing.session_token,
                     requestId: req.requestId
                 });
-
-                return res.status(409).json({
-                    canStart: false,
-                    message: challengeId
-                        ? 'Challenge is already active in another session. Please close it first.'
-                        : 'Quiz is already active in another session. Please close it first.',
-                    sessionToken: null
-                });
             }
-
-            // Remove stale session
-            await existing.destroy();
-            logger.info('Removed stale session', {
-                userId,
-                quizId,
-                challengeId,
-                requestId: req.requestId
-            });
         }
 
         // Create new session
@@ -78,7 +124,24 @@ router.post('/start', authenticateToken, async (req, res) => {
             sessionData.quiz_id = quizId;
         }
 
+        logger.info('Creating new session', {
+            userId,
+            quizId,
+            challengeId,
+            sessionToken,
+            requestId: req.requestId
+        });
+
         const session = await ActiveQuizSession.create(sessionData);
+
+        logger.info('Session created successfully', {
+            sessionId: session.id,
+            userId,
+            quizId,
+            challengeId,
+            sessionToken,
+            requestId: req.requestId
+        });
 
         logger.info('Session started', {
             userId,

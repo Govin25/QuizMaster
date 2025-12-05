@@ -143,6 +143,12 @@ router.post('/:id/accept', authenticateToken, async (req, res) => {
         // Update challenge status to active with version check
         await ChallengeRepository.updateChallengeStatus(challengeId, 'active', {}, version);
 
+        // Clean up any existing sessions for this challenge (from both participants)
+        const { ActiveQuizSession } = require('../models/sequelize');
+        await ActiveQuizSession.destroy({
+            where: { challenge_id: challengeId }
+        });
+
         // Reset scores for both participants
         await new Promise((resolve, reject) => {
             const db = require('../db');
@@ -207,6 +213,12 @@ router.post('/:id/decline', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Challenge is not pending' });
         }
 
+        // Clean up any existing sessions for this challenge before deletion
+        const { ActiveQuizSession } = require('../models/sequelize');
+        await ActiveQuizSession.destroy({
+            where: { challenge_id: challengeId }
+        });
+
         // Delete the challenge instead of marking as declined (with version check)
         await ChallengeRepository.deleteChallenge(challengeId, userId, version);
 
@@ -248,6 +260,12 @@ router.delete('/:id/cancel', authenticateToken, async (req, res) => {
 
         // Get challenge details before deletion for notification
         const challenge = await ChallengeRepository.getChallengeById(challengeId);
+
+        // Clean up any existing sessions for this challenge before deletion
+        const { ActiveQuizSession } = require('../models/sequelize');
+        await ActiveQuizSession.destroy({
+            where: { challenge_id: challengeId }
+        });
 
         await ChallengeRepository.deleteChallenge(challengeId, userId, version);
 
