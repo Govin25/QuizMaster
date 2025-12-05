@@ -78,46 +78,69 @@ module.exports = {
         const transaction = await queryInterface.sequelize.transaction();
 
         try {
-            // 1. Insert Permissions
-            // We use bulkInsert but we need to handle potential duplicates if re-running (though migrations should be clean)
-            // For safety, we can use ignoreDuplicates option if supported, or just insert.
-            // Since this is a migration, we assume it runs once.
+            // 1. Fetch existing permissions
+            const [existingPermissions] = await queryInterface.sequelize.query(
+                "SELECT name FROM permissions",
+                { transaction }
+            );
+            const existingPermissionNames = new Set(existingPermissions.map(p => p.name));
 
             const timestamp = new Date();
-            const permissionsData = PERMISSIONS.map(p => ({
-                ...p,
-                created_at: timestamp,
-                updated_at: timestamp
-            }));
+            const permissionsData = PERMISSIONS
+                .filter(p => !existingPermissionNames.has(p.name))
+                .map(p => ({
+                    ...p,
+                    created_at: timestamp
+                }));
 
-            await queryInterface.bulkInsert('permissions', permissionsData, { transaction });
+            if (permissionsData.length > 0) {
+                await queryInterface.bulkInsert('permissions', permissionsData, { transaction });
+            }
 
-            // 2. Insert Roles
-            const rolesData = ROLES.map(r => ({
-                name: r.name,
-                description: r.description,
-                is_system: r.is_system,
-                created_at: timestamp,
-                updated_at: timestamp
-            }));
+            // 2. Fetch existing roles
+            const [existingRoles] = await queryInterface.sequelize.query(
+                "SELECT name FROM roles",
+                { transaction }
+            );
+            const existingRoleNames = new Set(existingRoles.map(r => r.name));
 
-            await queryInterface.bulkInsert('roles', rolesData, { transaction });
+            const rolesData = ROLES
+                .filter(r => !existingRoleNames.has(r.name))
+                .map(r => ({
+                    name: r.name,
+                    description: r.description,
+                    is_system: r.is_system,
+                    created_at: timestamp
+                }));
 
-            // 3. Fetch inserted IDs to map them
-            const [permissions] = await queryInterface.sequelize.query(
+            if (rolesData.length > 0) {
+                await queryInterface.bulkInsert('roles', rolesData, { transaction });
+            }
+
+            // 3. Fetch all IDs to map them (re-fetch all to ensure we have IDs for both new and existing)
+            const [allPermissions] = await queryInterface.sequelize.query(
                 "SELECT id, name FROM permissions",
                 { transaction }
             );
 
-            const [roles] = await queryInterface.sequelize.query(
+            const [allRoles] = await queryInterface.sequelize.query(
                 "SELECT id, name FROM roles",
                 { transaction }
             );
 
-            const permissionMap = new Map(permissions.map(p => [p.name, p.id]));
-            const roleMap = new Map(roles.map(r => [r.name, r.id]));
+            const permissionMap = new Map(allPermissions.map(p => [p.name, p.id]));
+            const roleMap = new Map(allRoles.map(r => [r.name, r.id]));
 
             // 4. Prepare RolePermissions
+            // We need to avoid duplicate role_permissions too.
+            const [existingRolePermissions] = await queryInterface.sequelize.query(
+                "SELECT role_id, permission_id FROM role_permissions",
+                { transaction }
+            );
+            const existingRolePermSet = new Set(
+                existingRolePermissions.map(rp => `${rp.role_id}:${rp.permission_id}`)
+            );
+
             const rolePermissionsData = [];
 
             for (const roleDef of ROLES) {
@@ -126,24 +149,27 @@ module.exports = {
 
                 if (roleDef.permissions.includes('*')) {
                     // Assign all permissions
-                    for (const perm of permissions) {
-                        rolePermissionsData.push({
-                            role_id: roleId,
-                            permission_id: perm.id,
-                            created_at: timestamp,
-                            updated_at: timestamp
-                        });
+                    for (const perm of allPermissions) {
+                        if (!existingRolePermSet.has(`${roleId}:${perm.id}`)) {
+                            rolePermissionsData.push({
+                                role_id: roleId,
+                                permission_id: perm.id,
+                                created_at: timestamp
+                            });
+                            // Add to set to prevent duplicates within this loop if logic is flawed
+                            existingRolePermSet.add(`${roleId}:${perm.id}`);
+                        }
                     }
                 } else {
                     for (const permName of roleDef.permissions) {
                         const permId = permissionMap.get(permName);
-                        if (permId) {
+                        if (permId && !existingRolePermSet.has(`${roleId}:${permId}`)) {
                             rolePermissionsData.push({
                                 role_id: roleId,
                                 permission_id: permId,
-                                created_at: timestamp,
-                                updated_at: timestamp
+                                created_at: timestamp
                             });
+                            existingRolePermSet.add(`${roleId}:${permId}`);
                         }
                     }
                 }

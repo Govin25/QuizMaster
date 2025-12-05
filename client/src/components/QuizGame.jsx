@@ -44,7 +44,18 @@ const QuizGame = ({ quizId, onEndGame, onShowReport }) => {
         const newSocket = io(API_URL);
         setSocket(newSocket);
 
-        newSocket.emit('join_game', { userId: user.id, quizId });
+        // Handle connection and reconnection
+        const handleConnect = () => {
+            console.log('Socket connected/reconnected:', newSocket.id);
+            newSocket.emit('join_game', { userId: user.id, quizId });
+        };
+
+        newSocket.on('connect', handleConnect);
+
+        // Also emit immediately if already connected (though 'connect' should fire)
+        if (newSocket.connected) {
+            handleConnect();
+        }
 
         newSocket.on('score_update', ({ score }) => {
             setScore(score);
