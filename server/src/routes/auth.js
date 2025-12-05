@@ -53,6 +53,7 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
+            path: '/', // Ensure cookie is available for all routes
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
         });
 
@@ -121,6 +122,7 @@ router.post('/login', authLimiter, async (req, res) => {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
+            path: '/', // Ensure cookie is available for all routes
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
         });
 

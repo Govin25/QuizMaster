@@ -277,6 +277,102 @@ async function resetAndSeed() {
             });
             console.log('✓ Cleared users');
 
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM roles', (err) => {
+                    if (err) reject(err);
+                    // Ignore error if table doesn't exist yet, migrations should handle schema
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared roles');
+
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM permissions', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared permissions');
+
+            await new Promise((resolve, reject) => {
+                db.run('DELETE FROM role_permissions', (err) => {
+                    if (err) reject(err);
+                    else resolve();
+                });
+            });
+            console.log('✓ Cleared role_permissions');
+
+            // 1. Create Permissions
+            const permissionsList = [
+                'quiz:create', 'quiz:read', 'quiz:update', 'quiz:delete',
+                'user:read', 'user:update'
+            ];
+
+            console.log('\n🔒 Creating Permissions...');
+            const permIds = {};
+            for (const pName of permissionsList) {
+                const [resource, action] = pName.split(':');
+                const pId = await new Promise((resolve, reject) => {
+                    db.run(
+                        'INSERT INTO permissions (name, resource, action, description, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
+                        [pName, resource, action, `Permission to ${action} ${resource}`],
+                        function (err) { if (err) reject(err); else resolve(this.lastID); }
+                    );
+                });
+                permIds[pName] = pId;
+            }
+            console.log(`✓ Created ${permissionsList.length} permissions`);
+
+            // 2. Create Roles
+            console.log('\n👑 Creating Roles...');
+
+            // Admin Role
+            const adminRoleId = await new Promise((resolve, reject) => {
+                db.run(
+                    'INSERT INTO roles (name, description, is_system, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
+                    ['admin', 'System Administrator', 1],
+                    function (err) { if (err) reject(err); else resolve(this.lastID); }
+                );
+            });
+            console.log(`✓ Created 'admin' role (ID: ${adminRoleId})`);
+
+            // User Role
+            const userRoleId = await new Promise((resolve, reject) => {
+                db.run(
+                    'INSERT INTO roles (name, description, is_system, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
+                    ['user', 'Standard User', 1],
+                    function (err) { if (err) reject(err); else resolve(this.lastID); }
+                );
+            });
+            console.log(`✓ Created 'user' role (ID: ${userRoleId})`);
+
+            // 3. Assign Permissions to Roles (Basic mapping)
+            console.log('\n🔗 Assigning Permissions to Roles...');
+            // Admin gets all
+            for (const pName of permissionsList) {
+                await new Promise((resolve, reject) => {
+                    db.run(
+                        'INSERT INTO role_permissions (role_id, permission_id, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
+                        [adminRoleId, permIds[pName]],
+                        function (err) { if (err) reject(err); else resolve(); }
+                    );
+                });
+            }
+            // User gets read/update only
+            const userPerms = ['quiz:read', 'user:read', 'user:update', 'quiz:create'];
+            for (const pName of userPerms) {
+                if (permIds[pName]) {
+                    await new Promise((resolve, reject) => {
+                        db.run(
+                            'INSERT INTO role_permissions (role_id, permission_id, created_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
+                            [userRoleId, permIds[pName]],
+                            function (err) { if (err) reject(err); else resolve(); }
+                        );
+                    });
+                }
+            }
+            console.log('✓ Assigned permissions to roles');
+
             // Create System admin user
             console.log('\n👤 Creating System admin user...');
             const hashedPassword = await bcrypt.hash('system123', 10);
