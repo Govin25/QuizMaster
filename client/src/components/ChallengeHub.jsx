@@ -13,10 +13,12 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
     const [challenges, setChallenges] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [hasActiveNotification, setHasActiveNotification] = useState(false);
 
     useEffect(() => {
         fetchChallenges();
         fetchStats();
+        checkActiveChallenges();
 
         // Listen for challenge notifications
         const socket = io(API_URL);
@@ -52,6 +54,9 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
             if (creatorId === user.id) {
                 showSuccess(`🎮 ${opponentUsername} accepted your challenge!`);
                 fetchChallenges(); // Refresh the list to move to active tab
+                if (activeTab !== 'active') {
+                    setHasActiveNotification(true);
+                }
             }
         });
 
@@ -107,6 +112,27 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
         }
     };
 
+    const checkActiveChallenges = async () => {
+        try {
+            // Check if there are any active challenges to set initial notification state
+            const response = await fetchWithAuth(
+                `${API_URL}/api/challenges/my-challenges?status=active&limit=1`
+            );
+
+            if (response.ok) {
+                const data = await response.json();
+                const activeChallenges = (data.challenges || []).filter(
+                    c => c.status === 'active'
+                );
+                if (activeChallenges.length > 0 && activeTab !== 'active') {
+                    setHasActiveNotification(true);
+                }
+            }
+        } catch (err) {
+            console.error('Failed to check active challenges:', err);
+        }
+    };
+
     const handleAcceptChallenge = async (challengeId) => {
         try {
             const challenge = challenges.find(c => c.id === challengeId);
@@ -131,6 +157,7 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
 
             showSuccess('Challenge accepted! Ready to play!');
             setActiveTab('active'); // Switch to active tab
+            setHasActiveNotification(false);
             fetchChallenges();
         } catch (err) {
             showError(err.message);
@@ -561,7 +588,10 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
                     {['pending', 'active', 'completed'].map(tab => (
                         <button
                             key={tab}
-                            onClick={() => setActiveTab(tab)}
+                            onClick={() => {
+                                setActiveTab(tab);
+                                if (tab === 'active') setHasActiveNotification(false);
+                            }}
                             style={{
                                 background: activeTab === tab ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
                                 border: activeTab === tab ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid transparent',
@@ -571,10 +601,24 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
                                 cursor: 'pointer',
                                 borderRadius: '8px',
                                 fontWeight: '600',
-                                transition: 'all 0.2s'
+                                transition: 'all 0.2s',
+                                position: 'relative'
                             }}
                         >
                             {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                            {tab === 'active' && hasActiveNotification && (
+                                <span style={{
+                                    position: 'absolute',
+                                    top: '-4px',
+                                    right: '-4px',
+                                    width: '10px',
+                                    height: '10px',
+                                    backgroundColor: '#ef4444',
+                                    borderRadius: '50%',
+                                    border: '2px solid #1e1e2e',
+                                    boxShadow: '0 0 0 2px rgba(30, 30, 46, 0.5)'
+                                }} />
+                            )}
                         </button>
                     ))}
                 </div>
