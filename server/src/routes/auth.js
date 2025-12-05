@@ -48,12 +48,23 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
             { expiresIn: '7d' } // Extended for better UX
         );
 
-        // Set secure httpOnly cookie
+        // Set secure httpOnly cookie (same config as login)
+        const isProduction = process.env.NODE_ENV === 'production';
+
         res.cookie('auth_token', token, {
-            httpOnly: true,  // Prevents JavaScript access (XSS protection)
-            secure: process.env.NODE_ENV === 'production',  // HTTPS only in production
-            sameSite: 'lax',  // CSRF protection while allowing same-site navigation
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'lax' : 'none',
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
+        });
+
+        console.log('Signup successful - Cookie set:', {
+            username: user.username,
+            cookieOptions: {
+                httpOnly: true,
+                secure: isProduction,
+                sameSite: isProduction ? 'lax' : 'none'
+            }
         });
 
         res.status(201).json({
@@ -98,11 +109,25 @@ router.post('/login', authLimiter, async (req, res) => {
         );
 
         // Set secure httpOnly cookie
+        // For cross-origin dev (localhost:5173 -> localhost:3001), we need sameSite: 'none'
+        // But sameSite: 'none' requires secure: true, which needs HTTPS
+        // In dev, we'll use sameSite: 'none' without secure (browsers allow this for localhost)
+        const isProduction = process.env.NODE_ENV === 'production';
+
         res.cookie('auth_token', token, {
             httpOnly: true,  // Prevents JavaScript access (XSS protection)
-            secure: process.env.NODE_ENV === 'production',  // HTTPS only in production
-            sameSite: 'lax',  // CSRF protection while allowing same-site navigation
+            secure: isProduction,  // HTTPS only in production
+            sameSite: isProduction ? 'lax' : 'none',  // 'none' for cross-origin dev, 'lax' for production
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
+        });
+
+        console.log('Login successful - Cookie set:', {
+            username: user.username,
+            cookieOptions: {
+                httpOnly: true,
+                secure: isProduction,
+                sameSite: isProduction ? 'lax' : 'none'
+            }
         });
 
         res.json({

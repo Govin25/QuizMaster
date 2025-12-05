@@ -3,6 +3,15 @@ const jwt = require('jsonwebtoken');
 const SECRET_KEY = process.env.JWT_SECRET || 'secret_key';
 
 const authenticateToken = (req, res, next) => {
+    // Debug logging for auth issues
+    console.log('Auth Debug:', {
+        path: req.path,
+        hasCookies: !!req.cookies,
+        cookieKeys: req.cookies ? Object.keys(req.cookies) : [],
+        hasAuthToken: !!req.cookies?.auth_token,
+        hasAuthHeader: !!req.headers['authorization']
+    });
+
     // Try to get token from cookie first (more secure)
     let token = req.cookies?.auth_token;
 
@@ -13,11 +22,13 @@ const authenticateToken = (req, res, next) => {
     }
 
     if (!token) {
+        console.log('Auth Failed: No token found');
         return res.status(401).json({ error: 'Access token required' });
     }
 
     jwt.verify(token, SECRET_KEY, (err, user) => {
         if (err) {
+            console.log('Auth Failed: Token verification error:', err.message);
             return res.status(403).json({ error: 'Invalid or expired token' });
         }
         req.user = user;
