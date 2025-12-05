@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import { useToast } from './ToastContext';
 import API_URL from '../config';
 
@@ -7,11 +7,12 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [loginTimestamp, setLoginTimestamp] = useState(null); // Track when user logged in
+    // Use ref instead of state to avoid closure issues in useCallback
+    const loginTimestampRef = useRef(null);
     const { showError } = useToast();
 
     // Grace period in ms - don't logout during this time after login
-    const LOGIN_GRACE_PERIOD = 5000;
+    const LOGIN_GRACE_PERIOD = 10000; // Increased to 10 seconds
 
     // Verify authentication on mount by checking with server
     useEffect(() => {
@@ -44,13 +45,16 @@ export const AuthProvider = ({ children }) => {
     };
 
     const login = useCallback((userData, isNewUser = false) => {
+        // Set timestamp ref BEFORE setting user to ensure it's available
+        loginTimestampRef.current = Date.now();
+        console.log('Login timestamp set:', loginTimestampRef.current);
+
         setUser(userData);
-        setLoginTimestamp(Date.now()); // Track login time
         localStorage.setItem('user', JSON.stringify(userData));
 
         // For new signups, set initial view to quiz-hub
         if (isNewUser) {
-            localStorage.setItem('app_view', JSON.stringify('quiz-hub'));
+            localStorage.setItem('app_view', JSON.stringify('hub'));
         }
     }, []);
 
@@ -65,6 +69,7 @@ export const AuthProvider = ({ children }) => {
             console.error('Logout request failed:', error);
         }
 
+        loginTimestampRef.current = null; // Clear timestamp on logout
         setUser(null);
         localStorage.removeItem('user');
     }, []);
@@ -88,8 +93,17 @@ export const AuthProvider = ({ children }) => {
 
             // Only treat 401/403 as session expired if we think we're logged in
             if ((response.status === 401 || response.status === 403) && user) {
-                // Check if we're in the grace period after login
-                const isInGracePeriod = loginTimestamp && (Date.now() - loginTimestamp) < LOGIN_GRACE_PERIOD;
+                // Check if we're in the grace period after login (use ref for current value)
+                const timestamp = loginTimestampRef.current;
+                const timeSinceLogin = timestamp ? Date.now() - timestamp : Infinity;
+                const isInGracePeriod = timeSinceLogin < LOGIN_GRACE_PERIOD;
+
+                console.log('Auth error check:', {
+                    status: response.status,
+                    timestamp,
+                    timeSinceLogin,
+                    isInGracePeriod
+                });
 
                 if (isInGracePeriod) {
                     // During grace period, don't logout - cookie might still be setting up
@@ -120,7 +134,7 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             throw error;
         }
-    }, [logout, showError, user, loginTimestamp, LOGIN_GRACE_PERIOD]);
+    }, [logout, showError, user]);
 
     return (
         <AuthContext.Provider value={{ user, login, logout, fetchWithAuth, loading }}>
@@ -130,4 +144,3 @@ export const AuthProvider = ({ children }) => {
 };
 
 export const useAuth = () => useContext(AuthContext);
-
