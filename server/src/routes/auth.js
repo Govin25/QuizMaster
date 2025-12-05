@@ -49,23 +49,14 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
         );
 
         // Set secure httpOnly cookie (same config as login)
-        const isProduction = process.env.NODE_ENV === 'production';
-
         res.cookie('auth_token', token, {
             httpOnly: true,
-            secure: isProduction,
-            sameSite: isProduction ? 'lax' : 'none',
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
         });
 
-        console.log('Signup successful - Cookie set:', {
-            username: user.username,
-            cookieOptions: {
-                httpOnly: true,
-                secure: isProduction,
-                sameSite: isProduction ? 'lax' : 'none'
-            }
-        });
+        console.log('Signup successful - Cookie set for', user.username);
 
         res.status(201).json({
             user: {
@@ -89,46 +80,51 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
 });
 
 router.post('/login', authLimiter, async (req, res) => {
+    console.log('=== LOGIN REQUEST RECEIVED ===');
+    console.log('Body:', { username: req.body.username, hasPassword: !!req.body.password });
+
     try {
         const { username, password } = req.body;
 
         if (!username || !password) {
+            console.log('Login failed: Missing credentials');
             return res.status(400).json({ error: 'Username and password are required' });
         }
 
+        console.log('Looking up user:', username);
         const user = await User.findByUsername(username);
-        if (!user || !(await User.validatePassword(user, password))) {
-            // Generic error message to prevent user enumeration
+
+        if (!user) {
+            console.log('Login failed: User not found');
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
+        console.log('User found, validating password...');
+        const isValidPassword = await User.validatePassword(user, password);
+
+        if (!isValidPassword) {
+            console.log('Login failed: Invalid password');
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        console.log('Password valid, generating token...');
         const token = jwt.sign(
             { id: user.id, username: user.username, role: user.role },
             SECRET_KEY,
             { expiresIn: '7d' }
         );
 
-        // Set secure httpOnly cookie
-        // For cross-origin dev (localhost:5173 -> localhost:3001), we need sameSite: 'none'
-        // But sameSite: 'none' requires secure: true, which needs HTTPS
-        // In dev, we'll use sameSite: 'none' without secure (browsers allow this for localhost)
-        const isProduction = process.env.NODE_ENV === 'production';
+        console.log('Token generated:', token.substring(0, 20) + '...');
 
+        // Set secure httpOnly cookie
         res.cookie('auth_token', token, {
-            httpOnly: true,  // Prevents JavaScript access (XSS protection)
-            secure: isProduction,  // HTTPS only in production
-            sameSite: isProduction ? 'lax' : 'none',  // 'none' for cross-origin dev, 'lax' for production
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
         });
 
-        console.log('Login successful - Cookie set:', {
-            username: user.username,
-            cookieOptions: {
-                httpOnly: true,
-                secure: isProduction,
-                sameSite: isProduction ? 'lax' : 'none'
-            }
-        });
+        console.log('✅ Login successful - Cookie set for', user.username);
 
         res.json({
             user: {
@@ -138,6 +134,7 @@ router.post('/login', authLimiter, async (req, res) => {
             }
         });
     } catch (err) {
+        console.error('❌ Login error:', err);
         logger.error('User login failed', {
             error: err,
             context: { username: req.body.username },
