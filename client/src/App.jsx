@@ -12,7 +12,7 @@ import QuizAttempts from './components/QuizAttempts';
 import MyQuizzes from './components/MyQuizzes';
 import QuizCreator from './components/QuizCreator';
 import QuizHub from './components/QuizHub';
-import AIGenerator from './components/AIGenerator';
+import QuizCreationHub from './components/QuizCreationHub';
 import QuizReview from './components/QuizReview';
 import UserProfile from './components/UserProfile';
 import PublicUserProfile from './components/PublicUserProfile';
@@ -354,8 +354,8 @@ const AppContent = () => {
             <button onClick={() => { setView('my-quizzes'); closeMenu(); }} className={view === 'my-quizzes' ? 'active' : ''}>
               📝 My Quizzes
             </button>
-            <button onClick={() => { setView('ai-generator'); closeMenu(); }} className={view === 'ai-generator' ? 'active' : ''}>
-              ✨ AI Generate
+            <button onClick={() => { setView('create-quiz'); closeMenu(); }} className={view === 'create-quiz' ? 'active' : ''}>
+              ✨ Create Quiz
             </button>
             <button onClick={() => { setView('challenges'); closeMenu(); }} className={view === 'challenges' ? 'active' : ''}>
               ⚔️ Challenges
@@ -402,8 +402,7 @@ const AppContent = () => {
             setView('creator');
           }}
           onCreate={() => {
-            setEditQuizId(null);
-            setView('creator');
+            setView('create-quiz');
           }}
           onBack={backToMenu}
         />
@@ -427,10 +426,14 @@ const AppContent = () => {
           onViewProfile={(userId) => viewUserProfile(userId, 'hub')}
         />
       )}
-      {view === 'ai-generator' && (
-        <AIGenerator
+      {view === 'create-quiz' && (
+        <QuizCreationHub
           onBack={backToMenu}
           onCreated={() => setView('my-quizzes')}
+          onManualCreate={() => {
+            setEditQuizId(null);
+            setView('creator');
+          }}
         />
       )}
       {view === 'review' && (

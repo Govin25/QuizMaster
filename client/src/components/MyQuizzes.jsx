@@ -3,9 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 import ConfirmDialog from './ConfirmDialog';
-import DocumentQuizGenerator from './DocumentQuizGenerator';
-import VideoQuizGenerator from './VideoQuizGenerator';
-import AIGenerator from './AIGenerator';
 import { handleConcurrencyError } from '../utils/concurrencyHandler';
 
 const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
@@ -17,9 +14,6 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
     const [selectedQuiz, setSelectedQuiz] = useState(null);
     const [reviewDetails, setReviewDetails] = useState({});
     const [deleteConfirm, setDeleteConfirm] = useState(null);
-    const [showDocumentGenerator, setShowDocumentGenerator] = useState(false);
-    const [showVideoGenerator, setShowVideoGenerator] = useState(false);
-    const [showAIGenerator, setShowAIGenerator] = useState(false);
 
     useEffect(() => {
         fetchQuizzes();
@@ -511,50 +505,6 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                 />
             )}
 
-            {showDocumentGenerator && (
-                <DocumentQuizGenerator
-                    onClose={() => setShowDocumentGenerator(false)}
-                    onQuizCreated={() => {
-                        setShowDocumentGenerator(false);
-                        fetchQuizzes();
-                    }}
-                />
-            )}
-
-            {showVideoGenerator && (
-                <VideoQuizGenerator
-                    onClose={() => setShowVideoGenerator(false)}
-                    onQuizCreated={() => {
-                        setShowVideoGenerator(false);
-                        fetchQuizzes();
-                    }}
-                />
-            )}
-
-            {showAIGenerator && (
-                <div style={{
-                    position: 'fixed',
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    background: 'rgba(0,0,0,0.8)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 1000,
-                    padding: '1rem'
-                }}>
-                    <AIGenerator
-                        onBack={() => setShowAIGenerator(false)}
-                        onCreated={() => {
-                            setShowAIGenerator(false);
-                            fetchQuizzes();
-                        }}
-                    />
-                </div>
-            )}
-
             <div className="glass-card" style={{ maxWidth: '1200px', width: '100%' }}>
                 {/* Header */}
                 <div style={{
@@ -567,33 +517,6 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                 }}>
                     <h2 style={{ margin: 0 }}>My Quizzes</h2>
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                        <button onClick={() => setShowAIGenerator(true)} style={{
-                            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                            padding: '0.6rem 1.2rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem'
-                        }}>
-                            🤖✨ AI Generate
-                        </button>
-                        <button onClick={() => setShowVideoGenerator(true)} style={{
-                            background: 'linear-gradient(135deg, #a855f7, #ec4899)',
-                            padding: '0.6rem 1.2rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem'
-                        }}>
-                            🎥 From Video
-                        </button>
-                        <button onClick={() => setShowDocumentGenerator(true)} style={{
-                            background: 'linear-gradient(135deg, #c084fc, #a855f7)',
-                            padding: '0.6rem 1.2rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem'
-                        }}>
-                            📄 From Document
-                        </button>
                         <button onClick={onCreate} style={{
                             background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
                             padding: '0.6rem 1.2rem'
