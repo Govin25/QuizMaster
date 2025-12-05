@@ -423,64 +423,117 @@ class AIQuizGenerator {
             const {
                 numQuestions = 10,
                 difficulty = 'medium',
-                questionTypes = ['multiple_choice', 'true_false']
+                questionTypes = ['multiple_choice', 'true_false'],
+                focusArea = '',
+                keywords = ''
             } = config;
 
-            const prompt = `
+            // Build enhanced prompt
+            let prompt = `
                 You are an expert quiz generator. Create a high-quality, in-depth quiz based on the following text.
                 
                 Configuration:
-                - Number of questions: ${numQuestions}
+                - Number of questions: EXACTLY ${numQuestions} questions (this is critical)
                 - Difficulty: ${difficulty} (adjust complexity accordingly)
                 - Question Types: ${questionTypes.join(', ')}
                 
                 Requirements:
                 1. Questions must be highly relevant to the specific content provided.
-                2. For "hard" difficulty, ask about implications, analysis, and synthesis of ideas, not just facts.
-                3. For "medium" difficulty, focus on understanding and application.
-                4. Ensure distractors (wrong answers) are plausible but clearly incorrect based on the text.
-                5. Return the result as a valid JSON array of question objects.
+                2. Generate EXACTLY ${numQuestions} questions - no more, no less.
+                3. For "hard" or "Advanced" or "Expert" difficulty, ask about implications, analysis, and synthesis of ideas.
+                4. For "medium" or "Intermediate" difficulty, focus on understanding and application.
+                5. For "easy" or "Beginner" difficulty, focus on basic facts and recall.
+                6. Ensure distractors (wrong answers) are plausible but clearly incorrect based on the text.
+            `;
+
+            // Add focus areas if provided
+            if (focusArea && focusArea.trim()) {
+                prompt += `
+                7. PRIORITY: Focus more questions on these areas: ${focusArea}`;
+            }
+
+            // Add keywords if provided
+            if (keywords && keywords.trim()) {
+                prompt += `
+                8. Include questions that specifically test knowledge of these terms/concepts: ${keywords}`;
+            }
+
+            prompt += `
                 
-                Output Format (JSON Array):
-                [
-                    {
-                        "type": "multiple_choice",
-                        "text": "Question text here?",
-                        "options": ["Option A", "Option B", "Option C", "Option D"],
-                        "correctAnswer": "Option B"
-                    },
-                    {
-                        "type": "true_false",
-                        "text": "Statement here.",
-                        "correctAnswer": "true" // or "false"
-                    }
-                ]
+                Output Format (JSON Object):
+                {
+                    "suggestedCategory": "A single-word or short phrase category for this quiz (e.g., Programming, Science, History)",
+                    "questions": [
+                        {
+                            "type": "multiple_choice",
+                            "text": "Question text here?",
+                            "options": ["Option A", "Option B", "Option C", "Option D"],
+                            "correctAnswer": "Option B"
+                        },
+                        {
+                            "type": "true_false",
+                            "text": "Statement here.",
+                            "correctAnswer": "true"
+                        }
+                    ]
+                }
 
                 Text Content:
-                ${text.substring(0, 30000)} // Limit context window if needed
+                ${text.substring(0, 30000)}
             `;
 
             const result = await model.generateContent(prompt);
             const response = await result.response;
             const textResponse = response.text();
 
-            // Extract JSON from response (handle potential markdown code blocks)
-            const jsonMatch = textResponse.match(/\[[\s\S]*\]/);
-            if (!jsonMatch) {
-                throw new Error('Failed to parse AI response as JSON');
+            // Try to extract JSON object first (new format with category)
+            let parsed = null;
+            let questions = [];
+            let suggestedCategory = '';
+
+            // Try to parse as object with suggestedCategory
+            const objectMatch = textResponse.match(/\{[\s\S]*"questions"[\s\S]*\}/);
+            if (objectMatch) {
+                try {
+                    parsed = JSON.parse(objectMatch[0]);
+                    if (parsed.questions && Array.isArray(parsed.questions)) {
+                        questions = parsed.questions;
+                        suggestedCategory = parsed.suggestedCategory || '';
+                    }
+                } catch (e) {
+                    // Fall through to array parsing
+                }
             }
 
-            const questions = JSON.parse(jsonMatch[0]);
+            // Fallback: Extract JSON array from response (old format)
+            if (questions.length === 0) {
+                const jsonMatch = textResponse.match(/\[[\s\S]*\]/);
+                if (!jsonMatch) {
+                    throw new Error('Failed to parse AI response as JSON');
+                }
+                questions = JSON.parse(jsonMatch[0]);
+            }
 
             // Validate and format
             const validated = this.validateQuestions(questions);
 
             logger.info('Generated quiz with Gemini', {
                 count: validated.length,
-                difficulty
+                difficulty,
+                suggestedCategory,
+                hasFocusArea: !!focusArea,
+                hasKeywords: !!keywords
             });
 
-            return validated.slice(0, numQuestions);
+            // Return object with questions and category if category was found
+            const finalQuestions = validated.slice(0, numQuestions);
+            if (suggestedCategory) {
+                return {
+                    questions: finalQuestions,
+                    suggestedCategory
+                };
+            }
+            return finalQuestions;
 
         } catch (error) {
             logger.error('Gemini generation failed', { error: error.message });

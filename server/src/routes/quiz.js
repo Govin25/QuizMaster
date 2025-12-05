@@ -383,72 +383,115 @@ router.get('/:id/review-details', authenticateToken, async (req, res) => {
     }
 });
 
-// Generate Quiz with AI
+// Generate Quiz with AI (Enhanced - returns data for review)
 router.post('/generate', authenticateToken, async (req, res) => {
     try {
-        const { topic, difficulty, numQuestions = 10 } = req.body;
+        const {
+            topic,
+            difficulty = 'medium',
+            numQuestions = 10,
+            focusAreas = '',
+            keywords = '',
+            questionTypes = ['multiple_choice', 'true_false'],
+            additionalContext = ''
+        } = req.body;
 
         if (!topic || topic.trim().length === 0) {
             return res.status(400).json({ error: 'Topic is required' });
         }
 
+        // Validate numQuestions (5-50)
+        const questionCount = Math.min(50, Math.max(5, parseInt(numQuestions) || 10));
+
         logger.info('AI quiz generation requested', {
             topic,
             difficulty,
-            numQuestions,
+            numQuestions: questionCount,
+            focusAreas,
+            keywords,
+            questionTypes,
             userId: req.user.id,
             requestId: req.requestId
         });
 
-        // Create a context prompt for the AI based on the topic
-        const contextPrompt = `
+        // Build enhanced context prompt for the AI
+        let contextPrompt = `
             Generate a comprehensive quiz about the following topic: "${topic}".
             
             The quiz should cover key concepts, important facts, and relevant details about this topic.
             Ensure questions are educational, accurate, and appropriate for the specified difficulty level.
             
             Topic: ${topic}
-            Difficulty: ${difficulty || 'medium'}
+            Difficulty: ${difficulty}
+            Number of Questions: ${questionCount}
         `;
+
+        // Add focus areas if provided
+        if (focusAreas && focusAreas.trim()) {
+            contextPrompt += `\n            Focus Areas (prioritize questions about these): ${focusAreas}`;
+        }
+
+        // Add keywords if provided
+        if (keywords && keywords.trim()) {
+            contextPrompt += `\n            Keywords (include questions featuring these terms): ${keywords}`;
+        }
+
+        // Add additional context if provided
+        if (additionalContext && additionalContext.trim()) {
+            contextPrompt += `\n            Additional Instructions: ${additionalContext}`;
+        }
+
+        // Also ask AI to suggest a category
+        contextPrompt += `\n\n            IMPORTANT: Also suggest a single-word or short phrase category for this quiz that would help users find it (e.g., "Programming", "Science", "History", "Mathematics", etc.)`;
 
         // Generate questions using AI
         const config = {
-            numQuestions: parseInt(numQuestions) || 10,
-            difficulty: difficulty || 'medium',
-            questionTypes: ['multiple_choice', 'true_false']
+            numQuestions: questionCount,
+            difficulty: difficulty,
+            questionTypes: Array.isArray(questionTypes) ? questionTypes : ['multiple_choice', 'true_false'],
+            focusArea: focusAreas,
+            keywords: keywords
         };
 
-        const questions = await aiQuizGenerator.generateQuiz(contextPrompt, config);
+        const result = await aiQuizGenerator.generateQuiz(contextPrompt, config);
+
+        // Handle both old format (array) and new format (object with questions and category)
+        let questions = [];
+        let suggestedCategory = topic.split(' ').slice(0, 2).join(' '); // Default: first 2 words of topic
+
+        if (Array.isArray(result)) {
+            questions = result;
+        } else if (result && result.questions) {
+            questions = result.questions;
+            if (result.suggestedCategory) {
+                suggestedCategory = result.suggestedCategory;
+            }
+        }
 
         if (!questions || questions.length === 0) {
             throw new Error('Failed to generate questions from topic');
         }
 
-        logger.info('AI questions generated', {
+        logger.info('AI questions generated for review', {
             count: questions.length,
             topic,
+            suggestedCategory,
             requestId: req.requestId
         });
 
-        // Create quiz
-        const title = `${topic} - AI Generated Quiz`;
-        const category = 'AI Generated';
-        const quiz = await Quiz.create(title, category, difficulty || 'medium', req.user.id, 'ai');
-
-        // Add generated questions to quiz
+        // Format questions for frontend
         const formattedQuestions = aiQuizGenerator.formatQuestionsForDB(questions);
-        for (const q of formattedQuestions) {
-            await Quiz.addQuestion(quiz.id, q);
-        }
 
-        logger.info('AI quiz created successfully', {
-            quizId: quiz.id,
-            questionCount: formattedQuestions.length,
-            topic,
-            requestId: req.requestId
+        // Return quiz data for review (NOT saving to DB yet)
+        res.status(200).json({
+            title: `${topic} Quiz`,
+            category: suggestedCategory,
+            suggestedCategories: [suggestedCategory, 'AI Generated', topic.split(' ')[0]].filter((v, i, a) => a.indexOf(v) === i),
+            difficulty,
+            questions: formattedQuestions,
+            source: 'ai',
+            topic: topic
         });
-
-        res.status(201).json(quiz);
     } catch (err) {
         logger.error('AI quiz generation failed', {
             error: err,
@@ -456,6 +499,63 @@ router.post('/generate', authenticateToken, async (req, res) => {
             requestId: req.requestId
         });
         res.status(500).json({ error: 'Failed to generate AI quiz: ' + err.message });
+    }
+});
+
+
+// Save AI-generated quiz (after user review and edit)
+router.post('/save-ai-quiz', authenticateToken, async (req, res) => {
+    try {
+        const { title, category, difficulty, questions } = req.body;
+
+        if (!title || !title.trim()) {
+            return res.status(400).json({ error: 'Quiz title is required' });
+        }
+
+        if (!category || !category.trim()) {
+            return res.status(400).json({ error: 'Quiz category is required' });
+        }
+
+        if (!questions || questions.length < 5) {
+            return res.status(400).json({ error: 'Quiz must have at least 5 questions' });
+        }
+
+        logger.info('Saving AI-generated quiz', {
+            title,
+            category,
+            difficulty,
+            questionCount: questions.length,
+            userId: req.user.id,
+            requestId: req.requestId
+        });
+
+        // Create quiz in database
+        const quiz = await Quiz.create(title.trim(), category.trim(), difficulty || 'medium', req.user.id, 'ai');
+
+        // Add questions to quiz
+        for (const question of questions) {
+            await Quiz.addQuestion(quiz.id, question);
+        }
+
+        // Fetch complete quiz with questions
+        const completeQuiz = await Quiz.getById(quiz.id);
+
+        logger.info('AI quiz saved successfully', {
+            quizId: quiz.id,
+            title,
+            questionCount: questions.length,
+            userId: req.user.id,
+            requestId: req.requestId
+        });
+
+        res.status(201).json(completeQuiz);
+    } catch (err) {
+        logger.error('Failed to save AI quiz', {
+            error: err,
+            context: { title: req.body.title, userId: req.user.id },
+            requestId: req.requestId
+        });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
     }
 });
 
