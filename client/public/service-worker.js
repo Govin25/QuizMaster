@@ -48,6 +48,13 @@ self.addEventListener('fetch', (event) => {
         return;
     }
 
+    // CRITICAL: Bypass service worker entirely for auth endpoints
+    // This prevents caching of auth responses which causes session issues on iOS
+    if (url.pathname.startsWith('/api/auth/')) {
+        // Let the browser handle auth requests directly - no caching
+        return;
+    }
+
     // Handle API requests with network-first strategy
     if (url.pathname.startsWith('/api/')) {
         event.respondWith(networkFirstStrategy(request));
@@ -96,9 +103,15 @@ async function cacheFirstStrategy(request) {
 async function networkFirstStrategy(request) {
     try {
         const networkResponse = await fetch(request);
+        const url = new URL(request.url);
 
-        // Cache successful GET requests
-        if (networkResponse.ok && request.method === 'GET') {
+        // NEVER cache auth or session-related endpoints
+        const isAuthRelated = url.pathname.includes('/auth/') ||
+            url.pathname.includes('/verify') ||
+            url.pathname.includes('/session');
+
+        // Cache successful GET requests (except auth-related)
+        if (networkResponse.ok && request.method === 'GET' && !isAuthRelated) {
             const cache = await caches.open(API_CACHE_NAME);
             cache.put(request, networkResponse.clone());
         }

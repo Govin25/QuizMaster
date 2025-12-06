@@ -12,11 +12,24 @@ export const AuthProvider = ({ children }) => {
     const { showError } = useToast();
 
     // Grace period in ms - don't logout during this time after login
-    const LOGIN_GRACE_PERIOD = 10000; // Increased to 10 seconds
+    // Increased to 15 seconds for iOS Safari/PWA cookie propagation
+    const LOGIN_GRACE_PERIOD = 15000;
 
-    // Verify authentication on mount by checking with server
+    // Check for existing user in localStorage on mount (optimistic)
+    // Don't verify with server immediately to avoid race conditions on iOS
     useEffect(() => {
-        verifyAuth();
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+            try {
+                const userData = JSON.parse(storedUser);
+                setUser(userData);
+                console.log('Restored user from localStorage:', userData.username);
+            } catch (error) {
+                console.error('Failed to parse stored user:', error);
+                localStorage.removeItem('user');
+            }
+        }
+        setLoading(false);
     }, []);
 
     const verifyAuth = async () => {
@@ -30,24 +43,24 @@ export const AuthProvider = ({ children }) => {
                 setUser(data.user);
                 // Store user data (not token) in localStorage for quick access
                 localStorage.setItem('user', JSON.stringify(data.user));
+                return true;
             } else {
                 // Not authenticated
                 setUser(null);
                 localStorage.removeItem('user');
+                return false;
             }
         } catch (error) {
             console.error('Auth verification failed:', error);
-            setUser(null);
-            localStorage.removeItem('user');
-        } finally {
-            setLoading(false);
+            // Don't clear user on network errors - might be temporary
+            return false;
         }
     };
 
     const login = useCallback((userData, isNewUser = false) => {
         // Set timestamp ref BEFORE setting user to ensure it's available
         loginTimestampRef.current = Date.now();
-        console.log('Login timestamp set:', loginTimestampRef.current);
+        console.log('Login successful, timestamp set:', loginTimestampRef.current);
 
         setUser(userData);
         localStorage.setItem('user', JSON.stringify(userData));
@@ -56,7 +69,11 @@ export const AuthProvider = ({ children }) => {
         if (isNewUser) {
             localStorage.setItem('app_view', JSON.stringify('hub'));
         }
-    }, []);
+
+        // On iOS, cookies may take a moment to propagate
+        // Trust the login response during grace period
+        console.log('User authenticated, grace period active for', LOGIN_GRACE_PERIOD, 'ms');
+    }, [LOGIN_GRACE_PERIOD]);
 
     const logout = useCallback(async () => {
         try {
@@ -137,7 +154,7 @@ export const AuthProvider = ({ children }) => {
     }, [logout, showError, user]);
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, fetchWithAuth, loading }}>
+        <AuthContext.Provider value={{ user, login, logout, fetchWithAuth, verifyAuth, loading }}>
             {children}
         </AuthContext.Provider>
     );

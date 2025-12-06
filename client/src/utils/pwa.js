@@ -152,6 +152,37 @@ export async function clearAllCaches() {
 }
 
 /**
+ * Clear auth-related caches (use on login/logout)
+ */
+export async function clearAuthCaches() {
+    if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        for (const cacheName of cacheNames) {
+            const cache = await caches.open(cacheName);
+            const requests = await cache.keys();
+            for (const request of requests) {
+                const url = new URL(request.url);
+                if (url.pathname.includes('/auth/') || url.pathname.includes('/verify')) {
+                    await cache.delete(request);
+                    console.log('[PWA] Cleared auth cache:', request.url);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Check if service worker is ready
+ */
+export async function isServiceWorkerReady() {
+    if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        return registration && registration.active;
+    }
+    return false;
+}
+
+/**
  * Check if online
  */
 export function isOnline() {

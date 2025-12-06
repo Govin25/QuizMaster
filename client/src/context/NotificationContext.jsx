@@ -9,13 +9,18 @@ const NotificationContext = createContext(null);
 export const useNotifications = () => useContext(NotificationContext);
 
 export const NotificationProvider = ({ children }) => {
-    const { user, fetchWithAuth } = useAuth();
+    const { user, fetchWithAuth, loading: authLoading } = useAuth();
     const { showInfo } = useToast();
     const [notifications, setNotifications] = useState([]);
     const [unreadCount, setUnreadCount] = useState(0);
     const [socket, setSocket] = useState(null);
 
     useEffect(() => {
+        // Don't fetch notifications or connect socket if auth is still loading
+        if (authLoading) {
+            return;
+        }
+
         if (user) {
             fetchNotifications();
 
@@ -51,7 +56,7 @@ export const NotificationProvider = ({ children }) => {
             setNotifications([]);
             setUnreadCount(0);
         }
-    }, [user]);
+    }, [user, authLoading]);
 
     const fetchNotifications = async () => {
         try {

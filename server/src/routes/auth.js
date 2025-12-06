@@ -53,15 +53,21 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
             { expiresIn: '7d' } // Extended for better UX
         );
 
-        // Set secure httpOnly cookie (same config as login)
-        // Set secure httpOnly cookie (same config as login)
-        res.cookie('auth_token', token, {
+        // Set secure httpOnly cookie with iOS-compatible settings
+        const cookieOptions = {
             httpOnly: true,
             secure: isProduction,
-            sameSite: isProduction ? 'none' : 'lax', // Required for cross-site cookies
-            path: '/', // Ensure cookie is available for all routes
+            sameSite: isProduction ? 'none' : 'lax',
+            path: '/',
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
-        });
+        };
+
+        res.cookie('auth_token', token, cookieOptions);
+
+        // Prevent caching of auth responses
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
 
         console.log('Signup successful - Cookie set for', user.username);
 
@@ -123,14 +129,21 @@ router.post('/login', authLimiter, async (req, res) => {
 
         console.log('Token generated:', token.substring(0, 20) + '...');
 
-        // Set secure httpOnly cookie
-        res.cookie('auth_token', token, {
+        // Set secure httpOnly cookie with iOS-compatible settings
+        const cookieOptions = {
             httpOnly: true,
             secure: isProduction,
-            sameSite: isProduction ? 'none' : 'lax', // Required for cross-site cookies (Vercel -> Railway)
-            path: '/', // Ensure cookie is available for all routes
+            sameSite: isProduction ? 'none' : 'lax',
+            path: '/',
             maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
-        });
+        };
+
+        res.cookie('auth_token', token, cookieOptions);
+
+        // Prevent caching of auth responses (critical for iOS)
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
 
         console.log('✅ Login successful - Cookie set for', user.username);
 
@@ -165,6 +178,11 @@ router.post('/logout', (req, res) => {
 // Verify authentication status (for client-side checks)
 const { authenticateToken } = require('../middleware/authMiddleware');
 router.get('/verify', authenticateToken, (req, res) => {
+    // Prevent caching of verification responses
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     res.json({
         authenticated: true,
         user: {

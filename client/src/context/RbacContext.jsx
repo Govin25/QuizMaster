@@ -5,18 +5,23 @@ import API_URL from '../config';
 const RbacContext = createContext(null);
 
 export const RbacProvider = ({ children }) => {
-    const { user, fetchWithAuth } = useAuth();
+    const { user, fetchWithAuth, loading: authLoading } = useAuth();
     const [permissions, setPermissions] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // Don't fetch permissions if auth is still loading
+        if (authLoading) {
+            return;
+        }
+
         if (user) {
             fetchPermissions();
         } else {
             setPermissions([]);
             setLoading(false);
         }
-    }, [user]);
+    }, [user, authLoading]);
 
     const fetchPermissions = async () => {
         try {
