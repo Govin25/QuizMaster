@@ -31,6 +31,25 @@ router.get('/user/:userId', authenticateToken, async (req, res) => {
     }
 });
 
+// Get current user's permissions (for RBAC)
+router.get('/permissions', authenticateToken, async (req, res) => {
+    try {
+        const rbacService = require('../services/rbacService');
+        const userId = req.user.id;
+
+        const permissions = await rbacService.getUserPermissions(userId);
+
+        res.json({ permissions });
+    } catch (err) {
+        logger.error('Failed to fetch user permissions', {
+            error: err,
+            context: { userId: req.user?.id },
+            requestId: req.requestId
+        });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
+    }
+});
+
 // Get user profile with comprehensive stats
 router.get('/stats/:userId', authenticateToken, async (req, res) => {
     try {
