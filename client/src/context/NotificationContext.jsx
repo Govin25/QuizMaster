@@ -55,11 +55,17 @@ export const NotificationProvider = ({ children }) => {
 
     const fetchNotifications = async () => {
         try {
+            console.log('🔄 Fetching notifications for user:', user?.id);
             const response = await fetchWithAuth(`${API_URL}/api/notifications?limit=20`);
+            console.log('📥 Notification fetch status:', response.status);
+
             if (response.ok) {
                 const data = await response.json();
+                console.log('📦 Notifications received:', data.notifications.length);
                 setNotifications(data.notifications);
                 setUnreadCount(data.unreadCount);
+            } else {
+                console.error('❌ Failed to fetch notifications:', await response.text());
             }
         } catch (error) {
             console.error('Failed to fetch notifications', error);
@@ -98,12 +104,28 @@ export const NotificationProvider = ({ children }) => {
         }
     };
 
+    const clearAllNotifications = async () => {
+        try {
+            // Optimistic update
+            setNotifications([]);
+            setUnreadCount(0);
+
+            await fetchWithAuth(`${API_URL}/api/notifications`, {
+                method: 'DELETE'
+            });
+        } catch (error) {
+            console.error('Failed to delete all notifications', error);
+            fetchNotifications();
+        }
+    };
+
     return (
         <NotificationContext.Provider value={{
             notifications,
             unreadCount,
             markAsRead,
             markAllAsRead,
+            clearAllNotifications,
             fetchNotifications
         }}>
             {children}

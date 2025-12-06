@@ -12,8 +12,12 @@ router.get('/', authenticateToken, async (req, res) => {
         const limit = parseInt(req.query.limit) || 20;
         const offset = parseInt(req.query.offset) || 0;
 
+        logger.info('🔔 GET /notifications request', { userId, limit, offset });
+
         const notifications = await NotificationService.getUserNotifications(userId, limit, offset);
         const unreadCount = await NotificationService.getUnreadCount(userId);
+
+        logger.info('🔔 Finding notifications', { userId, count: notifications.length });
 
         res.json({ notifications, unreadCount });
     } catch (err) {
@@ -59,6 +63,23 @@ router.put('/read-all', authenticateToken, async (req, res) => {
         res.json({ message: 'All notifications marked as read', count });
     } catch (err) {
         logger.error('Failed to mark all notifications as read', {
+            error: err,
+            context: { userId: req.user.id },
+            requestId: req.requestId
+        });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
+    }
+});
+// Delete all notifications
+router.delete('/', authenticateToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const count = await NotificationService.deleteAllByUser(userId);
+
+        res.json({ message: 'All notifications deleted', count });
+    } catch (err) {
+        logger.error('Failed to delete all notifications', {
             error: err,
             context: { userId: req.user.id },
             requestId: req.requestId

@@ -116,6 +116,26 @@ class NotificationService {
     }
 
     /**
+     * Delete all notifications for a user
+     */
+    static async deleteAllByUser(userId) {
+        return new Promise((resolve, reject) => {
+            const query = `
+                DELETE FROM notifications 
+                WHERE user_id = ?
+            `;
+
+            db.run(query, [userId], function (err) {
+                if (err) {
+                    logger.error('Failed to delete all notifications', { error: err, userId });
+                    return reject(err);
+                }
+                resolve(this.changes);
+            });
+        });
+    }
+
+    /**
      * Mark all notifications as read for a user
      */
     static async markAllAsRead(userId) {
