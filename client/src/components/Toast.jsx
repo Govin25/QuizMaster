@@ -20,10 +20,12 @@ const Toast = ({ id, message, type = 'info', onClose }) => {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: '1rem',
-            minWidth: '300px',
+            minWidth: '280px',
             maxWidth: '400px',
+            width: '100%',
             boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-            animation: 'slideIn 0.3s ease-out'
+            animation: 'slideIn 0.3s ease-out',
+            pointerEvents: 'auto'
         };
 
         switch (type) {

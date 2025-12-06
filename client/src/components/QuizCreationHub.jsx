@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AIGenerator from './AIGenerator';
 import DocumentQuizGenerator from './DocumentQuizGenerator';
 import VideoQuizGenerator from './VideoQuizGenerator';
+import JSONQuizUploader from './JSONQuizUploader';
 
 const QuizCreationHub = ({ onBack, onCreated, onManualCreate }) => {
     const [activeGenerator, setActiveGenerator] = useState(null);
@@ -33,6 +34,15 @@ const QuizCreationHub = ({ onBack, onCreated, onManualCreate }) => {
             description: 'Upload a document or paste text to create quiz questions',
             gradient: 'linear-gradient(135deg, #a855f7, #c084fc)',
             glow: 'rgba(168, 85, 247, 0.3)'
+        },
+        {
+            id: 'json',
+            icon: '📤',
+            title: 'Upload JSON',
+            subtitle: 'Bulk Import',
+            description: 'Upload quiz data in JSON format - supports single or multiple quizzes',
+            gradient: 'linear-gradient(135deg, #f59e0b, #f97316)',
+            glow: 'rgba(245, 158, 11, 0.3)'
         },
         {
             id: 'manual',
@@ -84,6 +94,15 @@ const QuizCreationHub = ({ onBack, onCreated, onManualCreate }) => {
     if (activeGenerator === 'document') {
         return (
             <DocumentQuizGenerator
+                onClose={handleGeneratorClose}
+                onQuizCreated={handleGeneratorComplete}
+            />
+        );
+    }
+
+    if (activeGenerator === 'json') {
+        return (
+            <JSONQuizUploader
                 onClose={handleGeneratorClose}
                 onQuizCreated={handleGeneratorComplete}
             />
@@ -165,7 +184,7 @@ const QuizCreationHub = ({ onBack, onCreated, onManualCreate }) => {
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontSize: '1.8rem',
-                            marginBottom: '1rem',
+                            margin: '0 auto 1rem auto',
                             boxShadow: `0 4px 20px ${option.glow}`
                         }}>
                             {option.icon}

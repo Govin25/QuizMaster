@@ -25,11 +25,14 @@ export const ToastProvider = ({ children }) => {
             <div style={{
                 position: 'fixed',
                 top: '80px',
-                right: '20px',
+                right: '10px',
+                left: '10px',
                 zIndex: 9999,
                 display: 'flex',
                 flexDirection: 'column',
-                alignItems: 'flex-end'
+                alignItems: 'flex-end',
+                pointerEvents: 'none',
+                maxWidth: 'calc(100vw - 20px)'
             }}>
                 {toasts.map(toast => (
                     <Toast

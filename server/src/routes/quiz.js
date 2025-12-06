@@ -1091,4 +1091,165 @@ router.get('/:quizId/attempts/:userId', async (req, res) => {
     }
 });
 
+// Upload quizzes from JSON
+router.post('/upload-json', authenticateToken, async (req, res) => {
+    try {
+        const { quizzes } = req.body;
+
+        if (!quizzes || !Array.isArray(quizzes) || quizzes.length === 0) {
+            return res.status(400).json({ error: 'Invalid request. Expected an array of quizzes.' });
+        }
+
+        logger.info('JSON quiz upload requested', {
+            quizCount: quizzes.length,
+            userId: req.user.id,
+            requestId: req.requestId
+        });
+
+        // Validate each quiz
+        const validationErrors = [];
+        quizzes.forEach((quiz, idx) => {
+            const errors = [];
+
+            // Required fields
+            if (!quiz.title || typeof quiz.title !== 'string' || quiz.title.trim().length === 0) {
+                errors.push('Missing or invalid "title" field');
+            }
+            if (!quiz.category || typeof quiz.category !== 'string' || quiz.category.trim().length === 0) {
+                errors.push('Missing or invalid "category" field');
+            }
+            if (!['Beginner', 'Intermediate', 'Advanced', 'Expert'].includes(quiz.difficulty)) {
+                errors.push('Invalid "difficulty" - must be Beginner, Intermediate, Advanced, or Expert');
+            }
+
+            // Questions validation
+            if (!Array.isArray(quiz.questions)) {
+                errors.push('Missing or invalid "questions" array');
+            } else {
+                if (quiz.questions.length < 5) {
+                    errors.push(`Quiz must have at least 5 questions (found ${quiz.questions.length})`);
+                }
+                if (quiz.questions.length > 20) {
+                    errors.push(`Quiz must have at most 20 questions (found ${quiz.questions.length})`);
+                }
+
+                quiz.questions.forEach((q, qIdx) => {
+                    if (!q.type || !['multiple_choice', 'true_false'].includes(q.type)) {
+                        errors.push(`Question ${qIdx + 1}: Invalid type - must be "multiple_choice" or "true_false"`);
+                    }
+                    if (!q.text || typeof q.text !== 'string' || q.text.trim().length === 0) {
+                        errors.push(`Question ${qIdx + 1}: Missing or invalid "text" field`);
+                    }
+
+                    if (q.type === 'multiple_choice') {
+                        if (!Array.isArray(q.options) || q.options.length < 2 || q.options.length > 6) {
+                            errors.push(`Question ${qIdx + 1}: Multiple choice must have 2-6 options`);
+                        }
+                        if (!q.correctAnswer || !q.options?.includes(q.correctAnswer)) {
+                            errors.push(`Question ${qIdx + 1}: correctAnswer must exactly match one of the options`);
+                        }
+                    }
+
+                    if (q.type === 'true_false') {
+                        if (!['true', 'false'].includes(q.correctAnswer)) {
+                            errors.push(`Question ${qIdx + 1}: True/False correctAnswer must be "true" or "false"`);
+                        }
+                    }
+
+                    if (!q.correctAnswer) {
+                        errors.push(`Question ${qIdx + 1}: Missing "correctAnswer" field`);
+                    }
+                });
+            }
+
+            if (errors.length > 0) {
+                validationErrors.push({ quizIndex: idx + 1, title: quiz.title || 'Untitled', errors });
+            }
+        });
+
+        if (validationErrors.length > 0) {
+            logger.warn('JSON quiz upload validation failed', {
+                validationErrors,
+                userId: req.user.id,
+                requestId: req.requestId
+            });
+            return res.status(400).json({
+                error: 'Validation failed',
+                details: validationErrors
+            });
+        }
+
+        // Create quizzes in database
+        const createdQuizzes = [];
+        for (const quizData of quizzes) {
+            try {
+                // Create quiz
+                const quiz = await Quiz.create(
+                    quizData.title.trim(),
+                    quizData.category.trim(),
+                    quizData.difficulty,
+                    req.user.id,
+                    'json_upload'
+                );
+
+                // Add questions
+                for (const questionData of quizData.questions) {
+                    const question = {
+                        type: questionData.type,
+                        text: questionData.text,
+                        correctAnswer: questionData.correctAnswer
+                    };
+
+                    if (questionData.type === 'multiple_choice') {
+                        question.options = questionData.options;
+                    }
+
+                    await Quiz.addQuestion(quiz.id, question);
+                }
+
+                createdQuizzes.push({
+                    id: quiz.id,
+                    title: quizData.title,
+                    questionCount: quizData.questions.length
+                });
+
+                logger.info('Quiz created from JSON upload', {
+                    quizId: quiz.id,
+                    title: quizData.title,
+                    questionCount: quizData.questions.length,
+                    userId: req.user.id,
+                    requestId: req.requestId
+                });
+            } catch (err) {
+                logger.error('Failed to create quiz from JSON', {
+                    error: err,
+                    quizTitle: quizData.title,
+                    userId: req.user.id,
+                    requestId: req.requestId
+                });
+                throw new Error(`Failed to create quiz "${quizData.title}": ${err.message}`);
+            }
+        }
+
+        logger.info('JSON quiz upload completed', {
+            count: createdQuizzes.length,
+            userId: req.user.id,
+            requestId: req.requestId
+        });
+
+        res.status(201).json({
+            message: 'Quizzes created successfully',
+            count: createdQuizzes.length,
+            quizzes: createdQuizzes
+        });
+    } catch (err) {
+        logger.error('JSON quiz upload failed', {
+            error: err,
+            userId: req.user.id,
+            requestId: req.requestId
+        });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
+    }
+});
+
 module.exports = router;
