@@ -24,20 +24,39 @@ export const NotificationProvider = ({ children }) => {
         if (user) {
             fetchNotifications();
 
-            // Connect to socket for real-time notifications
-            const newSocket = io(API_URL);
+            // Connect to socket for real-time notifications with error handling
+            const newSocket = io(API_URL, {
+                reconnection: true,
+                reconnectionAttempts: 5, // Limit reconnection attempts
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000,
+                timeout: 10000,
+                transports: ['websocket', 'polling'] // Prefer websocket
+            });
+
             setSocket(newSocket);
 
-            // Join user-specific room if needed (or backend handles it via session)
-            // Assuming backend joins socket to room based on auth or handshake
-            // Currently backend emits to `user_${userId}` room. 
-            // We need to ensure backend puts this socket in that room.
-            // Looking at backend `server/src/index.js`, we don't see explicit "join room user_id" logic on connection 
-            // other than what happens in `join_game` or `join_challenge`.
-            // We should add a generic "join_user_room" event or rely on `socket.on('connection')` identifying user.
-            // Let's modify this to emit an event to join the user room.
+            // Handle connection errors
+            newSocket.on('connect_error', (error) => {
+                console.warn('Socket connection error:', error.message);
+                // Don't spam the console or retry indefinitely
+            });
 
-            newSocket.emit('join_user_room', { userId: user.id });
+            newSocket.on('connect_timeout', () => {
+                console.warn('Socket connection timeout');
+            });
+
+            newSocket.on('reconnect_failed', () => {
+                console.error('Socket reconnection failed after max attempts');
+                // Stop trying to reconnect
+                newSocket.close();
+            });
+
+            // Join user-specific room on successful connection
+            newSocket.on('connect', () => {
+                console.log('Socket connected successfully');
+                newSocket.emit('join_user_room', { userId: user.id });
+            });
 
             newSocket.on('notification_received', (notification) => {
                 setNotifications(prev => [notification, ...prev]);
@@ -46,12 +65,14 @@ export const NotificationProvider = ({ children }) => {
 
                 // Play sound
                 try {
-                    const audio = new Audio('/notification.mp3'); // We'll need to add this or ignore if missing
+                    const audio = new Audio('/notification.mp3');
                     audio.play().catch(() => { });
                 } catch (e) { }
             });
 
-            return () => newSocket.close();
+            return () => {
+                newSocket.close();
+            };
         } else {
             setNotifications([]);
             setUnreadCount(0);
