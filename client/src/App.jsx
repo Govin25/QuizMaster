@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { RbacProvider } from './context/RbacContext'; // Added RbacProvider import
+import { NotificationProvider } from './context/NotificationContext';
 import AuthForm from './components/AuthForm'; // This will be replaced by Login/Register in a later step, keeping for now
 import LandingPage from './components/LandingPage';
 import Home from './components/Home';
@@ -25,6 +26,7 @@ import LegalFooter from './components/LegalFooter';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import InstallPWA from './components/InstallPWA';
+import NotificationCenter from './components/NotificationCenter';
 import quizSessionManager from './utils/quizSessionManager';
 
 const AppContent = () => {
@@ -371,6 +373,7 @@ const AppContent = () => {
               <span>👋</span>
               <span>Welcome, <strong style={{ color: 'white' }}>{user.username}</strong></span>
             </div>
+            <NotificationCenter />
             <button className="menu-toggle" onClick={toggleMenu}>
               {isMenuOpen ? '✕' : '☰'}
             </button>
@@ -547,7 +550,9 @@ function App() {
   return (
     <ToastProvider>
       <AuthProvider>
-        <AppContent />
+        <NotificationProvider>
+          <AppContent />
+        </NotificationProvider>
       </AuthProvider>
     </ToastProvider>
   );

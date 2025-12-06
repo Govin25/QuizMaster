@@ -25,19 +25,5 @@
         "education",
         "games",
         "entertainment"
-    ],
-    "screenshots": [
-        {
-            "src": "/screenshots/home.png",
-            "sizes": "1280x720",
-            "type": "image/png",
-            "form_factor": "wide"
-        },
-        {
-            "src": "/screenshots/quiz.png",
-            "sizes": "750x1334",
-            "type": "image/png",
-            "form_factor": "narrow"
-        }
     ]
 }

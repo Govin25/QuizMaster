@@ -21,38 +21,57 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
         checkActiveChallenges();
 
         // Listen for challenge notifications
+        console.log('🔌 Connecting to socket...', API_URL);
         const socket = io(API_URL);
+
+        socket.on('connect', () => {
+            console.log('✅ Socket connected:', socket.id);
+            if (user && user.id) {
+                socket.emit('join_user_room', { userId: user.id });
+            }
+        });
+
+        socket.on('connect_error', (err) => {
+            console.error('❌ Socket connection error:', err);
+        });
 
         // Listen for challenge declined notifications
         socket.on('challenge_declined', ({ creatorId, opponentUsername, quizTitle }) => {
-            if (creatorId === user.id) {
-                showError(`${opponentUsername} declined your challenge for "${quizTitle}"`);
+            console.log('📩 Event: challenge_declined', { creatorId, opponentUsername, currentUserId: user.id });
+            console.log('🔍 Comparison:', `String(${creatorId}) === String(${user.id})`, String(creatorId) === String(user.id));
+
+            if (String(creatorId) === String(user.id)) {
+                // showError(`${opponentUsername} declined your challenge for "${quizTitle}"`); // Removed per user request
+                console.log('🔄 Refreshing challenges...');
                 fetchChallenges(); // Refresh the list
             }
         });
 
         // Listen for new challenge notifications (when someone challenges you)
         socket.on('challenge_received', ({ challengeId, opponentId, creatorUsername, quizTitle }) => {
+            console.log('📩 Event: challenge_received', { opponentId, currentUserId: user.id });
             // Only show notification if this user is the opponent
-            if (opponentId === user.id) {
-                showSuccess(`🎯 ${creatorUsername} challenged you to "${quizTitle}"!`);
+            if (String(opponentId) === String(user.id)) {
+                // showSuccess(`🎯 ${creatorUsername} challenged you to "${quizTitle}"!`); // Removed per user request
                 fetchChallenges(); // Refresh the list to show new challenge
             }
         });
 
         // Listen for challenge cancelled notifications
         socket.on('challenge_cancelled', ({ challengeId, opponentId }) => {
+            console.log('📩 Event: challenge_cancelled', { opponentId, currentUserId: user.id });
             // Only refresh if this user is the opponent
-            if (opponentId === user.id) {
+            if (String(opponentId) === String(user.id)) {
                 fetchChallenges(); // Refresh the list to remove cancelled challenge
             }
         });
 
         // Listen for challenge accepted notifications
         socket.on('challenge_accepted', ({ challengeId, creatorId, opponentUsername }) => {
+            console.log('📩 Event: challenge_accepted', { creatorId, currentUserId: user.id });
             // Only show notification and refresh if this user is the creator
-            if (creatorId === user.id) {
-                showSuccess(`🎮 ${opponentUsername} accepted your challenge!`);
+            if (String(creatorId) === String(user.id)) {
+                // showSuccess(`🎮 ${opponentUsername} accepted your challenge!`); // Removed per user request
                 fetchChallenges(); // Refresh the list to move to active tab
                 if (activeTab !== 'active') {
                     setHasActiveNotification(true);
@@ -63,8 +82,8 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
         // Listen for opponent joining lobby
         socket.on('opponent_joined_lobby', ({ challengeId, joinedUserId, joinedUsername, targetUserId }) => {
             // Only show notification if this user is the target opponent
-            if (targetUserId === user.id) {
-                showSuccess(`🎮 ${joinedUsername} joined the lobby! Get ready!`);
+            if (String(targetUserId) === String(user.id)) {
+                // showSuccess(`🎮 ${joinedUsername} joined the lobby! Get ready!`); // Removed per user request
                 // Optional: Refresh challenges to show "In Lobby" status if we had that in the UI
                 fetchChallenges();
             }

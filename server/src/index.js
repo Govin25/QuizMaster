@@ -152,9 +152,13 @@ app.use('/api/quizzes', quizRoutes);
 app.use('/api/leaderboard', require('./routes/leaderboard'));
 app.use('/api/results', require('./routes/results'));
 app.use('/api/profile', require('./routes/profile'));
+app.use('/api/library', require('./routes/library'));
+app.use('/api/challenges', require('./routes/challenges'));
+app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/achievements', require('./routes/achievements'));
+app.use('/api/notifications', require('./routes/notifications'));
 app.use('/api/legal', require('./routes/legal'));
 app.use('/api/social', require('./routes/social'));
-app.use('/api/challenges', require('./routes/challenges'));
 app.use('/api/usage', require('./routes/usage')); // NEW: Usage tracking
 app.use('/api/subscription', require('./routes/subscription')); // NEW: Subscription management
 app.use('/api/quiz-sessions', require('./routes/quizSession')); // NEW: Quiz session management
@@ -174,11 +178,17 @@ const socketMap = new Map(); // socketId -> { userId, challengeId }
 io.on('connection', (socket) => {
     logger.info('WebSocket connection established', { socketId: socket.id });
 
+    socket.on('join_user_room', ({ userId }) => {
+        socket.join(`user_${userId}`);
+        logger.info('User joined notification room', { userId, socketId: socket.id });
+    });
+
     socket.on('join_game', ({ userId, quizId }) => {
         gameManager.startSession(socket.id, userId, quizId);
-        socket.join(`quiz_${quizId}`); // Fixed: removed trailing space
+        socket.join(`quiz_${quizId}`);
         logger.info('User joined quiz game', { userId, quizId, socketId: socket.id });
     });
+
 
     socket.on('submit_answer', async ({ quizId, questionId, answer, timeTaken }) => {
         const session = gameManager.getSession(socket.id);

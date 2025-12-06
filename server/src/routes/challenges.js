@@ -3,6 +3,7 @@ const router = express.Router();
 const { authenticateToken, requirePermission } = require('../middleware/authMiddleware');
 const ChallengeRepository = require('../repositories/ChallengeRepository');
 const ChallengeService = require('../services/challengeService');
+const NotificationService = require('../services/notificationService');
 const logger = require('../utils/logger');
 const { handleError } = require('../utils/errorHandler');
 
@@ -43,9 +44,21 @@ router.post('/create', authenticateToken, requirePermission('challenge:create'),
         const challenge = await ChallengeRepository.getChallengeById(challengeId);
 
         // Notify opponent via socket that they received a challenge
+        // Notify opponent via socket that they received a challenge
         const io = req.app.get('io');
+
+        // Create persistent notification
+        await NotificationService.createNotification(
+            opponent.id,
+            'challenge_invite',
+            'New Challenge Request',
+            `${req.user.username} challenged you to "${quiz.title}"!`,
+            { challengeId, quizId, creatorUsername: req.user.username, quizTitle: quiz.title },
+            io
+        );
+
         if (io) {
-            io.emit('challenge_received', {
+            io.to(`user_${opponent.id}`).emit('challenge_received', {
                 challengeId,
                 opponentId: opponent.id,
                 creatorUsername: req.user.username,
@@ -188,9 +201,21 @@ router.post('/:id/accept', authenticateToken, async (req, res) => {
         });
 
         // Notify creator via socket that challenge was accepted
+        // Notify creator via socket that challenge was accepted
         const io = req.app.get('io');
+
+        // Create persistent notification
+        await NotificationService.createNotification(
+            challenge.creator_id,
+            'challenge_accepted',
+            'Challenge Accepted',
+            `${challenge.opponent_username} accepted your challenge!`,
+            { challengeId, opponentUsername: challenge.opponent_username, quizTitle: challenge.quiz_title },
+            io
+        );
+
         if (io) {
-            io.emit('challenge_accepted', {
+            io.to(`user_${challenge.creator_id}`).emit('challenge_accepted', {
                 challengeId,
                 creatorId: challenge.creator_id,
                 opponentUsername: challenge.opponent_username,
@@ -249,9 +274,21 @@ router.post('/:id/decline', authenticateToken, async (req, res) => {
         });
 
         // Notify creator via socket that challenge was declined
+        // Notify creator via socket that challenge was declined
         const io = req.app.get('io');
+
+        // Create persistent notification
+        await NotificationService.createNotification(
+            challenge.creator_id,
+            'challenge_declined',
+            'Challenge Declined',
+            `${challenge.opponent_username} declined your challenge.`,
+            { challengeId, opponentUsername: challenge.opponent_username, quizTitle: challenge.quiz_title },
+            io
+        );
+
         if (io) {
-            io.emit('challenge_declined', {
+            io.to(`user_${challenge.creator_id}`).emit('challenge_declined', {
                 challengeId,
                 creatorId: challenge.creator_id,
                 opponentUsername: challenge.opponent_username,
@@ -297,8 +334,19 @@ router.delete('/:id/cancel', authenticateToken, async (req, res) => {
         // Notify opponent via socket that challenge was cancelled
         if (challenge) {
             const io = req.app.get('io');
+
+            // Create persistent notification
+            await NotificationService.createNotification(
+                challenge.opponent_id,
+                'challenge_cancelled',
+                'Challenge Cancelled',
+                `${challenge.creator_username} cancelled the challenge.`,
+                { challengeId, creatorUsername: challenge.creator_username, quizTitle: challenge.quiz_title },
+                io
+            );
+
             if (io) {
-                io.emit('challenge_cancelled', {
+                io.to(`user_${challenge.opponent_id}`).emit('challenge_cancelled', {
                     challengeId,
                     opponentId: challenge.opponent_id,
                     creatorUsername: challenge.creator_username,
