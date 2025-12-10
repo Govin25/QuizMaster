@@ -154,6 +154,7 @@ app.use('/api/results', require('./routes/results'));
 app.use('/api/profile', require('./routes/profile'));
 app.use('/api/library', require('./routes/library'));
 app.use('/api/challenges', require('./routes/challenges'));
+app.use('/api/group-challenges', require('./routes/groupChallenges'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/achievements', require('./routes/achievements'));
 app.use('/api/notifications', require('./routes/notifications'));
@@ -555,6 +556,230 @@ io.on('connection', (socket) => {
     socket.on('leave_challenge', ({ challengeId }) => {
         socket.leave(`challenge_${challengeId}`);
         logger.info('User left challenge', { challengeId, socketId: socket.id });
+    });
+
+    // Group Challenge Socket.IO Events
+    const GroupChallengeRepository = require('./repositories/GroupChallengeRepository');
+    const GroupChallengeService = require('./services/groupChallengeService');
+    const Quiz = require('./models/Quiz');
+
+    // Track auto-end timers for rooms
+    const autoEndTimers = new Map(); // roomId -> timeoutId
+
+    socket.on('join_group_challenge_room', async ({ userId, roomId, username }) => {
+        try {
+            const roomKey = `group_challenge_${roomId}`;
+            await socket.join(roomKey);
+
+            logger.info('User joined group challenge room', {
+                userId,
+                roomId,
+                socketId: socket.id
+            });
+
+            // Get updated room details
+            const room = await GroupChallengeRepository.getRoomById(roomId);
+
+            // Broadcast to all participants including sender
+            io.to(roomKey).emit('room_updated', {
+                participants: room.participants,
+                participantCount: room.participant_count
+            });
+
+            logger.info('Room details broadcasted', { roomId, participantCount: room.participant_count });
+        } catch (err) {
+            logger.error('Failed to join group challenge room', {
+                error: err,
+                userId,
+                roomId
+            });
+        }
+    });
+
+    socket.on('leave_group_challenge_room', async ({ userId, roomId }) => {
+        try {
+            const roomKey = `group_challenge_${roomId}`;
+            await socket.leave(roomKey);
+
+            logger.info('User left group challenge room', { userId, roomId });
+        } catch (err) {
+            logger.error('Failed to leave group challenge room', { error: err, userId, roomId });
+        }
+    });
+
+    // Group challenge: join room (via API, broadcast via socket)
+    socket.on('group_challenge_participant_joined', async ({ roomId, participant }) => {
+        try {
+            const roomKey = `group_challenge_${roomId}`;
+
+            // Broadcast to all participants in the room
+            io.to(roomKey).emit('participant_joined', {
+                participant,
+                participantCount: participant.participant_count
+            });
+
+            logger.info('Participant joined broadcasted', { roomId, userId: participant.user_id });
+        } catch (err) {
+            logger.error('Failed to broadcast participant joined', { error: err, roomId });
+        }
+    });
+
+    // Group challenge: submit answer
+    socket.on('group_challenge_submit_answer', async ({ roomId, questionId, answer, timeTaken, currentQuestionIndex, userId }) => {
+        try {
+            // Get quiz to validate answer
+            const room = await GroupChallengeRepository.getRoomById(roomId);
+            const quiz = await Quiz.getById(room.quiz_id);
+            const question = quiz.questions.find(q => q.id === questionId);
+
+            if (!question) {
+                return socket.emit('error', { message: 'Question not found' });
+            }
+
+            // Check if answer is correct
+            const isCorrect = question.correctAnswer === answer;
+            let points = 0;
+
+            if (isCorrect) {
+                // Flat +10 points for correct answer
+                points = 10;
+            }
+
+            // Get current participant score
+            const participants = await GroupChallengeRepository.getRoomParticipants(roomId);
+            const participant = participants.find(p => p.user_id === userId);
+            const newScore = (participant?.score || 0) + points;
+            const newTime = (participant?.total_time_seconds || 0) + timeTaken;
+
+            // Update participant score
+            await GroupChallengeRepository.updateParticipantScore(roomId, userId, newScore, newTime);
+
+            // Get updated leaderboard
+            const leaderboard = await GroupChallengeService.getLiveLeaderboard(roomId);
+
+            // Broadcast leaderboard update to all participants
+            io.to(`group_challenge_${roomId}`).emit('leaderboard_update', {
+                leaderboard
+            });
+
+            // Send result to the player who answered
+            socket.emit('group_challenge_answer_result', {
+                questionId,
+                isCorrect,
+                correctAnswer: question.correctAnswer,
+                points,
+                newScore,
+                currentQuestionIndex
+            });
+
+            logger.debug('Group challenge answer processed', {
+                roomId,
+                userId,
+                questionId,
+                isCorrect,
+                points,
+                newScore
+            });
+        } catch (err) {
+            logger.error('Failed to process group challenge answer', {
+                error: err,
+                roomId,
+                questionId
+            });
+        }
+    });
+
+    // Group challenge: player completed quiz
+    socket.on('group_challenge_player_complete', async ({ roomId, userId, finalScore, totalTime }) => {
+        try {
+            logger.info('Player completed group challenge', { roomId, userId, finalScore, totalTime });
+
+            // Mark player as complete
+            await GroupChallengeRepository.markParticipantComplete(roomId, userId, finalScore, totalTime);
+
+            // Get updated room state
+            const room = await GroupChallengeRepository.getRoomById(roomId);
+            const completedCount = room.participants.filter(p => p.completed).length;
+            const totalParticipants = room.participants.length; // Only count actual participants, not max capacity
+
+            logger.info('Group challenge completion status', {
+                roomId,
+                completedCount,
+                totalParticipants,
+                userId
+            });
+
+            // Broadcast completion to room
+            io.to(`group_challenge_${roomId}`).emit('participant_completed', {
+                userId,
+                username: room.participants.find(p => p.user_id === userId)?.username,
+                completedCount,
+                totalParticipants
+            });
+
+            // Check if this is the first player to complete
+            if (completedCount === 1 && totalParticipants > 1) {
+                // Start auto-end timer (15 seconds)
+                logger.info('Starting auto-end timer for remaining players', { roomId, timeRemaining: 15 });
+
+                io.to(`group_challenge_${roomId}`).emit('auto_end_timer_started', {
+                    timeRemaining: 15
+                });
+
+                // Set timeout to force complete after 15 seconds
+                const timerId = setTimeout(async () => {
+                    try {
+                        logger.info('Auto-end timer expired, force completing challenge', { roomId });
+
+                        // Check if challenge is still active
+                        const currentRoom = await GroupChallengeRepository.getRoomById(roomId);
+                        if (currentRoom && currentRoom.status === 'active') {
+                            const result = await GroupChallengeService.forceCompleteChallenge(roomId);
+
+                            io.to(`group_challenge_${roomId}`).emit('group_challenge_finished', {
+                                participants: result.participants,
+                                winner: result.winner
+                            });
+                        }
+
+                        // Clean up timer
+                        autoEndTimers.delete(roomId);
+                    } catch (err) {
+                        logger.error('Failed to force complete challenge', { error: err, roomId });
+                    }
+                }, 15000); // 15 seconds
+
+                // Store timer so we can cancel it if all players finish early
+                autoEndTimers.set(roomId, timerId);
+            }
+            // Check if all players have completed
+            else if (completedCount === totalParticipants) {
+                logger.info('All players completed, finishing challenge immediately', { roomId });
+
+                // Cancel auto-end timer if it exists
+                if (autoEndTimers.has(roomId)) {
+                    clearTimeout(autoEndTimers.get(roomId));
+                    autoEndTimers.delete(roomId);
+                    logger.info('Cancelled auto-end timer - all players finished', { roomId });
+                }
+
+                // Complete the challenge
+                const result = await GroupChallengeService.processChallengeCompletion(roomId);
+
+                if (result.completed) {
+                    io.to(`group_challenge_${roomId}`).emit('group_challenge_finished', {
+                        participants: result.participants,
+                        winner: result.winner
+                    });
+                }
+            }
+        } catch (err) {
+            logger.error('Failed to process player completion', {
+                error: err,
+                roomId,
+                userId
+            });
+        }
     });
 
     socket.on('disconnect', () => {

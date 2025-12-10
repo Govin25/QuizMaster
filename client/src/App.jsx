@@ -21,6 +21,11 @@ import ChallengeHub from './components/ChallengeHub';
 import ChallengeGame from './components/ChallengeGame';
 import ChallengeCreator from './components/ChallengeCreator';
 import ChallengeResults from './components/ChallengeResults';
+import GroupChallengeHub from './components/GroupChallengeHub';
+import GroupChallengeLobby from './components/GroupChallengeLobby';
+import GroupChallengeGame from './components/GroupChallengeGame';
+import GroupChallengeResults from './components/GroupChallengeResults';
+import GroupChallengeCreator from './components/GroupChallengeCreator';
 import Logo from './components/Logo';
 import LegalFooter from './components/LegalFooter';
 import PrivacyPolicy from './components/PrivacyPolicy';
@@ -45,7 +50,7 @@ const AppContent = () => {
   };
 
   // Views that require specific associated data - these shouldn't be restored without that data
-  const VIEWS_REQUIRING_DATA = ['game', 'report', 'attempts', 'challenge-game', 'challenge-results', 'public-profile', 'creator'];
+  const VIEWS_REQUIRING_DATA = ['game', 'report', 'attempts', 'challenge-game', 'challenge-results', 'group-lobby', 'group-game', 'group-results', 'public-profile', 'creator'];
 
   // Validate persisted view - only restore safe views
   const getValidatedView = () => {
@@ -79,10 +84,12 @@ const AppContent = () => {
   const [activeResultId, setActiveResultId] = useState(() => getPersistedState('app_activeResultId', null));
   const [editQuizId, setEditQuizId] = useState(() => getPersistedState('app_editQuizId', null));
   const [activeChallengeId, setActiveChallengeId] = useState(() => getPersistedState('app_activeChallengeId', null));
+  const [activeGroupRoomId, setActiveGroupRoomId] = useState(() => getPersistedState('app_activeGroupRoomId', null));
   const [viewedUserId, setViewedUserId] = useState(() => getPersistedState('app_viewedUserId', null));
   const [previousView, setPreviousView] = useState(() => getPersistedState('app_previousView', 'leaderboard'));
 
   const [showChallengeCreator, setShowChallengeCreator] = useState(false);
+  const [showGroupChallengeCreator, setShowGroupChallengeCreator] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
   const [showTermsOfService, setShowTermsOfService] = useState(false);
@@ -399,6 +406,9 @@ const AppContent = () => {
             <button onClick={() => { setView('challenges'); closeMenu(); }} className={view === 'challenges' ? 'active' : ''}>
               ⚔️ Challenges
             </button>
+            <button onClick={() => { setView('group-challenges'); closeMenu(); }} className={view === 'group-challenges' || view === 'group-lobby' || view === 'group-game' || view === 'group-results' ? 'active' : ''}>
+              🎯 Group Challenges
+            </button>
             <button onClick={() => { setView('leaderboard'); closeMenu(); }} className={view === 'leaderboard' ? 'active' : ''}>
               🏆 Leaderboard
             </button>
@@ -523,6 +533,59 @@ const AppContent = () => {
         <ChallengeResults
           challengeId={activeChallengeId}
           onClose={() => setView('challenges')}
+        />
+      )}
+
+      {/* Group Challenges */}
+      {view === 'group-challenges' && (
+        <>
+          <GroupChallengeHub
+            onJoinRoom={(roomId, quizId) => {
+              setActiveGroupRoomId(roomId);
+              setActiveQuizId(quizId);
+              setView('group-lobby');
+            }}
+            onCreate={() => setShowGroupChallengeCreator(true)}
+          />
+          {showGroupChallengeCreator && (
+            <GroupChallengeCreator
+              onClose={() => setShowGroupChallengeCreator(false)}
+              onCreated={(room) => {
+                setShowGroupChallengeCreator(false);
+                setActiveGroupRoomId(room.id);
+                setActiveQuizId(room.quiz_id);
+                setView('group-lobby');
+              }}
+            />
+          )}
+        </>
+      )}
+      {view === 'group-lobby' && activeGroupRoomId && activeQuizId && (
+        <GroupChallengeLobby
+          roomId={activeGroupRoomId}
+          quizId={activeQuizId}
+          onStartGame={() => setView('group-game')}
+          onBack={() => setView('group-challenges')}
+        />
+      )}
+      {view === 'group-game' && activeGroupRoomId && activeQuizId && (
+        <GroupChallengeGame
+          roomId={activeGroupRoomId}
+          quizId={activeQuizId}
+          onShowResults={(roomId) => {
+            setActiveGroupRoomId(roomId);
+            setView('group-results');
+          }}
+        />
+      )}
+      {view === 'group-results' && activeGroupRoomId && (
+        <GroupChallengeResults
+          roomId={activeGroupRoomId}
+          onClose={() => setView('group-challenges')}
+          onViewQuiz={(quizId) => {
+            setActiveQuizId(quizId);
+            setView('attempts');
+          }}
         />
       )}
 
