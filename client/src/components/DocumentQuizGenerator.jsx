@@ -149,9 +149,11 @@ const DocumentQuizGenerator = ({ onClose, onQuizCreated }) => {
     };
 
     const updateOption = (questionIndex, optionIndex, value) => {
+        // Limit option length to 200 characters
+        const trimmedValue = value.slice(0, 200);
         const updated = [...editingQuestions];
         const newOptions = [...updated[questionIndex].options];
-        newOptions[optionIndex] = value;
+        newOptions[optionIndex] = trimmedValue;
         updated[questionIndex] = { ...updated[questionIndex], options: newOptions };
         setEditingQuestions(updated);
     };

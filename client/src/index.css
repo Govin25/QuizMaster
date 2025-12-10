@@ -51,7 +51,6 @@ button {
   font-size: clamp(0.85rem, 2vw, 0.95rem);
   cursor: pointer;
   transition: all 0.2s ease;
-  white-space: nowrap;
 }
 
 button:hover {
@@ -136,6 +135,17 @@ h3 {
   gap: clamp(1rem, 3vw, 2rem);
   width: 100%;
 }
+
+/* Quiz option buttons - ensure text wraps properly */
+.grid button {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  text-align: center;
+  line-height: 1.4;
+  min-height: 2.5rem;
+}
+
 
 /* Mobile-specific adjustments */
 @media (max-width: 640px) {

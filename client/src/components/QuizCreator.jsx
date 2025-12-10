@@ -222,8 +222,10 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
     };
 
     const handleOptionChange = (index, value) => {
+        // Limit option length to 200 characters
+        const trimmedValue = value.slice(0, 200);
         const newOptions = [...currentQuestion.options];
-        newOptions[index] = value;
+        newOptions[index] = trimmedValue;
         setCurrentQuestion({ ...currentQuestion, options: newOptions });
     };
 
@@ -531,15 +533,30 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
                             <div>
                                 <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Options</label>
                                 {currentQuestion.options.map((opt, idx) => (
-                                    <input
-                                        key={idx}
-                                        type="text"
-                                        placeholder={`Option ${idx + 1}`}
-                                        value={opt}
-                                        onChange={e => handleOptionChange(idx, e.target.value)}
-                                        required
-                                        style={{ width: '100%', marginBottom: '0.75rem' }}
-                                    />
+                                    <div key={idx} style={{ marginBottom: '0.75rem' }}>
+                                        <input
+                                            type="text"
+                                            placeholder={`Option ${idx + 1}`}
+                                            value={opt}
+                                            onChange={e => handleOptionChange(idx, e.target.value)}
+                                            required
+                                            style={{
+                                                width: '100%',
+                                                marginBottom: '0.25rem',
+                                                borderColor: opt.length > 150 ? '#fb923c' : undefined
+                                            }}
+                                        />
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            fontSize: '0.75rem',
+                                            color: opt.length > 150 ? '#fb923c' : 'var(--text-muted)',
+                                            marginBottom: '0.5rem'
+                                        }}>
+                                            <span>{opt.length > 150 && '⚠️ Keep options concise for better readability'}</span>
+                                            <span>{opt.length}/200</span>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
                         )}

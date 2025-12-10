@@ -97,9 +97,11 @@ const AIGenerator = ({ onBack, onCreated }) => {
 
     // Update option
     const updateOption = (questionIndex, optionIndex, value) => {
+        // Limit option length to 200 characters
+        const trimmedValue = value.slice(0, 200);
         const updated = [...questions];
         const newOptions = [...updated[questionIndex].options];
-        newOptions[optionIndex] = value;
+        newOptions[optionIndex] = trimmedValue;
         updated[questionIndex] = { ...updated[questionIndex], options: newOptions };
         setQuestions(updated);
     };
@@ -463,26 +465,43 @@ const AIGenerator = ({ onBack, onCreated }) => {
                             <div className="ai-gen-options">
                                 <label className="ai-gen-editor-label">Options (click to mark correct)</label>
                                 {currentQuestion.options.map((option, optIdx) => (
-                                    <div key={optIdx} className="ai-gen-option-row">
-                                        <button
-                                            type="button"
-                                            onClick={() => setCorrectAnswer(currentQuestionIndex, option)}
-                                            className={`ai-gen-option-check ${currentQuestion.correctAnswer === option ? 'correct' : ''}`}
-                                        >
-                                            {currentQuestion.correctAnswer === option ? '✓' : ''}
-                                        </button>
-                                        <input
-                                            type="text"
-                                            value={option}
-                                            onChange={(e) => {
-                                                const oldValue = option;
-                                                updateOption(currentQuestionIndex, optIdx, e.target.value);
-                                                if (currentQuestion.correctAnswer === oldValue) {
-                                                    setCorrectAnswer(currentQuestionIndex, e.target.value);
-                                                }
-                                            }}
-                                            className={`ai-gen-option-input ${currentQuestion.correctAnswer === option ? 'correct' : ''}`}
-                                        />
+                                    <div key={optIdx}>
+                                        <div className="ai-gen-option-row">
+                                            <button
+                                                type="button"
+                                                onClick={() => setCorrectAnswer(currentQuestionIndex, option)}
+                                                className={`ai-gen-option-check ${currentQuestion.correctAnswer === option ? 'correct' : ''}`}
+                                            >
+                                                {currentQuestion.correctAnswer === option ? '✓' : ''}
+                                            </button>
+                                            <input
+                                                type="text"
+                                                value={option}
+                                                onChange={(e) => {
+                                                    const oldValue = option;
+                                                    updateOption(currentQuestionIndex, optIdx, e.target.value);
+                                                    if (currentQuestion.correctAnswer === oldValue) {
+                                                        setCorrectAnswer(currentQuestionIndex, e.target.value);
+                                                    }
+                                                }}
+                                                className={`ai-gen-option-input ${currentQuestion.correctAnswer === option ? 'correct' : ''}`}
+                                                style={{
+                                                    borderColor: option.length > 150 ? '#fb923c' : undefined
+                                                }}
+                                            />
+                                        </div>
+                                        <div style={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            fontSize: '0.7rem',
+                                            color: option.length > 150 ? '#fb923c' : 'var(--text-muted)',
+                                            marginTop: '0.25rem',
+                                            marginBottom: '0.5rem',
+                                            paddingLeft: '2.5rem'
+                                        }}>
+                                            <span>{option.length > 150 && '⚠️ Keep options concise'}</span>
+                                            <span>{option.length}/200</span>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

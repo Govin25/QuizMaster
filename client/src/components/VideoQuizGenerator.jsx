@@ -125,9 +125,11 @@ const VideoQuizGenerator = ({ onClose, onQuizCreated }) => {
 
     // Update option for multiple choice questions
     const updateOption = (questionIndex, optionIndex, value) => {
+        // Limit option length to 200 characters
+        const trimmedValue = value.slice(0, 200);
         const updated = [...questions];
         const options = [...updated[questionIndex].options];
-        options[optionIndex] = value;
+        options[optionIndex] = trimmedValue;
         updated[questionIndex].options = options;
         setQuestions(updated);
     };
