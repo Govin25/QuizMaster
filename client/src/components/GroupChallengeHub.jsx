@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 
-const GroupChallengeHub = ({ onJoinRoom, onCreate }) => {
+const GroupChallengeHub = ({ onJoinRoom, onCreate, onShowResults }) => {
     const { user, fetchWithAuth } = useAuth();
     const { showSuccess, showError } = useToast();
 
@@ -279,17 +279,28 @@ const GroupChallengeHub = ({ onJoinRoom, onCreate }) => {
                         textAlign: 'center'
                     }}>
                         <div style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-                            {room.my_rank === 1 ? '🥇' : room.my_rank === 2 ? '🥈' : room.my_rank === 3 ? '🥉' : `#${room.my_rank}`}
+                            {room.my_rank === 1 ? '🥇' : room.my_rank === 2 ? '🥈' : room.my_rank === 3 ? '🥉' : `#${room.my_rank} `}
                         </div>
-                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                            Your Rank • Score: {room.my_score}
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
+                                <span>👥 {room.participant_count || 0}/{room.max_participants} Players</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <span>🎯 {room.quiz_question_count || 0} Questions</span>
+                            </div>
                         </div>
                     </div>
                 )}
 
                 {/* Action Buttons */}
                 <button
-                    onClick={() => onJoinRoom(room.id, room.quiz_id)}
+                    onClick={() => {
+                        if (isCompleted) {
+                            onShowResults(room.id);
+                        } else {
+                            onJoinRoom(room.id, room.quiz_id);
+                        }
+                    }}
                     style={{
                         width: '100%',
                         background: isWaiting || isActive ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'rgba(99, 102, 241, 0.2)',

@@ -546,6 +546,10 @@ const AppContent = () => {
               setView('group-lobby');
             }}
             onCreate={() => setShowGroupChallengeCreator(true)}
+            onShowResults={(roomId) => {
+              setActiveGroupRoomId(roomId);
+              setView('group-results');
+            }}
           />
           {showGroupChallengeCreator && (
             <GroupChallengeCreator
