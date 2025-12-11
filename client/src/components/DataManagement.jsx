@@ -5,7 +5,7 @@ import API_URL from '../config';
 import ConfirmDialog from './ConfirmDialog';
 
 const DataManagement = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, fetchWithAuth } = useAuth();
     const { showSuccess, showError } = useToast();
     const [deletionStatus, setDeletionStatus] = useState(null);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -18,12 +18,7 @@ const DataManagement = () => {
 
     const fetchDeletionStatus = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/legal/user/deletion-status`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const response = await fetchWithAuth(`${API_URL}/api/legal/user/deletion-status`);
             const data = await response.json();
             setDeletionStatus(data);
         } catch (error) {
@@ -34,12 +29,7 @@ const DataManagement = () => {
     const handleExportData = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/legal/user/data-export`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            const response = await fetchWithAuth(`${API_URL}/api/legal/user/data-export`);
 
             if (!response.ok) {
                 throw new Error('Failed to export data');
@@ -67,11 +57,9 @@ const DataManagement = () => {
     const handleRequestDeletion = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/legal/user/request-deletion`, {
+            const response = await fetchWithAuth(`${API_URL}/api/legal/user/request-deletion`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
@@ -95,11 +83,9 @@ const DataManagement = () => {
     const handleCancelDeletion = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/legal/user/cancel-deletion`, {
+            const response = await fetchWithAuth(`${API_URL}/api/legal/user/cancel-deletion`, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 }
             });
@@ -121,11 +107,9 @@ const DataManagement = () => {
     const handlePermanentDelete = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('token');
-            const response = await fetch(`${API_URL}/api/legal/user/account`, {
+            const response = await fetchWithAuth(`${API_URL}/api/legal/user/account`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ confirmDeletion: true, immediate: true })

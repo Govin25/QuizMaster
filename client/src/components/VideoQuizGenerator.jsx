@@ -4,7 +4,7 @@ import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 
 const VideoQuizGenerator = ({ onClose, onQuizCreated }) => {
-    const { token } = useAuth();
+    const { fetchWithAuth } = useAuth();
     const { showSuccess, showError } = useToast();
 
 
@@ -45,11 +45,10 @@ const VideoQuizGenerator = ({ onClose, onQuizCreated }) => {
 
         setIsValidating(true);
         try {
-            const response = await fetch(`${API_URL}/api/quizzes/video/validate`, {
+            const response = await fetchWithAuth(`${API_URL}/api/quizzes/video/validate`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({ url: videoUrl })
             });
@@ -84,11 +83,10 @@ const VideoQuizGenerator = ({ onClose, onQuizCreated }) => {
     const generateQuiz = async () => {
         setIsGenerating(true);
         try {
-            const response = await fetch(`${API_URL}/api/quizzes/video/generate`, {
+            const response = await fetchWithAuth(`${API_URL}/api/quizzes/video/generate`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     url: videoUrl,
@@ -174,11 +172,10 @@ const VideoQuizGenerator = ({ onClose, onQuizCreated }) => {
 
         setIsSaving(true);
         try {
-            const response = await fetch(`${API_URL}/api/quizzes/save-video-quiz`, {
+            const response = await fetchWithAuth(`${API_URL}/api/quizzes/save-video-quiz`, {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
+                    'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
                     title: quizData.title,

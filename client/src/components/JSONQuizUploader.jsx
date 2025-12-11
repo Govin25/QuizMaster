@@ -1,8 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { useToast } from '../context/ToastContext';
+import { useAuth } from '../context/AuthContext';
 
 const JSONQuizUploader = ({ onClose, onQuizCreated }) => {
     const { showSuccess, showError } = useToast();
+    const { fetchWithAuth } = useAuth();
     const [jsonText, setJsonText] = useState('');
     const [validationErrors, setValidationErrors] = useState([]);
     const [parsedQuizzes, setParsedQuizzes] = useState(null);
@@ -208,12 +210,11 @@ Please create a quiz about: [YOUR TOPIC HERE]`;
 
         setIsUploading(true);
         try {
-            const response = await fetch('/api/quizzes/upload-json', {
+            const response = await fetchWithAuth('/api/quizzes/upload-json', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                credentials: 'include',
                 body: JSON.stringify({ quizzes: parsedQuizzes })
             });
 

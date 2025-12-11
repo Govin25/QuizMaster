@@ -34,7 +34,12 @@ export const AuthProvider = ({ children }) => {
 
     const verifyAuth = async () => {
         try {
+            const token = localStorage.getItem('auth_token');
+            const headers = {};
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
             const response = await fetch(`${API_URL}/api/auth/verify`, {
+                headers,
                 credentials: 'include'  // Send cookies
             });
 
@@ -48,6 +53,8 @@ export const AuthProvider = ({ children }) => {
                 // Not authenticated
                 setUser(null);
                 localStorage.removeItem('user');
+                // Only clear token if verify explicitly fails (401)
+                if (response.status === 401) localStorage.removeItem('auth_token');
                 return false;
             }
         } catch (error) {
@@ -57,13 +64,19 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const login = useCallback((userData, isNewUser = false) => {
+    const login = useCallback((userData, isNewUser = false, token = null) => {
         // Set timestamp ref BEFORE setting user to ensure it's available
         loginTimestampRef.current = Date.now();
         console.log('Login successful, timestamp set:', loginTimestampRef.current);
 
         setUser(userData);
         localStorage.setItem('user', JSON.stringify(userData));
+
+        // Store token if provided (Header-Based Auth for iOS)
+        if (token) {
+            localStorage.setItem('auth_token', token);
+            console.log('Auth token stored in localStorage');
+        }
 
         // For new signups, set initial view to quiz-hub
         if (isNewUser) {
@@ -89,6 +102,7 @@ export const AuthProvider = ({ children }) => {
         loginTimestampRef.current = null; // Clear timestamp on logout
         setUser(null);
         localStorage.removeItem('user');
+        localStorage.removeItem('auth_token'); // Clear token
     }, []);
 
     const fetchWithAuth = useCallback(async (url, options = {}) => {
@@ -101,11 +115,17 @@ export const AuthProvider = ({ children }) => {
             headers['Content-Type'] = 'application/json';
         }
 
+        // Add Authorization header if token exists
+        const token = localStorage.getItem('auth_token');
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+
         try {
             const response = await fetch(url, {
                 ...options,
                 headers,
-                credentials: 'include'  // Always send cookies
+                credentials: 'include'  // Always send cookies (fallback)
             });
 
             // Only treat 401/403 as session expired if we think we're logged in
@@ -130,7 +150,12 @@ export const AuthProvider = ({ children }) => {
 
                 // Verify if session is truly expired by checking with server
                 try {
+                    // Pass token in verify request too
+                    const verifyHeaders = {};
+                    if (token) verifyHeaders['Authorization'] = `Bearer ${token}`;
+
                     const verifyResponse = await fetch(`${API_URL}/api/auth/verify`, {
+                        headers: verifyHeaders,
                         credentials: 'include'
                     });
 

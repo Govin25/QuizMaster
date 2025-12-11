@@ -76,8 +76,8 @@ const AuthForm = ({ defaultMode = 'signup' }) => {
             await new Promise(resolve => setTimeout(resolve, 100));
 
             // Pass isNewUser flag for signups to redirect to quiz-hub
-            // No longer need to pass token - it's in the cookie
-            login(data.user, !isLogin);
+            // Pass token for Header-Based Auth (iOS fix)
+            login(data.user, !isLogin, data.token);
         } catch (err) {
             setError(err.message);
         }

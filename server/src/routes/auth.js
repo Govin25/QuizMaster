@@ -76,7 +76,8 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
                 id: user.id,
                 username: user.username,
                 role: user.role
-            }
+            },
+            token // Return token for client-side storage (iOS fix)
         });
     } catch (err) {
         logger.error('User signup failed', {
@@ -152,7 +153,8 @@ router.post('/login', authLimiter, async (req, res) => {
                 id: user.id,
                 username: user.username,
                 role: user.role
-            }
+            },
+            token // Return token for client-side storage (iOS fix)
         });
     } catch (err) {
         console.error('❌ Login error:', err);

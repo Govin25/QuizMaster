@@ -122,7 +122,7 @@ const UserProfile = ({ onBack }) => {
 
     const fetchSocialProfile = async () => {
         try {
-            const res = await fetch(`${API_URL}/api/social/profile/${user.id}`);
+            const res = await fetchWithAuth(`${API_URL}/api/social/profile/${user.id}`);
             if (res.ok) {
                 const data = await res.json();
                 setSocialProfile(data);
