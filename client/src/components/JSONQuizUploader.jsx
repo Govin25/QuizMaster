@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
+import API_URL from '../config';
 
 const JSONQuizUploader = ({ onClose, onQuizCreated }) => {
     const { showSuccess, showError } = useToast();
@@ -210,7 +211,7 @@ Please create a quiz about: [YOUR TOPIC HERE]`;
 
         setIsUploading(true);
         try {
-            const response = await fetchWithAuth('/api/quizzes/upload-json', {
+            const response = await fetchWithAuth(`${API_URL}/api/quizzes/upload-json`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
