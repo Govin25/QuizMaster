@@ -23,6 +23,8 @@ const Quiz = require('./models/Quiz');
 const QuizResult = require('./models/QuizResult');
 
 const app = express();
+// Trust the first proxy (Railway load balancer)
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 
 // CORS configuration

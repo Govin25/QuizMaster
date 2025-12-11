@@ -17,8 +17,8 @@ if (SECRET_KEY === 'secret_key') {
 
 // Determine authentication security level based on environment
 // Railway sets RAILWAY_ENVIRONMENT, so we use that or NODE_ENV=production
-// const isProduction = process.env.NODE_ENV === 'production';
-const isProduction = true;
+const isProduction = process.env.NODE_ENV === 'production';
+// const isProduction = true;
 
 // Health check endpoint for Docker and monitoring
 router.get('/health', (req, res) => {
