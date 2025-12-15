@@ -1,6 +1,26 @@
-import React, { useState } from 'react';
+import React from 'react';
 
-const ConfirmDialog = ({ message, onConfirm, onCancel }) => {
+const ConfirmDialog = ({
+    isOpen,  // New prop: control visibility
+    onClose, // New prop: alternative to onCancel
+    onConfirm,
+    onCancel, // Old prop: kept for backwards compatibility
+    message,
+    title,   // New prop: custom title
+    confirmText, // New prop: custom confirm button text
+    confirmStyle // New prop: 'danger' or default
+}) => {
+    // Support both old and new API
+    const handleCancel = onClose || onCancel;
+    const dialogTitle = title || 'Confirm Deletion';
+    const buttonText = confirmText || 'Delete';
+    const isDanger = confirmStyle === 'danger' || !confirmStyle;
+
+    // Don't render if isOpen is explicitly false
+    if (isOpen === false) {
+        return null;
+    }
+
     return (
         <div style={{
             position: 'fixed',
@@ -37,9 +57,9 @@ const ConfirmDialog = ({ message, onConfirm, onCancel }) => {
                 <h3 style={{
                     margin: '0 0 1rem 0',
                     textAlign: 'center',
-                    color: '#ef4444'
+                    color: isDanger ? '#ef4444' : 'var(--primary)'
                 }}>
-                    Confirm Deletion
+                    {dialogTitle}
                 </h3>
                 <p style={{
                     margin: '0 0 2rem 0',
@@ -54,7 +74,7 @@ const ConfirmDialog = ({ message, onConfirm, onCancel }) => {
                     gap: '1rem'
                 }}>
                     <button
-                        onClick={onCancel}
+                        onClick={handleCancel}
                         style={{
                             flex: 1,
                             padding: '0.75rem',
@@ -74,16 +94,20 @@ const ConfirmDialog = ({ message, onConfirm, onCancel }) => {
                         style={{
                             flex: 1,
                             padding: '0.75rem',
-                            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3))',
-                            border: '1px solid rgba(239, 68, 68, 0.5)',
+                            background: isDanger
+                                ? 'linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.3))'
+                                : 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                            border: isDanger
+                                ? '1px solid rgba(239, 68, 68, 0.5)'
+                                : '1px solid var(--primary)',
                             borderRadius: '8px',
-                            color: '#ef4444',
+                            color: isDanger ? '#ef4444' : 'white',
                             cursor: 'pointer',
                             fontSize: '0.95rem',
                             fontWeight: '600'
                         }}
                     >
-                        Delete
+                        {buttonText}
                     </button>
                 </div>
             </div>

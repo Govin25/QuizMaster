@@ -14,9 +14,47 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
     const [selectedQuiz, setSelectedQuiz] = useState(null);
     const [reviewDetails, setReviewDetails] = useState({});
     const [deleteConfirm, setDeleteConfirm] = useState(null);
+    const [inLibrary, setInLibrary] = useState(new Set()); // Track which quizzes are in library
+
+    const fetchLibraryStatus = async () => {
+        try {
+            const response = await fetchWithAuth(`${API_URL}/api/quizzes/my-library`);
+            if (!response.ok) return;
+            const data = await response.json();
+
+            console.log('Library API response:', data);
+
+            // Handle different response formats
+            let quizzes = [];
+            if (Array.isArray(data)) {
+                quizzes = data;
+            } else if (data.quizzes && Array.isArray(data.quizzes)) {
+                quizzes = data.quizzes;
+            } else if (data.library && Array.isArray(data.library)) {
+                quizzes = data.library;
+            } else if (data.recentlyAdded || data.completed) {
+                // Combine recentlyAdded and completed arrays
+                const recentlyAdded = data.recentlyAdded || [];
+                const completed = data.completed || [];
+                quizzes = [...recentlyAdded, ...completed];
+            }
+
+            console.log('Extracted quizzes:', quizzes);
+
+            // Create a Set of quiz IDs that are in the library
+            const libraryQuizIds = new Set(quizzes.map(item => item.id || item.quiz_id));
+            console.log('Library quiz IDs:', Array.from(libraryQuizIds));
+
+            setInLibrary(libraryQuizIds);
+        } catch (err) {
+            // Silent fail - not critical
+            console.error('Failed to fetch library status:', err);
+        }
+    };
 
     useEffect(() => {
         fetchQuizzes();
+        fetchLibraryStatus();
     }, []);
 
     const fetchQuizzes = async () => {
@@ -264,11 +302,15 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                 const errorData = await response.json().catch(() => ({}));
                 if (errorData.error === 'Quiz already in library') {
                     showInfo('Quiz is already in your home!');
+                    // Update local state even if backend says it's already there
+                    setInLibrary(prev => new Set(prev).add(quizId));
                     return;
                 }
                 throw new Error(errorData.error || 'Failed to add quiz to home');
             }
             showSuccess('Quiz added to home successfully!');
+            // Update local state to reflect the quiz is now in library
+            setInLibrary(prev => new Set(prev).add(quizId));
         } catch (err) {
             showError(err.message);
         }
@@ -391,22 +433,31 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                             }
                             handleAddToHome(quiz.id);
                         }}
-                        disabled={(quiz.questionCount || 0) === 0}
+                        disabled={(quiz.questionCount || 0) === 0 || inLibrary.has(quiz.id)}
                         style={{
-                            background: (quiz.questionCount || 0) > 0
-                                ? 'rgba(255, 255, 255, 0.1)'
-                                : 'rgba(148, 163, 184, 0.1)',
-                            border: (quiz.questionCount || 0) > 0
-                                ? '1px solid rgba(255, 255, 255, 0.2)'
-                                : '1px solid rgba(148, 163, 184, 0.2)',
-                            color: (quiz.questionCount || 0) > 0 ? 'white' : '#94a3b8',
+                            background: inLibrary.has(quiz.id)
+                                ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))'
+                                : (quiz.questionCount || 0) > 0
+                                    ? 'rgba(255, 255, 255, 0.1)'
+                                    : 'rgba(148, 163, 184, 0.1)',
+                            border: inLibrary.has(quiz.id)
+                                ? '1px solid rgba(34, 197, 94, 0.3)'
+                                : (quiz.questionCount || 0) > 0
+                                    ? '1px solid rgba(255, 255, 255, 0.2)'
+                                    : '1px solid rgba(148, 163, 184, 0.2)',
+                            color: inLibrary.has(quiz.id)
+                                ? '#22c55e'
+                                : (quiz.questionCount || 0) > 0 ? 'white' : '#94a3b8',
                             padding: '0.75rem',
                             fontSize: '0.9rem',
-                            cursor: (quiz.questionCount || 0) > 0 ? 'pointer' : 'not-allowed',
+                            cursor: (quiz.questionCount || 0) > 0 && !inLibrary.has(quiz.id) ? 'pointer' : 'not-allowed',
                             opacity: (quiz.questionCount || 0) > 0 ? 1 : 0.6
                         }}
                     >
-                        🏠 Add to Home {(quiz.questionCount || 0) === 0 && '(No questions)'}
+                        {inLibrary.has(quiz.id)
+                            ? '✓ Added to Home'
+                            : `🏠 Add to Home${(quiz.questionCount || 0) === 0 ? ' (No questions)' : ''}`
+                        }
                     </button>
                 )}
 

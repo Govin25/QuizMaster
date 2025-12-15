@@ -972,7 +972,7 @@ router.post('/:id/questions', authenticateToken, validateQuestion, async (req, r
         const questionId = await Quiz.addQuestion(quizId, questionData, version);
 
         // Invalidate cache for this quiz to ensure fresh data
-        cache.delete(`quiz_${quizId}`);
+        cache.delete(`quiz_details_v2_${quizId}`);
 
         res.status(201).json({ id: questionId });
     } catch (err) {
@@ -1013,7 +1013,7 @@ router.put('/questions/:questionId', authenticateToken, async (req, res) => {
         });
 
         // Invalidate cache for this quiz
-        cache.delete(`quiz_${question.quiz.id}`);
+        cache.delete(`quiz_details_v2_${question.quiz.id}`);
 
         res.json({ message: 'Question updated successfully' });
     } catch (err) {
@@ -1048,8 +1048,8 @@ router.delete('/questions/:questionId', authenticateToken, async (req, res) => {
         // Delete the question
         await question.destroy();
 
-        // Invalidate cache for this quiz
-        cache.delete(`quiz_${question.quiz.id}`);
+        // Invalidate cache for this quiz (use same key as GET endpoint)
+        cache.delete(`quiz_details_v2_${question.quiz.id}`);
 
         res.json({ message: 'Question deleted successfully' });
     } catch (err) {
