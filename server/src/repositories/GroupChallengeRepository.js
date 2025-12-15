@@ -484,20 +484,22 @@ VALUES(?, 1, ?, ?, ?, ?, ?, ?)`,
     static getUserRooms(userId, filters = {}) {
         return new Promise((resolve, reject) => {
             let query = `
-        SELECT DISTINCT
-gc.*,
-    q.title as quiz_title,
-    q.category as quiz_category,
-    q.difficulty as quiz_difficulty,
-    u.username as leader_username,
-    gcp.rank as my_rank,
-    gcp.score as my_score
-        FROM group_challenges gc
-        JOIN quizzes q ON gc.quiz_id = q.id
-        JOIN users u ON gc.leader_id = u.id
-        JOIN group_challenge_participants gcp ON gc.id = gcp.group_challenge_id
-        WHERE gcp.user_id = ?
-    `;
+            SELECT DISTINCT
+                gc.*,
+                q.title as quiz_title,
+                q.category as quiz_category,
+                q.difficulty as quiz_difficulty,
+                u.username as leader_username,
+                gcp.rank as my_rank,
+                gcp.score as my_score,
+                (SELECT COUNT(*) FROM questions WHERE quiz_id = gc.quiz_id) as question_count,
+                (SELECT COUNT(*) FROM group_challenge_participants WHERE group_challenge_id = gc.id) as participant_count
+            FROM group_challenges gc
+            JOIN quizzes q ON gc.quiz_id = q.id
+            JOIN users u ON gc.leader_id = u.id
+            JOIN group_challenge_participants gcp ON gc.id = gcp.group_challenge_id
+            WHERE gcp.user_id = ?
+        `;
 
             const params = [userId];
 
@@ -505,7 +507,7 @@ gc.*,
                 if (Array.isArray(filters.status)) {
                     // Handle multiple statuses
                     const placeholders = filters.status.map(() => '?').join(',');
-                    query += ` AND gc.status IN(${ placeholders })`;
+                    query += ` AND gc.status IN(${placeholders})`;
                     params.push(...filters.status);
                 } else {
                     // Single status

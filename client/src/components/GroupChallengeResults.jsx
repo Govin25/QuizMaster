@@ -277,6 +277,23 @@ const GroupChallengeResults = ({ roomId, onClose, onViewQuiz }) => {
                     })}
             </div>
 
+            {/* Back Button */}
+            <button
+                onClick={onClose}
+                style={{
+                    width: '100%',
+                    background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                    border: 'none',
+                    color: 'white',
+                    padding: '0.75rem',
+                    fontSize: '0.95rem',
+                    cursor: 'pointer',
+                    borderRadius: '8px',
+                    fontWeight: '600'
+                }}
+            >
+                🎯 Back to Challenges
+            </button>
 
         </div>
     );

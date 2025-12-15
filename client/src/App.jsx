@@ -261,9 +261,11 @@ const AppContent = () => {
     setView('challenge-game');
   };
 
-  const viewChallengeResults = (challengeId) => {
+  const viewChallengeResults = (challengeId, onCloseCallback) => {
     setActiveChallengeId(challengeId);
     setView('challenge-results');
+    // Store callback for later use
+    window.__challengeResultsCloseCallback = onCloseCallback;
   };
 
   return (
@@ -532,7 +534,14 @@ const AppContent = () => {
       {view === 'challenge-results' && activeChallengeId && (
         <ChallengeResults
           challengeId={activeChallengeId}
-          onClose={() => setView('challenges')}
+          onClose={() => {
+            // Call the stored callback if it exists
+            if (window.__challengeResultsCloseCallback) {
+              window.__challengeResultsCloseCallback();
+              window.__challengeResultsCloseCallback = null;
+            }
+            setView('challenges');
+          }}
         />
       )}
 
@@ -546,9 +555,11 @@ const AppContent = () => {
               setView('group-lobby');
             }}
             onCreate={() => setShowGroupChallengeCreator(true)}
-            onShowResults={(roomId) => {
+            onShowResults={(roomId, onCloseCallback) => {
               setActiveGroupRoomId(roomId);
               setView('group-results');
+              // Store callback for later use
+              window.__groupChallengeResultsCloseCallback = onCloseCallback;
             }}
           />
           {showGroupChallengeCreator && (
@@ -585,7 +596,14 @@ const AppContent = () => {
       {view === 'group-results' && activeGroupRoomId && (
         <GroupChallengeResults
           roomId={activeGroupRoomId}
-          onClose={() => setView('group-challenges')}
+          onClose={() => {
+            // Call the stored callback if it exists
+            if (window.__groupChallengeResultsCloseCallback) {
+              window.__groupChallengeResultsCloseCallback();
+              window.__groupChallengeResultsCloseCallback = null;
+            }
+            setView('group-challenges');
+          }}
           onViewQuiz={(quizId) => {
             setActiveQuizId(quizId);
             setView('attempts');

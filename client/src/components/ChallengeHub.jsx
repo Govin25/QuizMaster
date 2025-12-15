@@ -9,7 +9,12 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
     const { user, fetchWithAuth } = useAuth();
     const { showSuccess, showError } = useToast();
 
-    const [activeTab, setActiveTab] = useState('pending');
+    const [activeTab, setActiveTab] = useState(() => {
+        // Check if returning from results with a tab preference
+        const storedTab = window.__challengeHubActiveTab;
+        delete window.__challengeHubActiveTab; // Clear it after reading
+        return storedTab || 'pending';
+    });
     const [challenges, setChallenges] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -462,7 +467,7 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
                                 {challenge.opponent_score}
                             </div>
                             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                {challenge.opponent_username}
+                                {isCreator ? challenge.opponent_username : challenge.creator_username}
                             </div>
                         </div>
                     </div>
@@ -549,7 +554,9 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
                     {isCompleted && (
                         <>
                             <button
-                                onClick={() => onViewResults(challenge.id)}
+                                onClick={() => onViewResults(challenge.id, () => {
+                                    window.__challengeHubActiveTab = 'completed';
+                                })}
                                 style={{
                                     flex: 1,
                                     background: 'rgba(99, 102, 241, 0.2)',

@@ -8,7 +8,12 @@ const GroupChallengeHub = ({ onJoinRoom, onCreate, onShowResults }) => {
     const { user, fetchWithAuth } = useAuth();
     const { showSuccess, showError } = useToast();
 
-    const [activeTab, setActiveTab] = useState('active');
+    const [activeTab, setActiveTab] = useState(() => {
+        // Check if returning from results with a tab preference
+        const storedTab = window.__groupChallengeHubActiveTab;
+        delete window.__groupChallengeHubActiveTab; // Clear it after reading
+        return storedTab || 'active';
+    });
     const [rooms, setRooms] = useState([]);
     const [stats, setStats] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -283,10 +288,10 @@ const GroupChallengeHub = ({ onJoinRoom, onCreate, onShowResults }) => {
                         </div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-                                <span>👥 {room.participant_count || 0}/{room.max_participants} Players</span>
+                                <span>👥 {room.participants?.length || room.participant_count || 0}/{room.max_participants} Players</span>
                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span>🎯 {room.quiz_question_count || 0} Questions</span>
+                                <span>🎯 {room.question_count || room.quiz_question_count || 0} Questions</span>
                             </div>
                         </div>
                     </div>
@@ -296,7 +301,9 @@ const GroupChallengeHub = ({ onJoinRoom, onCreate, onShowResults }) => {
                 <button
                     onClick={() => {
                         if (isCompleted) {
-                            onShowResults(room.id);
+                            onShowResults(room.id, () => {
+                                window.__groupChallengeHubActiveTab = 'completed';
+                            });
                         } else {
                             onJoinRoom(room.id, room.quiz_id);
                         }
