@@ -366,7 +366,7 @@ class QuizRepository {
     /**
      * Search quizzes for challenge creation
      * Returns public approved quizzes + user's own quizzes
-     * @param {string} searchQuery - Search term
+     * @param {string} searchQuery - Search term (can be ID, title, or category)
      * @param {number} userId - Current user ID
      * @param {string} filter - 'all' or 'mine'
      * @returns {Promise<Array>}
@@ -374,26 +374,54 @@ class QuizRepository {
     async searchForChallenge(searchQuery, userId, filter = 'all') {
         const searchPattern = `%${searchQuery}%`;
 
+        // Check if search query is a pure number (potential ID search)
+        const isNumeric = /^\d+$/.test(searchQuery.trim());
+        const numericId = isNumeric ? parseInt(searchQuery.trim()) : null;
+
         let whereCondition;
 
         if (filter === 'mine') {
             // Only user's own quizzes
+            const orConditions = [
+                { title: { [Op.like]: searchPattern } },
+                { category: { [Op.like]: searchPattern } }
+            ];
+
+            // Add ID search if query is numeric - use CAST to convert ID to string for LIKE comparison
+            if (numericId !== null) {
+                orConditions.push(
+                    sequelize.where(
+                        sequelize.cast(sequelize.col('id'), 'VARCHAR'),
+                        { [Op.like]: `%${searchQuery.trim()}%` }
+                    )
+                );
+            }
+
             whereCondition = {
                 creator_id: userId,
-                [Op.or]: [
-                    { title: { [Op.like]: searchPattern } },
-                    { category: { [Op.like]: searchPattern } }
-                ]
+                [Op.or]: orConditions
             };
         } else {
             // Public approved quizzes OR user's own quizzes
+            const searchConditions = [
+                { title: { [Op.like]: searchPattern } },
+                { category: { [Op.like]: searchPattern } }
+            ];
+
+            // Add ID search if query is numeric - use CAST to convert ID to string for LIKE comparison
+            if (numericId !== null) {
+                searchConditions.push(
+                    sequelize.where(
+                        sequelize.cast(sequelize.col('id'), 'VARCHAR'),
+                        { [Op.like]: `%${searchQuery.trim()}%` }
+                    )
+                );
+            }
+
             whereCondition = {
                 [Op.and]: [
                     {
-                        [Op.or]: [
-                            { title: { [Op.like]: searchPattern } },
-                            { category: { [Op.like]: searchPattern } }
-                        ]
+                        [Op.or]: searchConditions
                     },
                     {
                         [Op.or]: [

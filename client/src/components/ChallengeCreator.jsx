@@ -172,7 +172,7 @@ const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search quizzes..."
+                        placeholder="Search by Quiz ID, title, or category..."
                         style={{
                             width: '100%',
                             padding: '0.75rem 2.5rem 0.75rem 1rem',
@@ -289,7 +289,17 @@ const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                                 <div style={{ flex: 1 }}>
                                     <h4 style={{ margin: '0 0 0.5rem 0' }}>{quiz.title}</h4>
-                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                                        <span style={{
+                                            color: 'var(--text-muted)',
+                                            fontSize: '0.75rem',
+                                            padding: '0.25rem 0.5rem',
+                                            fontFamily: 'monospace',
+                                            background: 'rgba(99, 102, 241, 0.1)',
+                                            borderRadius: '6px'
+                                        }}>
+                                            🆔 {quiz.id}
+                                        </span>
                                         <span style={{
                                             background: 'rgba(99, 102, 241, 0.2)',
                                             border: '1px solid rgba(99, 102, 241, 0.3)',

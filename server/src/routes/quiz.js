@@ -76,6 +76,120 @@ router.get('/public', async (req, res) => {
     }
 });
 
+// Get recommended quizzes for user
+router.get('/recommended', authenticateToken, async (req, res) => {
+    try {
+        const recommendationService = require('../services/recommendationService');
+        const userId = req.user.id;
+        const limit = parseInt(req.query.limit) || 10;
+        const cacheKey = `recommendations_${userId}`;
+
+        // Check cache first
+        if (cache.has(cacheKey)) {
+            return res.json(cache.get(cacheKey));
+        }
+
+        const recommendations = await recommendationService.getRecommendations(userId, limit);
+
+        // Cache for 3 minutes
+        cache.set(cacheKey, recommendations, 3 * 60 * 1000);
+
+        res.json(recommendations);
+    } catch (err) {
+        logger.error('Failed to get recommendations', {
+            error: err,
+            context: { userId: req.user.id },
+            requestId: req.requestId
+        });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
+    }
+});
+
+// Get quizzes grouped by category
+router.get('/by-category', async (req, res) => {
+    try {
+        const recommendationService = require('../services/recommendationService');
+        const limit = parseInt(req.query.limit) || 6;
+        const offset = parseInt(req.query.offset) || 0;
+        const cacheKey = `quizzes_by_category_${limit}_${offset}`;
+
+        // Check cache first
+        if (cache.has(cacheKey)) {
+            return res.json(cache.get(cacheKey));
+        }
+
+        const quizzesByCategory = await recommendationService.getQuizzesByCategory(limit, offset);
+
+        // Cache for 5 minutes
+        cache.set(cacheKey, quizzesByCategory, 5 * 60 * 1000);
+
+        res.json(quizzesByCategory);
+    } catch (err) {
+        logger.error('Failed to get quizzes by category', {
+            error: err,
+            requestId: req.requestId
+        });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
+    }
+});
+
+// Get all categories
+router.get('/categories', async (req, res) => {
+    try {
+        const recommendationService = require('../services/recommendationService');
+        const cacheKey = 'all_categories';
+
+        // Check cache first
+        if (cache.has(cacheKey)) {
+            return res.json(cache.get(cacheKey));
+        }
+
+        const categories = await recommendationService.getAllCategories();
+
+        // Cache for 10 minutes
+        cache.set(cacheKey, categories, 10 * 60 * 1000);
+
+        res.json(categories);
+    } catch (err) {
+        logger.error('Failed to get categories', {
+            error: err,
+            requestId: req.requestId
+        });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
+    }
+});
+
+// Get quizzes from a specific category (with pagination)
+router.get('/by-category/:category', async (req, res) => {
+    try {
+        const recommendationService = require('../services/recommendationService');
+        const { category } = req.params;
+        const limit = parseInt(req.query.limit) || 10;
+        const offset = parseInt(req.query.offset) || 0;
+        const cacheKey = `quizzes_category_${category}_${limit}_${offset}`;
+
+        // Check cache first
+        if (cache.has(cacheKey)) {
+            return res.json(cache.get(cacheKey));
+        }
+
+        const quizzes = await recommendationService.getQuizzesBySpecificCategory(category, limit, offset);
+
+        // Cache for 5 minutes
+        cache.set(cacheKey, quizzes, 5 * 60 * 1000);
+
+        res.json(quizzes);
+    } catch (err) {
+        logger.error('Failed to get quizzes by category', {
+            error: err,
+            context: { category: req.params.category },
+            requestId: req.requestId
+        });
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
+    }
+});
+
+
 // Get user's quizzes
 router.get('/my-quizzes', authenticateToken, async (req, res) => {
     try {

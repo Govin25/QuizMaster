@@ -9,18 +9,35 @@ import PublicUserProfile from './PublicUserProfile';
 const QuizHub = ({ onBack, onViewProfile }) => {
     const { fetchWithAuth } = useAuth();
     const { showSuccess, showError } = useToast();
-    const [quizzes, setQuizzes] = useState([]);
-    const [filteredQuizzes, setFilteredQuizzes] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+
+    // State for recommendations
+    const [recommendations, setRecommendations] = useState([]);
+    const [loadingRecommendations, setLoadingRecommendations] = useState(true);
+    const [hasRecommendations, setHasRecommendations] = useState(false);
+
+    // State for category-based quizzes
+    const [quizzesByCategory, setQuizzesByCategory] = useState({});
+    const [loadingCategories, setLoadingCategories] = useState(true);
+    const [expandedCategories, setExpandedCategories] = useState({});
     const [searchQuery, setSearchQuery] = useState('');
+    const [filteredQuizzes, setFilteredQuizzes] = useState({});
+    const [categoryOffsets, setCategoryOffsets] = useState({});
+    const [loadingMoreByCategory, setLoadingMoreByCategory] = useState({});
+    const [hasMoreByCategory, setHasMoreByCategory] = useState({});
+
+    // Other state
     const [addedQuizzes, setAddedQuizzes] = useState(new Set());
     const [selectedQuiz, setSelectedQuiz] = useState(null);
-    const [selectedQuizSource, setSelectedQuizSource] = useState(null); // 'trending' or 'browse'
+    const [selectedQuizSource, setSelectedQuizSource] = useState(null);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        fetchPublicQuizzes();
-        fetchUserLibrary();
+        const loadInitialData = async () => {
+            await fetchUserLibrary();
+            await fetchRecommendations();
+            await fetchQuizzesByCategory();
+        };
+        loadInitialData();
 
         // Listen for quiz added events from other components
         const handleQuizAdded = (event) => {
@@ -33,33 +50,172 @@ const QuizHub = ({ onBack, onViewProfile }) => {
         };
     }, []);
 
+    // Apply library filtering whenever addedQuizzes or quizzesByCategory changes
     useEffect(() => {
-        if (searchQuery.trim() === '') {
-            setFilteredQuizzes(quizzes);
-        } else {
-            const filtered = quizzes.filter(quiz =>
-                quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                quiz.category.toLowerCase().includes(searchQuery.toLowerCase())
-            );
-            setFilteredQuizzes(filtered);
+        if (Object.keys(quizzesByCategory).length > 0 && !searchQuery.trim()) {
+            applyLibraryFilter();
         }
-    }, [searchQuery, quizzes]);
+    }, [addedQuizzes, quizzesByCategory]);
 
-    const fetchPublicQuizzes = async () => {
+    const applyLibraryFilter = () => {
+        const filtered = {};
+        Object.entries(quizzesByCategory).forEach(([category, quizzes]) => {
+            const nonLibraryQuizzes = quizzes.filter(quiz => !addedQuizzes.has(quiz.id));
+            if (nonLibraryQuizzes.length > 0) {
+                filtered[category] = nonLibraryQuizzes;
+            }
+        });
+        setFilteredQuizzes(filtered);
+    };
+
+    const fetchRecommendations = async () => {
         try {
-            const response = await fetchWithAuth(`${API_URL}/api/quizzes/public`);
+            setLoadingRecommendations(true);
+            const response = await fetchWithAuth(`${API_URL}/api/quizzes/recommended?limit=10`);
+            if (!response.ok) {
+                if (response.status === 401) {
+                    throw new Error('Session expired');
+                }
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || `Failed to fetch recommendations (${response.status})`);
+            }
+            const data = await response.json();
+            setRecommendations(data);
+            setHasRecommendations(data.length > 0);
+        } catch (err) {
+            console.error('Error fetching recommendations:', err);
+            setHasRecommendations(false);
+        } finally {
+            setLoadingRecommendations(false);
+        }
+    };
+
+    const fetchQuizzesByCategory = async () => {
+        try {
+            setLoadingCategories(true);
+            const response = await fetchWithAuth(`${API_URL}/api/quizzes/by-category?limit=10`);
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || `Failed to fetch quizzes (${response.status})`);
             }
             const data = await response.json();
-            setQuizzes(data);
-            setFilteredQuizzes(data);
+            setQuizzesByCategory(data);
+            // Don't set filteredQuizzes here - let the useEffect handle it
+
+            // Initialize offsets for each category
+            const initialOffsets = {};
+            const initialHasMore = {};
+            Object.keys(data).forEach(category => {
+                initialOffsets[category] = 10; // We've loaded first 10
+                initialHasMore[category] = data[category].length === 10; // Has more if we got exactly 10
+            });
+            setCategoryOffsets(initialOffsets);
+            setHasMoreByCategory(initialHasMore);
         } catch (err) {
             setError(`${err.message}`);
         } finally {
-            setLoading(false);
+            setLoadingCategories(false);
         }
+    };
+
+    const loadMoreQuizzes = async (category) => {
+        try {
+            setLoadingMoreByCategory(prev => ({ ...prev, [category]: true }));
+            const currentOffset = categoryOffsets[category] || 0;
+
+            const response = await fetchWithAuth(
+                `${API_URL}/api/quizzes/by-category/${encodeURIComponent(category)}?limit=10&offset=${currentOffset}`
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to load more quizzes');
+            }
+
+            const newQuizzes = await response.json();
+
+            if (newQuizzes.length > 0) {
+                // Add new quizzes to the category
+                setQuizzesByCategory(prev => ({
+                    ...prev,
+                    [category]: [...(prev[category] || []), ...newQuizzes]
+                }));
+
+                // Update filtered quizzes if not searching
+                if (!searchQuery.trim()) {
+                    setFilteredQuizzes(prev => ({
+                        ...prev,
+                        [category]: [...(prev[category] || []), ...newQuizzes]
+                    }));
+                }
+
+                // Update offset
+                setCategoryOffsets(prev => ({
+                    ...prev,
+                    [category]: currentOffset + newQuizzes.length
+                }));
+
+                // Update hasMore flag
+                setHasMoreByCategory(prev => ({
+                    ...prev,
+                    [category]: newQuizzes.length === 10 // Has more if we got exactly 10
+                }));
+            } else {
+                // No more quizzes available
+                setHasMoreByCategory(prev => ({
+                    ...prev,
+                    [category]: false
+                }));
+            }
+        } catch (err) {
+            showError(err.message);
+        } finally {
+            setLoadingMoreByCategory(prev => ({ ...prev, [category]: false }));
+        }
+    };
+
+    // Filter quizzes based on search query
+    const handleSearch = (query) => {
+        setSearchQuery(query);
+
+        if (!query.trim()) {
+            // Filter out library quizzes when not searching
+            const filtered = {};
+            Object.entries(quizzesByCategory).forEach(([category, quizzes]) => {
+                const nonLibraryQuizzes = quizzes.filter(quiz => !addedQuizzes.has(quiz.id));
+                if (nonLibraryQuizzes.length > 0) {
+                    filtered[category] = nonLibraryQuizzes;
+                }
+            });
+            setFilteredQuizzes(filtered);
+            return;
+        }
+
+        const lowerQuery = query.toLowerCase().trim();
+        const filtered = {};
+
+        Object.entries(quizzesByCategory).forEach(([category, quizzes]) => {
+            const matchedQuizzes = quizzes.filter(quiz => {
+                // Exclude library quizzes
+                if (addedQuizzes.has(quiz.id)) return false;
+
+                // Search by ID (exact or partial match)
+                const idMatch = quiz.id.toString().includes(lowerQuery);
+
+                // Search by title
+                const titleMatch = quiz.title.toLowerCase().includes(lowerQuery);
+
+                // Search by category
+                const categoryMatch = quiz.category.toLowerCase().includes(lowerQuery);
+
+                return idMatch || titleMatch || categoryMatch;
+            });
+
+            if (matchedQuizzes.length > 0) {
+                filtered[category] = matchedQuizzes;
+            }
+        });
+
+        setFilteredQuizzes(filtered);
     };
 
     const fetchUserLibrary = async () => {
@@ -107,18 +263,183 @@ const QuizHub = ({ onBack, onViewProfile }) => {
         }
     };
 
-    if (loading) {
+    const toggleCategory = (category) => {
+        setExpandedCategories(prev => ({
+            ...prev,
+            [category]: !prev[category]
+        }));
+    };
+
+    // Quiz Card Component (reusable)
+    const QuizCard = ({ quiz, source = 'browse' }) => {
+        const isAdded = addedQuizzes.has(quiz.id);
         return (
-            <div className="glass-card" style={{ maxWidth: '1200px', width: '100%' }}>
-                <h2>Quiz Hub</h2>
-                <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))' }}>
-                    {[1, 2, 3].map(i => (
-                        <div key={i} className="skeleton" style={{ height: '200px' }} />
-                    ))}
+            <div
+                className="hover-lift"
+                style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    borderRadius: '16px',
+                    padding: '1.5rem',
+                    border: '1px solid var(--glass-border)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                }}
+                onClick={() => handleViewDetails(quiz.id, source)}
+                onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--primary)';
+                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(99, 102, 241, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = 'var(--glass-border)';
+                    e.currentTarget.style.boxShadow = 'none';
+                }}
+            >
+                {/* Title */}
+                <h3 style={{
+                    margin: 0,
+                    fontSize: '1.25rem',
+                    color: 'white',
+                    lineHeight: '1.4',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    wordBreak: 'break-word'
+                }}>
+                    {quiz.title}
+                </h3>
+
+                {/* Meta Info */}
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <span style={{
+                        background: 'rgba(99, 102, 241, 0.2)',
+                        border: '1px solid rgba(99, 102, 241, 0.3)',
+                        color: '#a5b4fc',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '12px',
+                        fontSize: '0.75rem',
+                        fontWeight: '600'
+                    }}>
+                        {quiz.category}
+                    </span>
+                    <span style={{
+                        background: 'rgba(251, 146, 60, 0.2)',
+                        border: '1px solid rgba(251, 146, 60, 0.3)',
+                        color: '#fb923c',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '12px',
+                        fontSize: '0.75rem',
+                        fontWeight: '600'
+                    }}>
+                        {quiz.difficulty}
+                    </span>
                 </div>
+
+                {/* Creator Info */}
+                {quiz.creator && (
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        color: 'var(--text-muted)',
+                        fontSize: '0.85rem'
+                    }}>
+                        <span>👤</span>
+                        <span>by {quiz.creator.username}</span>
+                    </div>
+                )}
+
+                {/* Quiz ID */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.85rem'
+                }}>
+                    <span>🆔</span>
+                    <span>ID: {quiz.id}</span>
+                </div>
+
+                {/* Question Count */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.9rem'
+                }}>
+                    <span>📝</span>
+                    <span>{quiz.questionCount || quiz.questions?.length || 0} Questions</span>
+                </div>
+
+                {/* Like Count */}
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.9rem'
+                }}>
+                    <span style={{ fontSize: '1.1rem' }}>❤️</span>
+                    <span>{parseInt(quiz.likesCount) || 0} {parseInt(quiz.likesCount) === 1 ? 'Like' : 'Likes'}</span>
+                </div>
+
+                {/* Click to view hint */}
+                <div style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--text-muted)',
+                    fontStyle: 'italic',
+                    textAlign: 'center',
+                    marginTop: 'auto',
+                    paddingTop: '0.5rem',
+                    borderTop: '1px solid rgba(255, 255, 255, 0.05)'
+                }}>
+                    👁️ Click to view details
+                </div>
+
+                {/* Action Button */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleAddToLibrary(quiz.id);
+                    }}
+                    disabled={isAdded}
+                    style={{
+                        width: '100%',
+                        background: isAdded
+                            ? 'rgba(34, 197, 94, 0.2)'
+                            : 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                        border: isAdded ? '1px solid rgba(34, 197, 94, 0.3)' : 'none',
+                        color: isAdded ? '#22c55e' : 'white',
+                        padding: '0.75rem',
+                        fontSize: '0.95rem',
+                        borderRadius: '12px',
+                        fontWeight: '600',
+                        cursor: isAdded ? 'default' : 'pointer',
+                        transition: 'all 0.3s',
+                        opacity: isAdded ? 0.7 : 1
+                    }}
+                    onMouseEnter={(e) => {
+                        if (!isAdded) {
+                            e.target.style.transform = 'scale(1.02)';
+                            e.target.style.boxShadow = '0 8px 20px rgba(99, 102, 241, 0.3)';
+                        }
+                    }}
+                    onMouseLeave={(e) => {
+                        e.target.style.transform = 'scale(1)';
+                        e.target.style.boxShadow = 'none';
+                    }}
+                >
+                    {isAdded ? '✓ Added to Home' : '+ Add to Home'}
+                </button>
             </div>
         );
-    }
+    };
 
     if (error) {
         return (
@@ -141,7 +462,6 @@ const QuizHub = ({ onBack, onViewProfile }) => {
     }
 
     // Quiz Details Modal
-
     if (selectedQuiz) {
         const isAdded = addedQuizzes.has(selectedQuiz.id);
         const backText = selectedQuizSource === 'trending' ? '← Back to Trending' : '← Back to Quiz Hub';
@@ -202,10 +522,20 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                     </div>
 
                     {selectedQuiz.creator && (
-                        <div style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '1.1rem', marginBottom: '0.5rem' }}>
                             Created by <span style={{ color: 'white', fontWeight: '600' }}>{selectedQuiz.creator.username}</span>
                         </div>
                     )}
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+                        Quiz ID: <span style={{
+                            color: '#a5b4fc',
+                            fontWeight: '600',
+                            background: 'rgba(99, 102, 241, 0.1)',
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '6px',
+                            fontFamily: 'monospace'
+                        }}>{selectedQuiz.id}</span>
+                    </div>
                 </div>
 
                 {/* Stats Grid */}
@@ -326,7 +656,6 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                 </div>
             </div>
         );
-
     }
 
     return (
@@ -363,19 +692,60 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                 <TopCreators onViewProfile={onViewProfile} />
             </div>
 
-            {/* Browse All Quizzes Section */}
-            <div style={{
-                marginBottom: '2rem',
-                position: 'relative'
-            }}>
-                <h2 style={{ marginBottom: '1.5rem' }}>🔍 Browse All Quizzes</h2>
+            {/* Recommended for You Section */}
+            {hasRecommendations && (
+                <div style={{ marginBottom: '3rem' }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        marginBottom: '1.5rem'
+                    }}>
+                        <h2 style={{ margin: 0 }}>✨ Recommended for You</h2>
+                        <span style={{
+                            background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                            color: 'white',
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '12px',
+                            fontSize: '0.75rem',
+                            fontWeight: '600'
+                        }}>
+                            Personalized
+                        </span>
+                    </div>
+
+                    {loadingRecommendations ? (
+                        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="skeleton" style={{ height: '350px', borderRadius: '16px' }} />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="grid" style={{
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                            gap: '1.5rem'
+                        }}>
+                            {recommendations.map(quiz => (
+                                <QuizCard key={quiz.id} quiz={quiz} source="recommended" />
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Browse by Category Section */}
+            <div style={{ marginBottom: '2rem' }}>
+                <h2 style={{ marginBottom: '1.5rem', textAlign: 'left' }}>📚 Browse by Category</h2>
+
+                {/* Search Box */}
                 <div style={{
                     position: 'relative',
                     background: 'rgba(15, 23, 42, 0.5)',
                     borderRadius: '12px',
                     border: '1px solid var(--glass-border)',
                     overflow: 'hidden',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    marginBottom: '2rem'
                 }}
                     onFocus={(e) => {
                         e.currentTarget.style.borderColor = 'var(--primary)';
@@ -397,9 +767,9 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                     </span>
                     <input
                         type="text"
-                        placeholder="Search quizzes by title or category..."
+                        placeholder="Search by Quiz ID, title, or category..."
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => handleSearch(e.target.value)}
                         style={{
                             width: '100%',
                             padding: '1rem 1rem 1rem 3rem',
@@ -411,185 +781,134 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                             margin: 0
                         }}
                     />
+                    {searchQuery && (
+                        <button
+                            onClick={() => handleSearch('')}
+                            style={{
+                                position: 'absolute',
+                                right: '1rem',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text-muted)',
+                                fontSize: '1.2rem',
+                                cursor: 'pointer',
+                                padding: '0.5rem'
+                            }}
+                        >
+                            ✕
+                        </button>
+                    )}
                 </div>
-            </div>
 
-            {/* Quiz Grid */}
-            {filteredQuizzes.length === 0 ? (
-                <div style={{
-                    textAlign: 'center',
-                    padding: '4rem 2rem',
-                    color: 'var(--text-muted)'
-                }}>
-                    <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📚</div>
-                    <h3>No quizzes found</h3>
-                    <p>{searchQuery ? 'Try a different search term' : 'No public quizzes available yet'}</p>
-                </div>
-            ) : (
-                <div className="grid" style={{
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                    gap: '1.5rem'
-                }}>
-                    {filteredQuizzes.map(quiz => {
-                        const isAdded = addedQuizzes.has(quiz.id);
-                        return (
-                            <div
-                                key={quiz.id}
-                                className="hover-lift"
-                                style={{
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    borderRadius: '16px',
-                                    padding: '1.5rem',
-                                    border: '1px solid var(--glass-border)',
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: '1rem',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.3s ease'
-                                }}
-                                onClick={() => handleViewDetails(quiz.id)}
-                                onMouseEnter={(e) => {
-                                    e.currentTarget.style.borderColor = 'var(--primary)';
-                                    e.currentTarget.style.boxShadow = '0 8px 24px rgba(99, 102, 241, 0.2)';
-                                }}
-                                onMouseLeave={(e) => {
-                                    e.currentTarget.style.borderColor = 'var(--glass-border)';
-                                    e.currentTarget.style.boxShadow = 'none';
-                                }}
-                            >
-                                {/* Title */}
-                                <h3 style={{
-                                    margin: 0,
-                                    fontSize: '1.25rem',
-                                    color: 'white',
-                                    lineHeight: '1.4',
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: 'vertical',
-                                    wordBreak: 'break-word'
-                                }}>
-                                    {quiz.title}
-                                </h3>
-
-                                {/* Meta Info */}
-                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    <span style={{
-                                        background: 'rgba(99, 102, 241, 0.2)',
-                                        border: '1px solid rgba(99, 102, 241, 0.3)',
-                                        color: '#a5b4fc',
-                                        padding: '0.25rem 0.75rem',
-                                        borderRadius: '12px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: '600'
-                                    }}>
-                                        {quiz.category}
-                                    </span>
-                                    <span style={{
-                                        background: 'rgba(251, 146, 60, 0.2)',
-                                        border: '1px solid rgba(251, 146, 60, 0.3)',
-                                        color: '#fb923c',
-                                        padding: '0.25rem 0.75rem',
-                                        borderRadius: '12px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: '600'
-                                    }}>
-                                        {quiz.difficulty}
-                                    </span>
+                {loadingCategories ? (
+                    <div style={{ display: 'grid', gap: '2rem' }}>
+                        {[1, 2, 3].map(i => (
+                            <div key={i}>
+                                <div className="skeleton" style={{ height: '40px', width: '200px', marginBottom: '1rem', borderRadius: '8px' }} />
+                                <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                    {[1, 2].map(j => (
+                                        <div key={j} className="skeleton" style={{ height: '350px', borderRadius: '16px' }} />
+                                    ))}
                                 </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : Object.keys(filteredQuizzes).length === 0 ? (
+                    <div style={{
+                        textAlign: 'center',
+                        padding: '4rem 2rem',
+                        color: 'var(--text-muted)'
+                    }}>
+                        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📚</div>
+                        <h3>{searchQuery ? 'No quizzes found' : 'No quizzes available yet'}</h3>
+                        <p>{searchQuery ? 'Try a different search term or Quiz ID' : 'Check back soon for new quizzes!'}</p>
+                    </div>
+                ) : (
+                    <div style={{ display: 'grid', gap: '3rem' }}>
+                        {Object.entries(filteredQuizzes).map(([category, quizzes]) => {
 
-                                {/* Creator Info */}
-                                {quiz.creator && (
+                            return (
+                                <div key={category} style={{
+                                    background: 'rgba(255, 255, 255, 0.02)',
+                                    borderRadius: '16px',
+                                    padding: '2rem',
+                                    border: '1px solid var(--glass-border)'
+                                }}>
+                                    {/* Category Header */}
                                     <div style={{
                                         display: 'flex',
+                                        justifyContent: 'space-between',
                                         alignItems: 'center',
-                                        gap: '0.5rem',
-                                        color: 'var(--text-muted)',
-                                        fontSize: '0.85rem'
+                                        marginBottom: '1.5rem'
                                     }}>
-                                        <span>👤</span>
-                                        <span>by {quiz.creator.username}</span>
+                                        <h3 style={{
+                                            margin: 0,
+                                            fontSize: '1.5rem',
+                                            background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)',
+                                            WebkitBackgroundClip: 'text',
+                                            WebkitTextFillColor: 'transparent'
+                                        }}>
+                                            {category}
+                                        </h3>
+                                        <span style={{
+                                            color: 'var(--text-muted)',
+                                            fontSize: '0.9rem'
+                                        }}>
+                                            {quizzes.length} {quizzes.length === 1 ? 'quiz' : 'quizzes'}
+                                        </span>
                                     </div>
-                                )}
 
-                                {/* Question Count */}
-                                <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    color: 'var(--text-muted)',
-                                    fontSize: '0.9rem'
-                                }}>
-                                    <span>📝</span>
-                                    <span>{quiz.questionCount || 0} Questions</span>
+                                    {/* Quiz Grid */}
+                                    <div className="grid" style={{
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                                        gap: '1.5rem',
+                                        marginBottom: hasMoreByCategory[category] ? '1.5rem' : 0
+                                    }}>
+                                        {quizzes.map(quiz => (
+                                            <QuizCard key={quiz.id} quiz={quiz} source="category" />
+                                        ))}
+                                    </div>
+
+                                    {/* View More Button */}
+                                    {!searchQuery && hasMoreByCategory[category] && (
+                                        <button
+                                            onClick={() => loadMoreQuizzes(category)}
+                                            disabled={loadingMoreByCategory[category]}
+                                            style={{
+                                                width: '100%',
+                                                background: 'rgba(255, 255, 255, 0.05)',
+                                                border: '1px solid var(--glass-border)',
+                                                color: 'white',
+                                                padding: '0.75rem',
+                                                fontSize: '0.95rem',
+                                                borderRadius: '12px',
+                                                fontWeight: '600',
+                                                cursor: loadingMoreByCategory[category] ? 'not-allowed' : 'pointer',
+                                                transition: 'all 0.3s',
+                                                opacity: loadingMoreByCategory[category] ? 0.6 : 1
+                                            }}
+                                            onMouseEnter={(e) => {
+                                                if (!loadingMoreByCategory[category]) {
+                                                    e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                                                    e.target.style.borderColor = 'var(--primary)';
+                                                }
+                                            }}
+                                            onMouseLeave={(e) => {
+                                                e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                                                e.target.style.borderColor = 'var(--glass-border)';
+                                            }}
+                                        >
+                                            {loadingMoreByCategory[category] ? '⏳ Loading...' : '▼ Load More Quizzes'}
+                                        </button>
+                                    )}
                                 </div>
-
-                                {/* Like Count */}
-                                <div style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    color: 'var(--text-muted)',
-                                    fontSize: '0.9rem'
-                                }}>
-                                    <span style={{ fontSize: '1.1rem' }}>❤️</span>
-                                    <span>{parseInt(quiz.likesCount) || 0} {parseInt(quiz.likesCount) === 1 ? 'Like' : 'Likes'}</span>
-                                </div>
-
-                                {/* Click to view hint */}
-                                <div style={{
-                                    fontSize: '0.75rem',
-                                    color: 'var(--text-muted)',
-                                    fontStyle: 'italic',
-                                    textAlign: 'center',
-                                    marginTop: 'auto',
-                                    paddingTop: '0.5rem',
-                                    borderTop: '1px solid rgba(255, 255, 255, 0.05)'
-                                }}>
-                                    👁️ Click to view details
-                                </div>
-
-                                {/* Action Button */}
-                                <button
-                                    onClick={(e) => {
-                                        e.stopPropagation(); // Prevent card click
-                                        handleAddToLibrary(quiz.id);
-                                    }}
-                                    disabled={isAdded}
-                                    style={{
-                                        width: '100%',
-                                        background: isAdded
-                                            ? 'rgba(34, 197, 94, 0.2)'
-                                            : 'linear-gradient(135deg, var(--primary), var(--secondary))',
-                                        border: isAdded ? '1px solid rgba(34, 197, 94, 0.3)' : 'none',
-                                        color: isAdded ? '#22c55e' : 'white',
-                                        padding: '0.75rem',
-                                        fontSize: '0.95rem',
-                                        borderRadius: '12px',
-                                        fontWeight: '600',
-                                        cursor: isAdded ? 'default' : 'pointer',
-                                        transition: 'all 0.3s',
-                                        opacity: isAdded ? 0.7 : 1
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        if (!isAdded) {
-                                            e.target.style.transform = 'scale(1.02)';
-                                            e.target.style.boxShadow = '0 8px 20px rgba(99, 102, 241, 0.3)';
-                                        }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.target.style.transform = 'scale(1)';
-                                        e.target.style.boxShadow = 'none';
-                                    }}
-                                >
-                                    {isAdded ? '✓ Added to Home' : '+ Add to Home'}
-                                </button>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
+                            );
+                        })}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

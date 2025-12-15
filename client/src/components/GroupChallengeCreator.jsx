@@ -14,7 +14,7 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
     const [creating, setCreating] = useState(false);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('all');
-    const [selectedCategory, setSelectedCategory] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         fetchQuizzes();
@@ -22,7 +22,7 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
 
     useEffect(() => {
         filterQuizzes();
-    }, [quizzes, activeTab, selectedCategory]);
+    }, [quizzes, activeTab, searchQuery]);
 
     const fetchQuizzes = async () => {
         try {
@@ -76,15 +76,23 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
             filtered = filtered.filter(q => q.creator_id !== user.id);
         }
 
-        // Filter by category
-        if (selectedCategory !== 'all') {
-            filtered = filtered.filter(q => q.category === selectedCategory);
+        // Filter by search query
+        if (searchQuery.trim()) {
+            const query = searchQuery.toLowerCase().trim();
+            filtered = filtered.filter(q => {
+                // Search by ID
+                const idMatch = q.id.toString().includes(query);
+                // Search by title
+                const titleMatch = q.title.toLowerCase().includes(query);
+                // Search by category
+                const categoryMatch = q.category.toLowerCase().includes(query);
+
+                return idMatch || titleMatch || categoryMatch;
+            });
         }
 
         setFilteredQuizzes(filtered);
     };
-
-    const categories = ['all', ...new Set(quizzes.map(q => q.category))];
 
     const handleCreate = async () => {
         if (!selectedQuiz) {
@@ -195,30 +203,48 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
                             ))}
                         </div>
 
-                        {/* Category Filter */}
+
+                        {/* Search Box */}
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>
-                                Category
+                                Search Quizzes
                             </label>
-                            <select
-                                value={selectedCategory}
-                                onChange={(e) => setSelectedCategory(e.target.value)}
-                                style={{
-                                    width: '100%',
-                                    padding: '0.75rem',
-                                    background: 'rgba(255, 255, 255, 0.05)',
-                                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                                    borderRadius: '8px',
-                                    color: 'white',
-                                    fontSize: '0.95rem'
-                                }}
-                            >
-                                {categories.map(cat => (
-                                    <option key={cat} value={cat} style={{ background: '#1a1a2e' }}>
-                                        {cat === 'all' ? 'All Categories' : cat}
-                                    </option>
-                                ))}
-                            </select>
+                            <div style={{ position: 'relative' }}>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Search by Quiz ID, title, or category..."
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem 2.5rem 0.75rem 1rem',
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        borderRadius: '8px',
+                                        color: 'white',
+                                        fontSize: '0.95rem'
+                                    }}
+                                />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery('')}
+                                        style={{
+                                            position: 'absolute',
+                                            right: '0.5rem',
+                                            top: '50%',
+                                            transform: 'translateY(-50%)',
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: 'var(--text-muted)',
+                                            cursor: 'pointer',
+                                            fontSize: '1.2rem',
+                                            padding: '0.25rem 0.5rem'
+                                        }}
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Quiz Selection */}
@@ -247,8 +273,20 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
                                             }}
                                         >
                                             <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{quiz.title}</div>
-                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                {quiz.category} • {quiz.difficulty} • {quiz.questionCount || quiz.questions?.length || 0} questions
+                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                <span style={{
+                                                    fontFamily: 'monospace',
+                                                    background: 'rgba(99, 102, 241, 0.1)',
+                                                    padding: '0.1rem 0.4rem',
+                                                    borderRadius: '4px'
+                                                }}>
+                                                    🆔 {quiz.id}
+                                                </span>
+                                                <span>{quiz.category}</span>
+                                                <span>•</span>
+                                                <span>{quiz.difficulty}</span>
+                                                <span>•</span>
+                                                <span>{quiz.questionCount || quiz.questions?.length || 0} questions</span>
                                             </div>
                                         </div>
                                     ))}
