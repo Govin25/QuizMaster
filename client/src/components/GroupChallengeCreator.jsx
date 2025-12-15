@@ -248,7 +248,7 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
                                         >
                                             <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{quiz.title}</div>
                                             <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                                {quiz.category} • {quiz.difficulty} • {quiz.questions?.length || 0} questions
+                                                {quiz.category} • {quiz.difficulty} • {quiz.questionCount || quiz.questions?.length || 0} questions
                                             </div>
                                         </div>
                                     ))}

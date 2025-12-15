@@ -219,99 +219,65 @@ const GroupChallengeResults = ({ roomId, onClose, onViewQuiz }) => {
             {/* Full Leaderboard */}
             <h3 style={{ marginBottom: '1rem' }}>📊 Final Standings</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '2rem' }}>
-                {room.participants.map((participant) => {
-                    const isMe = participant.user_id === user.id;
+                {room.participants
+                    .sort((a, b) => a.rank - b.rank) // Sort by rank ascending (1st place first)
+                    .map((participant) => {
+                        const isMe = participant.user_id === user.id;
 
-                    return (
-                        <div
-                            key={participant.user_id}
-                            style={{
-                                background: isMe ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                                border: isMe ? '2px solid rgba(99, 102, 241, 0.5)' : '1px solid var(--glass-border)',
-                                borderRadius: '12px',
-                                padding: '1rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '1rem'
-                            }}
-                        >
-                            {/* Rank */}
-                            <div style={{
-                                fontSize: '1.5rem',
-                                fontWeight: 'bold',
-                                minWidth: '50px',
-                                textAlign: 'center',
-                                color: participant.rank === 1 ? '#fbbf24' :
-                                    participant.rank === 2 ? '#c0c0c0' :
-                                        participant.rank === 3 ? '#cd7f32' : 'var(--text-muted)'
-                            }}>
-                                {participant.rank === 1 ? '🥇' :
-                                    participant.rank === 2 ? '🥈' :
-                                        participant.rank === 3 ? '🥉' : `#${participant.rank}`}
-                            </div>
-
-                            {/* Player Info */}
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontWeight: '600', fontSize: '1.1rem', marginBottom: '0.25rem' }}>
-                                    {participant.username}{isMe && ' (You)'}
+                        return (
+                            <div
+                                key={participant.user_id}
+                                style={{
+                                    background: isMe ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                                    border: isMe ? '2px solid rgba(99, 102, 241, 0.5)' : '1px solid var(--glass-border)',
+                                    borderRadius: '12px',
+                                    padding: '1rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '1rem'
+                                }}
+                            >
+                                {/* Rank */}
+                                <div style={{
+                                    fontSize: '1.5rem',
+                                    fontWeight: 'bold',
+                                    minWidth: '50px',
+                                    textAlign: 'center',
+                                    color: participant.rank === 1 ? '#fbbf24' :
+                                        participant.rank === 2 ? '#c0c0c0' :
+                                            participant.rank === 3 ? '#cd7f32' : 'var(--text-muted)'
+                                }}>
+                                    {participant.rank === 1 ? '🥇' :
+                                        participant.rank === 2 ? '🥈' :
+                                            participant.rank === 3 ? '🥉' : `#${participant.rank}`}
                                 </div>
-                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                                    Time: {Math.floor(participant.total_time_seconds / 60)}:{(participant.total_time_seconds % 60).toString().padStart(2, '0')}
+
+                                {/* Player Info */}
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: '600', fontSize: '1.1rem', marginBottom: '0.25rem' }}>
+                                        {participant.username}{isMe && ' (You)'}
+                                    </div>
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                        Time: {Math.floor(participant.total_time_seconds / 60)}:{(participant.total_time_seconds % 60).toString().padStart(2, '0')}
+                                    </div>
+                                </div>
+
+                                {/* Score */}
+                                <div style={{
+                                    fontSize: '2rem',
+                                    fontWeight: 'bold',
+                                    color: participant.rank === 1 ? '#fbbf24' :
+                                        participant.rank === 2 ? '#c0c0c0' :
+                                            participant.rank === 3 ? '#cd7f32' : 'white'
+                                }}>
+                                    {participant.score}
                                 </div>
                             </div>
-
-                            {/* Score */}
-                            <div style={{
-                                fontSize: '2rem',
-                                fontWeight: 'bold',
-                                color: participant.rank === 1 ? '#fbbf24' :
-                                    participant.rank === 2 ? '#c0c0c0' :
-                                        participant.rank === 3 ? '#cd7f32' : 'white'
-                            }}>
-                                {participant.score}
-                            </div>
-                        </div>
-                    );
-                })}
+                        );
+                    })}
             </div>
 
-            {/* Action Buttons */}
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                {onViewQuiz && (
-                    <button
-                        onClick={() => onViewQuiz(room.quiz_id)}
-                        style={{
-                            flex: 1,
-                            background: 'rgba(99, 102, 241, 0.2)',
-                            border: '1px solid rgba(99, 102, 241, 0.3)',
-                            color: '#a5b4fc',
-                            padding: '0.75rem',
-                            fontSize: '0.95rem',
-                            cursor: 'pointer',
-                            borderRadius: '8px',
-                            fontWeight: '600'
-                        }}
-                    >
-                        📝 View Quiz
-                    </button>
-                )}
-                <button
-                    onClick={onClose}
-                    style={{
-                        flex: 1,
-                        background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
-                        border: 'none',
-                        color: 'white',
-                        padding: '0.75rem',
-                        fontSize: '0.95rem',
-                        cursor: 'pointer',
-                        borderRadius: '8px',
-                        fontWeight: '600'
-                    }}
-                >
-                    🏠 Back to Hub
-                </button>
-            </div>
+
         </div>
     );
 };
