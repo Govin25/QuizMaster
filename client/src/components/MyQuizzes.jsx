@@ -22,8 +22,6 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
             if (!response.ok) return;
             const data = await response.json();
 
-            console.log('Library API response:', data);
-
             // Handle different response formats
             let quizzes = [];
             if (Array.isArray(data)) {
@@ -39,12 +37,8 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                 quizzes = [...recentlyAdded, ...completed];
             }
 
-            console.log('Extracted quizzes:', quizzes);
-
             // Create a Set of quiz IDs that are in the library
             const libraryQuizIds = new Set(quizzes.map(item => item.id || item.quiz_id));
-            console.log('Library quiz IDs:', Array.from(libraryQuizIds));
-
             setInLibrary(libraryQuizIds);
         } catch (err) {
             // Silent fail - not critical
@@ -65,7 +59,15 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                 throw new Error(errorData.error || `Failed to fetch quizzes (${response.status})`);
             }
             const data = await response.json();
-            setQuizzes(data);
+
+            // Sort quizzes by creation date (latest first)
+            const sortedData = data.sort((a, b) => {
+                const dateA = new Date(a.created_at || a.createdAt || 0);
+                const dateB = new Date(b.created_at || b.createdAt || 0);
+                return dateB - dateA; // Descending order (newest first)
+            });
+
+            setQuizzes(sortedData);
 
             // Fetch review details for rejected quizzes
             data.forEach(quiz => {

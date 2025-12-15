@@ -179,8 +179,21 @@ router.delete('/delete/:id', authenticateToken, async (req, res) => {
             });
         }
 
+        // Remove quiz from all users' libraries before deletion
+        const LibraryRepository = require('../repositories/LibraryRepository');
+        await LibraryRepository.removeQuizFromAllLibraries(quizId);
+
+        logger.debug('Removed quiz from all libraries', {
+            quizId,
+            requestId: req.requestId
+        });
+
         // Delete quiz with version check
         await QuizRepository.deleteQuiz(quizId, version);
+
+        // Invalidate library caches for all users (pattern delete)
+        cache.deletePattern('library_*');
+
         logger.info('Quiz deleted successfully', {
             quizId,
             userId,

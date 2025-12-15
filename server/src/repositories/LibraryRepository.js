@@ -51,6 +51,18 @@ class LibraryRepository {
     }
 
     /**
+     * Remove quiz from all users' libraries (used when quiz is deleted)
+     * @param {number} quizId 
+     * @returns {Promise<number>} Number of library entries removed
+     */
+    async removeQuizFromAllLibraries(quizId) {
+        const deleted = await UserQuizLibrary.destroy({
+            where: { quiz_id: quizId },
+        });
+        return deleted;
+    }
+
+    /**
      * Get user's quiz library with stats
      * @param {number} userId 
      * @returns {Promise<Object>}
