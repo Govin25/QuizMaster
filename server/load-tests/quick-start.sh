@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# QuizMaster Load Testing - Quick Start Script
+# Quainy Load Testing - Quick Start Script
 # This script helps you get started with load testing
 
 set -e
 
 echo "=========================================="
-echo "QuizMaster Load Testing - Quick Start"
+echo "Quainy Load Testing - Quick Start"
 echo "=========================================="
 echo ""
 

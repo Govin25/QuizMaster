@@ -5,7 +5,7 @@ title: Data & Privacy
 
 # Data & Privacy
 
-QuizMaster is GDPR compliant and gives you full control over your data.
+Quainy is GDPR compliant and gives you full control over your data.
 
 :::info Coming Soon
 Detailed GDPR documentation is coming soon.

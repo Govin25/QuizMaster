@@ -4,7 +4,7 @@
 
 ## Introduction
 
-Welcome to QuizMaster. We respect your privacy and are committed to protecting your personal data. This privacy policy explains how we collect, use, and safeguard your information when you use our quiz application.
+Welcome to Quainy. We respect your privacy and are committed to protecting your personal data. This privacy policy explains how we collect, use, and safeguard your information when you use our quiz application.
 
 ## Information We Collect
 
@@ -27,7 +27,7 @@ Welcome to QuizMaster. We respect your privacy and are committed to protecting y
 ## How We Use Your Information
 
 We use your data to:
-- Provide and maintain the QuizMaster service
+- Provide and maintain the Quainy service
 - Authenticate your account and manage sessions
 - Track your quiz progress and display leaderboards
 - Generate personalized statistics and achievements
@@ -70,7 +70,7 @@ Export your data in JSON format for use with other services.
 
 ## Cookies and Local Storage
 
-QuizMaster uses browser localStorage (not cookies) to store:
+Quainy uses browser localStorage (not cookies) to store:
 - JWT authentication token
 - User session information
 
@@ -85,15 +85,15 @@ No third-party cookies or tracking cookies are used.
 
 ## Children's Privacy
 
-QuizMaster is not intended for users under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe we have collected data from a child under 13, please contact us immediately.
+Quainy is not intended for users under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe we have collected data from a child under 13, please contact us immediately.
 
 ## Changes to This Policy
 
-We may update this privacy policy from time to time. Changes will be posted on this page with an updated "Last Updated" date. Continued use of QuizMaster after changes constitutes acceptance of the updated policy.
+We may update this privacy policy from time to time. Changes will be posted on this page with an updated "Last Updated" date. Continued use of Quainy after changes constitutes acceptance of the updated policy.
 
 ## Third-Party Services
 
-QuizMaster does not currently integrate with third-party services. If this changes, we will update this policy accordingly.
+Quainy does not currently integrate with third-party services. If this changes, we will update this policy accordingly.
 
 ## International Data Transfers
 
@@ -109,9 +109,9 @@ If you have questions about this Privacy Policy or wish to exercise your data ri
 
 We process your personal data based on:
 - **Consent**: You agree to our terms when creating an account
-- **Contract**: Processing necessary to provide the QuizMaster service
+- **Contract**: Processing necessary to provide the Quainy service
 - **Legitimate Interests**: Security, fraud prevention, and service improvement
 
 ## Your Consent
 
-By using QuizMaster, you consent to this Privacy Policy and agree to its terms.
+By using Quainy, you consent to this Privacy Policy and agree to its terms.

@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'QuizMaster',
+  title: 'Quainy',
   tagline: 'Advanced Quiz Application with AI-Powered Generation',
   favicon: 'img/favicon.ico',
 
@@ -74,9 +74,9 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'QuizMaster',
+      title: 'Quainy',
       logo: {
-        alt: 'QuizMaster Logo',
+        alt: 'Quainy Logo',
         src: 'img/logo.svg',
       },
       items: [
@@ -151,7 +151,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} QuizMaster. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Quainy. Built with Docusaurus.`,
     },
     prism: {
       theme: prismThemes.github,

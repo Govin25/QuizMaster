@@ -5,11 +5,11 @@ title: Quick Start
 
 # Quick Start Guide
 
-Get up and running with QuizMaster in 5 minutes! This guide assumes you've already completed the [Installation](./installation.md).
+Get up and running with Quainy in 5 minutes! This guide assumes you've already completed the [Installation](./installation.md).
 
 ## 1. Start the Application
 
-From the QuizMaster root directory:
+From the Quainy root directory:
 
 ```bash
 npm run dev
@@ -71,7 +71,7 @@ After logging in, you'll see the **Home** page with your personal library. Let's
 
 ### AI-Powered Generation
 
-QuizMaster can generate quizzes for you using AI!
+Quainy can generate quizzes for you using AI!
 
 1. Go to **My Quizzes**
 2. Click **AI Generate** tab
@@ -174,7 +174,7 @@ Now that you're familiar with the basics, explore more:
 - **[User Guide](/docs/user-guide/authentication)**: Detailed feature documentation
 - **[Creating Quizzes](/docs/user-guide/creating-quizzes)**: Advanced quiz creation techniques
 - **[Analytics](/docs/user-guide/analytics)**: Understanding your performance data
-- **[Developer Guide](/docs/developer-guide/architecture)**: Contribute to QuizMaster
+- **[Developer Guide](/docs/developer-guide/architecture)**: Contribute to Quainy
 
 ## Need Help?
 

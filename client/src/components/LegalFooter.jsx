@@ -77,7 +77,7 @@ const LegalFooter = () => {
                 </a>
             </div>
             <div style={{ opacity: 0.7 }}>
-                © {currentYear} QuizMaster. Open source under MIT License.
+                © {currentYear} Quainy. Open source under MIT License.
             </div>
         </footer>
     );

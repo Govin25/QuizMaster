@@ -5,7 +5,7 @@ title: Installation
 
 # Installation
 
-This guide will walk you through setting up QuizMaster on your local machine for development.
+This guide will walk you through setting up Quainy on your local machine for development.
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ cd QuizMaster
 
 ### 2. Install Dependencies
 
-QuizMaster has a convenient script to install all dependencies for both client and server:
+Quainy has a convenient script to install all dependencies for both client and server:
 
 ```bash
 npm run install:all
@@ -51,7 +51,7 @@ npm install
 
 ### 3. Set Up Environment Variables
 
-QuizMaster requires environment variables for both the server and client.
+Quainy requires environment variables for both the server and client.
 
 #### Server Environment Variables
 
@@ -91,7 +91,7 @@ VITE_API_URL=http://localhost:3001
 
 ### 4. Initialize the Database
 
-QuizMaster uses SQLite for development. The database will be created automatically, but you can seed it with sample data:
+Quainy uses SQLite for development. The database will be created automatically, but you can seed it with sample data:
 
 ```bash
 cd server
@@ -141,7 +141,7 @@ VITE v7.2.4  ready in XXX ms
 
 Navigate to [http://localhost:5173](http://localhost:5173)
 
-You should see the QuizMaster login/signup page!
+You should see the Quainy login/signup page!
 
 ## Running Both Servers Concurrently
 

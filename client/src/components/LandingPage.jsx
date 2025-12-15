@@ -15,21 +15,21 @@ const LandingPage = () => {
             name: "Sarah Johnson",
             role: "Computer Science Student",
             avatar: "👩‍💻",
-            text: "QuizMaster transformed how I study! The AI-generated quizzes are incredibly accurate, and the 1v1 challenges make learning competitive and fun.",
+            text: "Quainy transformed how I study! The AI-generated quizzes are incredibly accurate, and the 1v1 challenges make learning competitive and fun.",
             rating: 5
         },
         {
             name: "Michael Chen",
             role: "High School Teacher",
             avatar: "👨‍🏫",
-            text: "I use QuizMaster to create engaging quizzes for my students. The analytics help me identify areas where they need more support. Absolutely fantastic!",
+            text: "I use Quainy to create engaging quizzes for my students. The analytics help me identify areas where they need more support. Absolutely fantastic!",
             rating: 5
         },
         {
             name: "Emily Rodriguez",
             role: "Medical Student",
             avatar: "👩‍⚕️",
-            text: "The comprehensive analytics and achievement system keep me motivated. I've improved my retention rate by 40% since using QuizMaster!",
+            text: "The comprehensive analytics and achievement system keep me motivated. I've improved my retention rate by 40% since using Quainy!",
             rating: 5
         },
         {
@@ -44,8 +44,8 @@ const LandingPage = () => {
     // FAQ data
     const faqs = [
         {
-            question: "Is QuizMaster really free?",
-            answer: "Yes! QuizMaster is completely free to use with all core features including AI quiz generation, real-time gameplay, analytics, and challenges. We're planning premium features for the future, but the current platform is 100% free."
+            question: "Is Quainy really free?",
+            answer: "Yes! Quainy is completely free to use with all core features including AI quiz generation, real-time gameplay, analytics, and challenges. We're planning premium features for the future, but the current platform is 100% free."
         },
         {
             question: "How does the AI quiz generation work?",
@@ -56,8 +56,8 @@ const LandingPage = () => {
             answer: "Absolutely! We're GDPR compliant with full data encryption. You have complete control over your data with options to export or delete your account at any time. We never share your personal information with third parties."
         },
         {
-            question: "Can I use QuizMaster offline?",
-            answer: "Yes! QuizMaster is a Progressive Web App (PWA) that works offline. You can install it on your device and access your quizzes even without an internet connection."
+            question: "Can I use Quainy offline?",
+            answer: "Yes! Quainy is a Progressive Web App (PWA) that works offline. You can install it on your device and access your quizzes even without an internet connection."
         },
         {
             question: "How do 1v1 challenges work?",
@@ -494,7 +494,7 @@ const LandingPage = () => {
             <section className="faq-section" id="faq">
                 <div className="section-header">
                     <h2 className="section-title">Frequently Asked Questions</h2>
-                    <p className="section-subtitle">Everything you need to know about QuizMaster</p>
+                    <p className="section-subtitle">Everything you need to know about Quainy</p>
                 </div>
                 <div className="faq-container">
                     {faqs.map((faq, index) => (

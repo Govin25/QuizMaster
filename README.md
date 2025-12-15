@@ -1,8 +1,8 @@
-# QuizMaster 🎯
+# Quainy 🎯
 
 An advanced, feature-rich quiz application built with React, Node.js, Express, and Socket.IO. Features a stunning glassmorphism UI, AI-powered quiz generation, comprehensive analytics, GDPR compliance, and real-time gameplay.
 
-![QuizMaster](https://img.shields.io/badge/React-19.2.0-blue) ![Node.js](https://img.shields.io/badge/Node.js-Express-green) ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8.1-orange) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Quainy](https://img.shields.io/badge/React-19.2.0-blue) ![Node.js](https://img.shields.io/badge/Node.js-Express-green) ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8.1-orange) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## ✨ Features
 
@@ -366,7 +366,7 @@ Users have the right to:
 
 ### Docker Deployment (Recommended)
 
-The easiest way to deploy QuizMaster is using Docker containers. Both client and server can be deployed independently or together using docker-compose.
+The easiest way to deploy Quainy is using Docker containers. Both client and server can be deployed independently or together using docker-compose.
 
 **Quick Start with Docker Compose:**
 ```bash

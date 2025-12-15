@@ -1,8 +1,8 @@
-# QuizMaster - AI-Powered Quiz Generation Setup
+# Quainy - AI-Powered Quiz Generation Setup
 
 ## Overview
 
-QuizMaster now supports AI-powered quiz generation from YouTube video transcripts using Google Gemini API. This provides high-quality, context-aware questions that are highly relevant to the video content.
+Quainy now supports AI-powered quiz generation from YouTube video transcripts using Google Gemini API. This provides high-quality, context-aware questions that are highly relevant to the video content.
 
 ## Setup Instructions
 

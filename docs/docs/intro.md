@@ -3,11 +3,11 @@ sidebar_position: 1
 title: Introduction
 ---
 
-# Welcome to QuizMaster 🎯
+# Welcome to Quainy 🎯
 
-QuizMaster is an advanced, feature-rich quiz application built with React, Node.js, Express, and Socket.IO. It features a stunning glassmorphism UI, AI-powered quiz generation, comprehensive analytics, GDPR compliance, and real-time gameplay.
+Quainy is an advanced, feature-rich quiz application built with React, Node.js, Express, and Socket.IO. It features a stunning glassmorphism UI, AI-powered quiz generation, comprehensive analytics, GDPR compliance, and real-time gameplay.
 
-![QuizMaster Banner](https://img.shields.io/badge/React-19.2.0-blue) ![Node.js](https://img.shields.io/badge/Node.js-Express-green) ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8.1-orange) ![License](https://img.shields.io/badge/License-MIT-yellow)
+![Quainy Banner](https://img.shields.io/badge/React-19.2.0-blue) ![Node.js](https://img.shields.io/badge/Node.js-Express-green) ![Socket.IO](https://img.shields.io/badge/Socket.IO-4.8.1-orange) ![License](https://img.shields.io/badge/License-MIT-yellow)
 
 ## ✨ Key Features
 
@@ -45,7 +45,7 @@ QuizMaster is an advanced, feature-rich quiz application built with React, Node.
         <h3>🏁 Getting Started</h3>
       </div>
       <div className="card__body">
-        <p>New to QuizMaster? Start here to set up your development environment and run your first quiz.</p>
+        <p>New to Quainy? Start here to set up your development environment and run your first quiz.</p>
       </div>
       <div className="card__footer">
         <a href="/docs/getting-started/installation" className="button button--primary button--block">Get Started →</a>
@@ -58,7 +58,7 @@ QuizMaster is an advanced, feature-rich quiz application built with React, Node.
         <h3>📖 User Guide</h3>
       </div>
       <div className="card__body">
-        <p>Learn how to use QuizMaster's features, from creating quizzes to tracking your analytics.</p>
+        <p>Learn how to use Quainy's features, from creating quizzes to tracking your analytics.</p>
       </div>
       <div className="card__footer">
         <a href="/docs/user-guide/authentication" className="button button--primary button--block">User Guide →</a>
@@ -115,7 +115,7 @@ QuizMaster is an advanced, feature-rich quiz application built with React, Node.
 
 Choose your path based on your role:
 
-- **New Users**: Start with [Installation](/docs/getting-started/installation) to set up QuizMaster
+- **New Users**: Start with [Installation](/docs/getting-started/installation) to set up Quainy
 - **End Users**: Check out the [User Guide](/docs/user-guide/authentication) to learn all features
 - **Developers**: Explore the [Developer Guide](/docs/developer-guide/architecture) to understand the codebase
 - **API Integration**: Review the [API Reference](/docs/api/authentication-api) for endpoint documentation
@@ -123,7 +123,7 @@ Choose your path based on your role:
 
 ## 🤝 Community & Support
 
-- **GitHub**: [QuizMaster Repository](https://github.com/Govin25/QuizMaster)
+- **GitHub**: [Quainy Repository](https://github.com/Govin25/QuizMaster)
 - **Issues**: Report bugs or request features on [GitHub Issues](https://github.com/Govin25/QuizMaster/issues)
 - **License**: MIT License - see [LICENSE](https://github.com/Govin25/QuizMaster/blob/main/LICENSE)
 

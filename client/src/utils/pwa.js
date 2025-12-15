@@ -63,7 +63,7 @@ export async function unregisterServiceWorker() {
  */
 function showUpdateNotification() {
     // You can integrate this with your toast notification system
-    const updateAvailable = confirm('A new version of QuizMaster is available! Reload to update?');
+    const updateAvailable = confirm('A new version of Quainy is available! Reload to update?');
 
     if (updateAvailable && swRegistration && swRegistration.waiting) {
         swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });

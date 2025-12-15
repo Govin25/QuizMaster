@@ -39,7 +39,7 @@ const DataManagement = () => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `quizmaster-data-${user.id}-${Date.now()}.json`;
+            a.download = `quainy-data-${user.id}-${Date.now()}.json`;
             document.body.appendChild(a);
             a.click();
             window.URL.revokeObjectURL(url);

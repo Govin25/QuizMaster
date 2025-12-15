@@ -37,8 +37,8 @@ Community leaders have the right and responsibility to remove, edit, or reject c
 
 This Code of Conduct applies within all community spaces, including:
 - GitHub repository (issues, pull requests, discussions)
-- QuizMaster platform (quiz content, user interactions)
-- Any official QuizMaster communication channels
+- Quainy platform (quiz content, user interactions)
+- Any official Quainy communication channels
 
 This Code of Conduct also applies when an individual is officially representing the community in public spaces.
 

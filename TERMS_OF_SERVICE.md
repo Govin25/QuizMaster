@@ -4,11 +4,11 @@
 
 ## 1. Acceptance of Terms
 
-By accessing and using QuizMaster, you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our service.
+By accessing and using Quainy, you accept and agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our service.
 
 ## 2. Description of Service
 
-QuizMaster is an interactive quiz platform that allows users to:
+Quainy is an interactive quiz platform that allows users to:
 - Take quizzes across various categories
 - Create and share custom quizzes
 - Track progress and compete on leaderboards
@@ -56,24 +56,24 @@ When creating quizzes, you must:
 ## 5. Intellectual Property
 
 ### 5.1 Platform Ownership
-QuizMaster and its original content, features, and functionality are owned by the QuizMaster team and are protected by international copyright, trademark, and other intellectual property laws.
+Quainy and its original content, features, and functionality are owned by the Quainy team and are protected by international copyright, trademark, and other intellectual property laws.
 
 ### 5.2 User-Generated Content
 - You retain ownership of quizzes you create
-- By creating a quiz on QuizMaster, you grant us a non-exclusive, worldwide license to display and distribute your quiz on our platform
+- By creating a quiz on Quainy, you grant us a non-exclusive, worldwide license to display and distribute your quiz on our platform
 - You represent that you have the right to share any content you upload
 - We reserve the right to remove content that violates these terms
 
 ### 5.3 Open Source License
-QuizMaster is open source software licensed under the MIT License. See the LICENSE file for details.
+Quainy is open source software licensed under the MIT License. See the LICENSE file for details.
 
 ## 6. Privacy and Data Protection
 
-Your use of QuizMaster is also governed by our Privacy Policy. Please review our Privacy Policy to understand our data practices.
+Your use of Quainy is also governed by our Privacy Policy. Please review our Privacy Policy to understand our data practices.
 
 ## 7. Disclaimer of Warranties
 
-QuizMaster is provided "AS IS" and "AS AVAILABLE" without warranties of any kind, either express or implied, including but not limited to:
+Quainy is provided "AS IS" and "AS AVAILABLE" without warranties of any kind, either express or implied, including but not limited to:
 - Merchantability
 - Fitness for a particular purpose
 - Non-infringement
@@ -86,7 +86,7 @@ We do not guarantee that:
 
 ## 8. Limitation of Liability
 
-To the maximum extent permitted by law, QuizMaster and its creators shall not be liable for:
+To the maximum extent permitted by law, Quainy and its creators shall not be liable for:
 - Indirect, incidental, special, or consequential damages
 - Loss of profits, data, or goodwill
 - Service interruptions or data loss
@@ -94,10 +94,10 @@ To the maximum extent permitted by law, QuizMaster and its creators shall not be
 
 ## 9. Indemnification
 
-You agree to indemnify and hold harmless QuizMaster and its creators from any claims, damages, losses, or expenses (including legal fees) arising from:
+You agree to indemnify and hold harmless Quainy and its creators from any claims, damages, losses, or expenses (including legal fees) arising from:
 - Your violation of these Terms of Service
 - Your violation of any rights of another party
-- Your use of the QuizMaster service
+- Your use of the Quainy service
 
 ## 10. Quiz Content Accuracy
 
@@ -128,7 +128,7 @@ These Terms of Service are governed by and construed in accordance with applicab
 
 ## 14. Dispute Resolution
 
-Any disputes arising from these terms or your use of QuizMaster should first be addressed through good-faith negotiation. If resolution cannot be reached, disputes will be resolved through binding arbitration.
+Any disputes arising from these terms or your use of Quainy should first be addressed through good-faith negotiation. If resolution cannot be reached, disputes will be resolved through binding arbitration.
 
 ## 15. Severability
 
@@ -136,7 +136,7 @@ If any provision of these Terms is found to be unenforceable, the remaining prov
 
 ## 16. Entire Agreement
 
-These Terms of Service, together with our Privacy Policy, constitute the entire agreement between you and QuizMaster regarding use of the service.
+These Terms of Service, together with our Privacy Policy, constitute the entire agreement between you and Quainy regarding use of the service.
 
 ## 17. Contact Information
 
@@ -146,4 +146,4 @@ For questions about these Terms of Service, please contact us at:
 
 ## 18. Acknowledgment
 
-By using QuizMaster, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.
+By using Quainy, you acknowledge that you have read, understood, and agree to be bound by these Terms of Service.

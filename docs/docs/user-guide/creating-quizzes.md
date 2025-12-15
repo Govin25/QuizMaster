@@ -18,7 +18,7 @@ Detailed documentation for quiz creation is coming soon. This section will cover
 
 ## Quick Overview
 
-QuizMaster offers two ways to create quizzes:
+Quainy offers two ways to create quizzes:
 
 ### Manual Creation
 - Create quizzes question by question

@@ -1,5 +1,5 @@
-const CACHE_NAME = 'quizmaster-v1';
-const API_CACHE_NAME = 'quizmaster-api-v1';
+const CACHE_NAME = 'quainy-v1';
+const API_CACHE_NAME = 'quainy-api-v1';
 
 // Assets to cache on install
 const STATIC_ASSETS = [

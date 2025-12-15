@@ -48,7 +48,7 @@ const InstallPWA = () => {
             <div style={styles.content}>
                 <div style={styles.icon}>📱</div>
                 <div style={styles.text}>
-                    <h3 style={styles.title}>Install QuizMaster</h3>
+                    <h3 style={styles.title}>Install Quainy</h3>
                     <p style={styles.description}>
                         Install our app for a better experience with offline access and faster loading!
                     </p>

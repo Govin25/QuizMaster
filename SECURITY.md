@@ -1,4 +1,4 @@
-# QuizMaster Security Quick Reference
+# Quainy Security Quick Reference
 
 ## 🚨 Before Production Deployment
 

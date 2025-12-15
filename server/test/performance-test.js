@@ -68,7 +68,7 @@ async function measureEndpoint(name, method, path, token = null) {
 }
 
 async function runTests() {
-    console.log('\n🔍 QuizMaster Performance Test\n');
+    console.log('\n🔍 Quainy Performance Test\n');
     console.log('='.repeat(70));
 
     // Test 1: Login to get auth token

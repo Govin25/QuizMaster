@@ -1,6 +1,6 @@
-# QuizMaster Load Testing Suite
+# Quainy Load Testing Suite
 
-Comprehensive load testing infrastructure for the QuizMaster application using Artillery and custom Node.js scripts.
+Comprehensive load testing infrastructure for the Quainy application using Artillery and custom Node.js scripts.
 
 ## 📋 Table of Contents
 
@@ -27,7 +27,7 @@ This load testing suite provides:
 ## ✅ Prerequisites
 
 - Node.js 14+ installed
-- QuizMaster server running on `http://localhost:3001`
+- Quainy server running on `http://localhost:3001`
 - Database seeded with test data (optional but recommended)
 
 ## 📦 Installation

@@ -1,6 +1,6 @@
-# QuizMaster Documentation
+# Quainy Documentation
 
-This directory contains the complete documentation for QuizMaster, built with [Docusaurus](https://docusaurus.io/).
+This directory contains the complete documentation for Quainy, built with [Docusaurus](https://docusaurus.io/).
 
 ## 🚀 Quick Start
 

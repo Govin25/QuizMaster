@@ -5,13 +5,13 @@ title: Authentication
 
 # Authentication
 
-QuizMaster uses secure JWT-based authentication with bcrypt password hashing to protect user accounts.
+Quainy uses secure JWT-based authentication with bcrypt password hashing to protect user accounts.
 
 ## Sign Up
 
 ### Creating a New Account
 
-1. Navigate to the QuizMaster homepage
+1. Navigate to the Quainy homepage
 2. Click **Sign Up**
 3. Fill in the registration form:
    - **Username**: Choose a unique username (3-50 characters)
@@ -30,14 +30,14 @@ After successful signup, you'll be automatically logged in and redirected to you
 - Can include letters, numbers, and special characters
 
 :::tip Security Tip
-Use a strong, unique password for your QuizMaster account. Consider using a password manager!
+Use a strong, unique password for your Quainy account. Consider using a password manager!
 :::
 
 ## Login
 
 ### Signing In
 
-1. Navigate to the QuizMaster homepage
+1. Navigate to the Quainy homepage
 2. Enter your credentials:
    - **Username**
    - **Password**
@@ -54,7 +54,7 @@ After logging in, you'll be redirected to your **Home** page, which shows:
 
 ### How Sessions Work
 
-QuizMaster uses **JWT (JSON Web Tokens)** for session management:
+Quainy uses **JWT (JSON Web Tokens)** for session management:
 
 - Tokens are stored in `localStorage`
 - Tokens are automatically included in API requests
@@ -111,7 +111,7 @@ If you're having trouble logging in:
 ### Forgot Password
 
 :::warning
-QuizMaster currently does not have a password reset feature. If you forget your password, you'll need to create a new account.
+Quainy currently does not have a password reset feature. If you forget your password, you'll need to create a new account.
 :::
 
 ### Session Expired
@@ -124,14 +124,14 @@ If your session expires:
 
 ### What Data is Collected
 
-During signup, QuizMaster collects:
+During signup, Quainy collects:
 - Username
 - Hashed password
 - Timestamp of account creation
 
 ### GDPR Compliance
 
-QuizMaster is GDPR compliant. You have the right to:
+Quainy is GDPR compliant. You have the right to:
 - **Access your data**: View all data associated with your account
 - **Export your data**: Download a JSON file with all your information
 - **Delete your account**: Request permanent account deletion
@@ -140,7 +140,7 @@ See the [Data & Privacy Guide](./data-privacy.md) for more information.
 
 ## Next Steps
 
-Now that you're authenticated, explore QuizMaster's features:
+Now that you're authenticated, explore Quainy's features:
 
 - **[Quiz Hub](./quiz-hub.md)**: Browse and discover public quizzes
 - **[Creating Quizzes](./creating-quizzes.md)**: Build your own quizzes
