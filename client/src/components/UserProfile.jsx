@@ -6,7 +6,7 @@ import DataManagement from './DataManagement';
 import ProfileHeader from './profile/ProfileHeader';
 import QuickStats from './profile/QuickStats';
 import PerformanceOverview from './profile/PerformanceOverview';
-import PerformanceTrend from './profile/PerformanceTrend';
+import ActivityGraph from './profile/ActivityGraph';
 import CategoryMastery from './profile/CategoryMastery';
 import AchievementsSection from './profile/AchievementsSection';
 import RecommendationsSection from './profile/RecommendationsSection';
@@ -219,10 +219,10 @@ const UserProfile = ({ onBack }) => {
                         error={statsState.error}
                     />
 
-                    <PerformanceTrend
-                        trends={trendsState.data}
-                        loading={trendsState.loading}
-                        error={trendsState.error}
+                    <ActivityGraph
+                        heatmap={activityState.data?.heatmap}
+                        loading={activityState.loading}
+                        error={activityState.error}
                     />
 
                     <CategoryMastery
