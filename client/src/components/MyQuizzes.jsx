@@ -14,7 +14,30 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
     const [selectedQuiz, setSelectedQuiz] = useState(null);
     const [reviewDetails, setReviewDetails] = useState({});
     const [deleteConfirm, setDeleteConfirm] = useState(null);
-    const [inLibrary, setInLibrary] = useState(new Set()); // Track which quizzes are in library
+    const [inLibrary, setInLibrary] = useState(new Set());
+    const [sourceFilter, setSourceFilter] = useState('all');
+
+    // Source filter configuration
+    const sourceFilters = [
+        { id: 'all', label: 'All', icon: '📚', color: '#a5b4fc' },
+        { id: 'ai', label: 'AI Generated', icon: '✨', color: '#c084fc' },
+        { id: 'ai_document', label: 'From Document', icon: '📄', color: '#60a5fa' },
+        { id: 'ai_video', label: 'From Video', icon: '🎬', color: '#f472b6' },
+        { id: 'json_upload', label: 'JSON Import', icon: '📥', color: '#34d399' },
+        { id: 'manual', label: 'Manual', icon: '✍️', color: '#fb923c' }
+    ];
+
+    // Get filtered quizzes based on selected source
+    const getFilteredQuizzes = () => {
+        if (sourceFilter === 'all') return quizzes;
+        return quizzes.filter(q => q.source === sourceFilter);
+    };
+
+    // Get count for each source type
+    const getSourceCount = (sourceId) => {
+        if (sourceId === 'all') return quizzes.length;
+        return quizzes.filter(q => q.source === sourceId).length;
+    };
 
     const fetchLibraryStatus = async () => {
         try {
@@ -326,6 +349,7 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
         <div
             key={quiz.id}
             className="hover-lift"
+            onClick={() => handleViewDetails(quiz.id)}
             style={{
                 background: 'rgba(255, 255, 255, 0.05)',
                 borderRadius: '16px',
@@ -334,7 +358,9 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                 display: 'flex',
                 flexDirection: 'column',
                 gap: '1rem',
-                position: 'relative'
+                position: 'relative',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
             }}
         >
             {/* Status Badge */}
@@ -391,6 +417,18 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                 <span>{quiz.questionCount || 0} Questions</span>
             </div>
 
+            {/* Quiz ID */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                color: 'var(--text-muted)',
+                fontSize: '0.85rem'
+            }}>
+                <span>🆔</span>
+                <span>ID: {quiz.id}</span>
+            </div>
+
             {/* Rejection Message */}
             {quiz.status === 'rejected' && reviewDetails[quiz.id]?.comments && (
                 <div style={{
@@ -410,25 +448,15 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
             )}
 
             {/* Action Buttons */}
-            <div style={{
-                marginTop: 'auto',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.5rem'
-            }}>
-                <button
-                    onClick={() => handleViewDetails(quiz.id)}
-                    style={{
-                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))',
-                        border: '1px solid rgba(99, 102, 241, 0.3)',
-                        color: '#a5b4fc',
-                        padding: '0.75rem',
-                        fontSize: '0.9rem'
-                    }}
-                >
-                    👁️ View Details
-                </button>
-
+            <div
+                onClick={(e) => e.stopPropagation()}
+                style={{
+                    marginTop: 'auto',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.5rem'
+                }}
+            >
                 {/* Add to Home for unpublished quizzes */}
                 {quiz.status !== 'approved' && (
                     <button
@@ -572,7 +600,20 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                     gap: '1rem',
                     flexWrap: 'wrap'
                 }}>
-                    <h2 style={{ margin: 0 }}>My Quizzes</h2>
+                    <h2 style={{ margin: 0 }}>
+                        My Quizzes
+                        <span style={{
+                            marginLeft: '0.75rem',
+                            fontSize: '1rem',
+                            fontWeight: '500',
+                            color: 'var(--text-muted)',
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '20px'
+                        }}>
+                            {quizzes.length}
+                        </span>
+                    </h2>
                     <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
                         <button onClick={onCreate} style={{
                             background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
@@ -604,39 +645,84 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                     </div>
                 ) : (
                     <>
-                        {/* AI Generated Quizzes Section */}
-                        {quizzes.some(q => q.source === 'ai') && (
-                            <div style={{ marginBottom: '3rem' }}>
-                                <h3 style={{
-                                    marginBottom: '1.5rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    color: '#c084fc'
-                                }}>
-                                    ✨ AI Quizzes
-                                </h3>
-                                <div className="grid" style={{
-                                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                                    gap: '1.5rem'
-                                }}>
-                                    {quizzes.filter(q => q.source === 'ai').map(quiz => renderQuizCard(quiz))}
-                                </div>
-                            </div>
-                        )}
+                        {/* Source Filter Tabs */}
+                        <div style={{
+                            display: 'flex',
+                            gap: '0.5rem',
+                            marginBottom: '1.5rem',
+                            flexWrap: 'wrap'
+                        }}>
+                            {sourceFilters.map(filter => {
+                                const count = getSourceCount(filter.id);
+                                // Only show filter if there are quizzes of that type (except 'all')
+                                if (filter.id !== 'all' && count === 0) return null;
 
-                        {/* Manual Quizzes Section */}
-                        {quizzes.some(q => q.source !== 'ai') && (
-                            <div>
-                                {quizzes.some(q => q.source === 'ai') && (
-                                    <h3 style={{ marginBottom: '1.5rem' }}>✍️ My Created Quizzes</h3>
-                                )}
-                                <div className="grid" style={{
-                                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                                    gap: '1.5rem'
-                                }}>
-                                    {quizzes.filter(q => q.source !== 'ai').map(quiz => renderQuizCard(quiz))}
+                                const isActive = sourceFilter === filter.id;
+                                return (
+                                    <button
+                                        key={filter.id}
+                                        onClick={() => setSourceFilter(filter.id)}
+                                        style={{
+                                            background: isActive
+                                                ? `rgba(${filter.id === 'all' ? '165, 180, 252' : '255, 255, 255'}, 0.15)`
+                                                : 'rgba(255, 255, 255, 0.05)',
+                                            border: isActive
+                                                ? `1px solid ${filter.color}50`
+                                                : '1px solid rgba(255, 255, 255, 0.1)',
+                                            color: isActive ? filter.color : 'var(--text-muted)',
+                                            padding: '0.5rem 1rem',
+                                            borderRadius: '20px',
+                                            fontSize: '0.85rem',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.4rem',
+                                            fontWeight: isActive ? '600' : '500',
+                                            transition: 'all 0.2s ease'
+                                        }}
+                                    >
+                                        <span>{filter.icon}</span>
+                                        <span>{filter.label}</span>
+                                        <span style={{
+                                            background: isActive
+                                                ? `${filter.color}30`
+                                                : 'rgba(255, 255, 255, 0.1)',
+                                            padding: '0.1rem 0.5rem',
+                                            borderRadius: '10px',
+                                            fontSize: '0.75rem',
+                                            marginLeft: '0.25rem'
+                                        }}>
+                                            {count}
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Quiz Grid */}
+                        {getFilteredQuizzes().length === 0 ? (
+                            <div style={{
+                                textAlign: 'center',
+                                padding: '3rem 2rem',
+                                color: 'var(--text-muted)'
+                            }}>
+                                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
+                                    {sourceFilters.find(f => f.id === sourceFilter)?.icon || '📝'}
                                 </div>
+                                <p>No quizzes found for this filter.</p>
+                                <button
+                                    onClick={() => setSourceFilter('all')}
+                                    style={{ marginTop: '1rem' }}
+                                >
+                                    Show All Quizzes
+                                </button>
+                            </div>
+                        ) : (
+                            <div className="grid" style={{
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                                gap: '1.5rem'
+                            }}>
+                                {getFilteredQuizzes().map(quiz => renderQuizCard(quiz))}
                             </div>
                         )}
                     </>

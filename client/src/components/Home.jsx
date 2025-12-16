@@ -253,6 +253,18 @@ const Home = ({ onStartQuiz, onViewReport, onViewAllAttempts }) => {
                 )}
             </div>
 
+            {/* Quiz ID */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                color: 'var(--text-muted)',
+                fontSize: '0.85rem'
+            }}>
+                <span>🆔</span>
+                <span>ID: {quiz.id}</span>
+            </div>
+
             {/* Attempt Count for completed quizzes */}
             {isCompleted && quiz.attemptCount > 0 && (
                 <div style={{

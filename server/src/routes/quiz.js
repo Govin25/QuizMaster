@@ -78,6 +78,32 @@ router.get('/public', async (req, res) => {
     }
 });
 
+// Get total count of public quizzes
+router.get('/public/count', async (req, res) => {
+    try {
+        const cacheKey = 'public_quizzes_count';
+
+        // Check cache first
+        if (cache.has(cacheKey)) {
+            return res.json(cache.get(cacheKey));
+        }
+
+        const { Quiz: QuizModel } = require('../models/sequelize');
+        const count = await QuizModel.count({
+            where: { is_public: true }
+        });
+
+        const result = { count };
+
+        // Cache for 5 minutes
+        cache.set(cacheKey, result, 5 * 60 * 1000);
+
+        res.json(result);
+    } catch (err) {
+        res.status(500).json(handleError(err, { userId: req.user?.id, requestId: req.requestId }));
+    }
+});
+
 // Get recommended quizzes for user
 router.get('/recommended', authenticateToken, async (req, res) => {
     try {

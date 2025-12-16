@@ -31,12 +31,14 @@ const QuizHub = ({ onBack, onViewProfile }) => {
     const [selectedQuiz, setSelectedQuiz] = useState(null);
     const [selectedQuizSource, setSelectedQuizSource] = useState(null);
     const [error, setError] = useState(null);
+    const [totalPublicCount, setTotalPublicCount] = useState(0);
 
     useEffect(() => {
         const loadInitialData = async () => {
             await fetchUserLibrary();
             await fetchRecommendations();
             await fetchQuizzesByCategory();
+            await fetchTotalPublicCount();
         };
         loadInitialData();
 
@@ -77,6 +79,18 @@ const QuizHub = ({ onBack, onViewProfile }) => {
             setHasRecommendations(false);
         } finally {
             setLoadingRecommendations(false);
+        }
+    };
+
+    const fetchTotalPublicCount = async () => {
+        try {
+            const response = await fetch(`${API_URL}/api/quizzes/public/count`);
+            if (response.ok) {
+                const data = await response.json();
+                setTotalPublicCount(data.count || 0);
+            }
+        } catch (err) {
+            console.error('Error fetching public quiz count:', err);
         }
     };
 
@@ -649,7 +663,22 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                 gap: '1rem',
                 flexWrap: 'wrap'
             }}>
-                <h2 style={{ margin: 0 }}>🌐 Quiz Hub</h2>
+                <h2 style={{ margin: 0 }}>
+                    🌐 Quiz Hub
+                    {totalPublicCount > 0 && (
+                        <span style={{
+                            marginLeft: '0.75rem',
+                            fontSize: '1rem',
+                            fontWeight: '500',
+                            color: 'var(--text-muted)',
+                            background: 'rgba(255, 255, 255, 0.1)',
+                            padding: '0.25rem 0.75rem',
+                            borderRadius: '20px'
+                        }}>
+                            {totalPublicCount}
+                        </span>
+                    )}
+                </h2>
                 <button onClick={onBack} style={{
                     background: 'rgba(255,255,255,0.1)',
                     padding: '0.6rem 1.2rem'

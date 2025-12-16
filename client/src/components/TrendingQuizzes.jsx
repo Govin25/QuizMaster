@@ -225,6 +225,18 @@ const QuizCard = ({ quiz, onAddToLibrary, onViewDetails, isAdded }) => {
                 <span>{quiz.questionCount || 0} Questions</span>
             </div>
 
+            {/* Quiz ID */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                color: 'var(--text-muted)',
+                fontSize: '0.85rem'
+            }}>
+                <span>🆔</span>
+                <span>ID: {quiz.id}</span>
+            </div>
+
             {/* Like Count (Read-only) */}
             <div style={{
                 display: 'flex',
