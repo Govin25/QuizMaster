@@ -26,8 +26,6 @@ function checkUsageLimit(generationType) {
                 // Get upgrade options
                 const upgradeOptions = [];
                 if (userTier === 'free') {
-                    upgradeOptions.push('pro', 'premium');
-                } else if (userTier === 'pro') {
                     upgradeOptions.push('premium');
                 }
 
@@ -87,13 +85,11 @@ function getGenerationTypeName(generationType) {
  */
 function getUpgradeMessage(currentTier, upgradeOptions) {
     if (upgradeOptions.length === 0) {
-        return 'You are already on the highest tier!';
+        return 'You are already on the Premium tier!';
     }
 
     if (currentTier === 'free') {
-        return 'Upgrade to Pro for 50/month or Premium for 200/month!';
-    } else if (currentTier === 'pro') {
-        return 'Upgrade to Premium for 200/month!';
+        return 'Upgrade to Premium for higher limits!';
     }
 
     return 'Consider upgrading for higher limits!';

@@ -6,7 +6,7 @@ const LandingPage = () => {
     const [showAuthModal, setShowAuthModal] = useState(false);
     const [activeTestimonial, setActiveTestimonial] = useState(0);
     const [expandedFaq, setExpandedFaq] = useState(null);
-    const [counters, setCounters] = useState({ users: 0, quizzes: 0, attempts: 0 });
+    const [counters, setCounters] = useState({ users: 0, quizzes: 0, attempts: 0, challenges: 0 });
     const [hasAnimated, setHasAnimated] = useState(false);
     const statsRef = useRef(null);
 
@@ -146,65 +146,52 @@ const LandingPage = () => {
     const pricingTiers = [
         {
             name: "Free",
-            price: "$0",
+            price: "₹0",
             period: "forever",
-            description: "Try everything with usage limits",
+            description: "Perfect for getting started",
             features: [
-                "5 AI quiz generations/month",
-                "3 document quiz generations/month",
-                "2 video quiz generations/month",
+                "3 AI quiz generations/month",
+                "2 document quiz generations/month",
+                "1 video quiz generation/month",
                 "Unlimited manual quizzes",
                 "Unlimited quiz attempts",
-                "Real-time 1v1 challenges",
-                "Leaderboards & analytics",
-                "Achievement system"
+                "Unlimited 1v1 challenges",
+                "Group challenges (up to 8 players)",
+                "10 quiz publishes/month",
+                "Basic analytics",
+                "Achievements & leaderboards"
             ],
             cta: "Get Started",
             highlighted: false,
             available: true
         },
         {
-            name: "Pro",
-            price: "$9",
+            name: "Premium",
+            price: "₹499",
             period: "per month",
-            description: "For power users and educators",
-            badge: "Most Popular",
+            description: "For power users & educators",
+            badge: "Best Value",
             features: [
-                "50 AI quiz generations/month",
-                "30 doc quiz generations/month",
-                "20 video quiz generations/month",
-                "Everything in Free",
-                "Priority processing",
+                "100 AI quiz generations/month",
+                "50 document quiz generations/month",
+                "25 video quiz generations/month",
+                "Unlimited manual quizzes",
+                "Unlimited quiz attempts",
+                "Unlimited 1v1 challenges",
+                "Group challenges (up to 100 players)",
+                "Unlimited quiz publishing",
                 "Advanced analytics",
+                "Priority AI processing",
                 "Export to PDF",
-                "Custom branding",
-                "Priority support"
+                "Priority support",
+                "Early feature access"
             ],
             cta: "Coming Soon",
             highlighted: true,
             available: false
-        },
-        {
-            name: "Premium",
-            price: "$19",
-            period: "per month",
-            description: "Unlimited learning & creation",
-            features: [
-                "200 AI quiz generations/month",
-                "100 doc quiz generations/month",
-                "75 video quiz generations/month",
-                "Everything in Pro",
-                "Bulk generation",
-                "API access",
-                "White-label option",
-                "Team collaboration",
-                "Early feature access"
-            ],
-            cta: "Coming Soon",
-            highlighted: false,
-            available: false
         }
     ];
+
 
     // Animate counters on scroll - optimized with passive listener
     useEffect(() => {
@@ -238,19 +225,21 @@ const LandingPage = () => {
             const targets = {
                 users: data.totalUsers || 0,
                 quizzes: data.totalQuizzes || 0,
-                attempts: data.totalAttempts || 0
+                attempts: data.totalAttempts || 0,
+                challenges: data.totalChallenges || 0
             };
 
             const duration = 1500; // Reduced from 2000ms for faster animation
             const steps = 40; // Reduced from 60 for better performance
             const interval = duration / steps;
 
-            let current = { users: 0, quizzes: 0, attempts: 0 };
+            let current = { users: 0, quizzes: 0, attempts: 0, challenges: 0 };
 
             const timer = setInterval(() => {
                 current.users += targets.users / steps;
                 current.quizzes += targets.quizzes / steps;
                 current.attempts += targets.attempts / steps;
+                current.challenges += targets.challenges / steps;
 
                 if (current.users >= targets.users) {
                     current = targets;
@@ -260,7 +249,8 @@ const LandingPage = () => {
                 setCounters({
                     users: Math.floor(current.users),
                     quizzes: Math.floor(current.quizzes),
-                    attempts: Math.floor(current.attempts)
+                    attempts: Math.floor(current.attempts),
+                    challenges: Math.floor(current.challenges)
                 });
             }, interval);
         } catch (error) {
@@ -269,7 +259,8 @@ const LandingPage = () => {
             setCounters({
                 users: 10000,
                 quizzes: 50000,
-                attempts: 500000
+                attempts: 500000,
+                challenges: 1000
             });
         }
     };
@@ -369,6 +360,11 @@ const LandingPage = () => {
                 <div className="stat-item">
                     <div className="stat-number">{formatNumber(counters.attempts)}+</div>
                     <div className="stat-label">Quiz Attempts</div>
+                </div>
+                <div className="stat-divider"></div>
+                <div className="stat-item">
+                    <div className="stat-number">{formatNumber(counters.challenges)}+</div>
+                    <div className="stat-label">Challenges Completed</div>
                 </div>
             </section>
 

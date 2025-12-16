@@ -125,7 +125,7 @@ const ActivityGraph = ({ heatmap, loading, error }) => {
 
             <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <div className="activity-graph-wrapper">
-                    <div style={{ marginBottom: '1rem', textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+                    <div style={{ marginBottom: '1rem', textAlign: 'right', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                         {totalQuizzes} {totalQuizzes === 1 ? 'quiz' : 'quizzes'} in the last year
                     </div>
 

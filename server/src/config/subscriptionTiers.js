@@ -7,65 +7,55 @@ const SUBSCRIPTION_TIERS = {
     free: {
         name: 'Free',
         price: 0,
+        currency: 'INR',
         limits: {
-            aiQuizGeneration: 5,
-            documentQuizGeneration: 3,
-            videoQuizGeneration: 2
+            aiQuizGeneration: 3,
+            documentQuizGeneration: 2,
+            videoQuizGeneration: 1,
+            maxGroupPlayers: 8,
+            quizPublishing: 10
         },
         features: {
             manualQuizzes: true,
             unlimitedAttempts: true,
-            challenges: true,
+            challenges1v1: true,
+            groupChallenges: true,
             analytics: 'basic',
+            achievements: true,
+            leaderboards: true,
             pdfExport: false,
-            customBranding: false,
+            priorityProcessing: false,
             prioritySupport: false,
-            priorityProcessing: false
-        }
-    },
-    pro: {
-        name: 'Pro',
-        price: 9,
-        limits: {
-            aiQuizGeneration: 50,
-            documentQuizGeneration: 30,
-            videoQuizGeneration: 20
-        },
-        features: {
-            manualQuizzes: true,
-            unlimitedAttempts: true,
-            challenges: true,
-            analytics: 'advanced',
-            pdfExport: true,
-            customBranding: true,
-            prioritySupport: true,
-            priorityProcessing: true
+            earlyAccess: false
         }
     },
     premium: {
         name: 'Premium',
-        price: 19,
+        price: 499,
+        currency: 'INR',
         limits: {
-            aiQuizGeneration: 200,
-            documentQuizGeneration: 100,
-            videoQuizGeneration: 75
+            aiQuizGeneration: 100,
+            documentQuizGeneration: 50,
+            videoQuizGeneration: 25,
+            maxGroupPlayers: 100,
+            quizPublishing: -1 // -1 means unlimited
         },
         features: {
             manualQuizzes: true,
             unlimitedAttempts: true,
-            challenges: true,
+            challenges1v1: true,
+            groupChallenges: true,
             analytics: 'advanced',
+            achievements: true,
+            leaderboards: true,
             pdfExport: true,
-            customBranding: true,
-            prioritySupport: true,
             priorityProcessing: true,
-            bulkGeneration: true,
-            apiAccess: true,
-            whiteLabel: true,
-            teamCollaboration: true
+            prioritySupport: true,
+            earlyAccess: true
         }
     }
 };
+
 
 /**
  * Get tier configuration

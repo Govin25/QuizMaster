@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { User, Quiz, Result } = require('../models/sequelize');
+const db = require('../db');
 
 /**
  * GET /api/public/stats
@@ -18,10 +19,28 @@ router.get('/stats', async (req, res) => {
         // Count total quiz attempts (results)
         const totalAttempts = await Result.count();
 
+        // Count total completed challenges (1v1 + group)
+        const challengeCount = await new Promise((resolve, reject) => {
+            const query = `
+                SELECT 
+                    (SELECT COUNT(*) FROM challenges WHERE status = 'completed') +
+                    (SELECT COUNT(*) FROM group_challenges WHERE status = 'completed') as total
+            `;
+            db.get(query, [], (err, row) => {
+                if (err) {
+                    console.error('Error counting challenges:', err);
+                    resolve(0); // Fallback to 0 if error
+                } else {
+                    resolve(row?.total || 0);
+                }
+            });
+        });
+
         res.json({
             totalUsers,
             totalQuizzes,
-            totalAttempts
+            totalAttempts,
+            totalChallenges: challengeCount
         });
     } catch (error) {
         console.error('Error fetching public stats:', error);
@@ -30,3 +49,4 @@ router.get('/stats', async (req, res) => {
 });
 
 module.exports = router;
+
