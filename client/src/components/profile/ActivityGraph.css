@@ -17,6 +17,7 @@
     gap: 3px;
     margin-bottom: 0.5rem;
     margin-left: 35px;
+    /* Shift down by one row to align with Monday */
 }
 
 .activity-month-label {

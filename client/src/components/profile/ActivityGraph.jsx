@@ -144,14 +144,14 @@ const ActivityGraph = ({ heatmap, loading, error }) => {
                         </div>
 
                         <div className="activity-content">
-                            {/* Day labels */}
+                            {/* Day labels - Sunday is row 0, Monday is row 1, etc. */}
                             <div className="activity-days">
+                                <div className="activity-day-label"></div>
                                 <div className="activity-day-label">Mon</div>
                                 <div className="activity-day-label"></div>
                                 <div className="activity-day-label">Wed</div>
                                 <div className="activity-day-label"></div>
                                 <div className="activity-day-label">Fri</div>
-                                <div className="activity-day-label"></div>
                                 <div className="activity-day-label"></div>
                             </div>
 
