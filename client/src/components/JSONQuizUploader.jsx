@@ -10,7 +10,7 @@ const JSONQuizUploader = ({ onClose, onQuizCreated }) => {
     const [validationErrors, setValidationErrors] = useState([]);
     const [parsedQuizzes, setParsedQuizzes] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [showSample, setShowSample] = useState(true);
+    const [showSample, setShowSample] = useState(false);
     const [showPrompt, setShowPrompt] = useState(false);
     const fileInputRef = useRef(null);
 
@@ -51,35 +51,68 @@ const JSONQuizUploader = ({ onClose, onQuizCreated }) => {
         ]
     };
 
-    const aiPrompt = `Create a quiz in JSON format following this exact schema:
+    const aiPrompt = `You are an expert quiz creator. Generate a high-quality educational quiz in JSON format.
 
+📋 JSON SCHEMA (follow EXACTLY):
 {
-  "title": "Quiz Title Here",
-  "category": "Category Name (e.g., Programming, Science, History)",
+  "title": "Descriptive Quiz Title",
+  "category": "Category (Programming, Science, History, Geography, Literature, Mathematics, General Knowledge, etc.)",
   "difficulty": "Beginner|Intermediate|Advanced|Expert",
   "questions": [
     {
       "type": "multiple_choice",
-      "text": "Question text here?",
-      "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-      "correctAnswer": "Option 1"
+      "text": "Clear, unambiguous question?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": "Option A"
     },
     {
-      "type": "true_false",
-      "text": "True/False question text here?",
+      "type": "true_false", 
+      "text": "Statement to evaluate as true or false.",
       "correctAnswer": "true"
     }
   ]
 }
 
-IMPORTANT RULES:
-- Each quiz must have between 5 and 20 questions
-- For multiple_choice questions, provide 2-6 options
-- The correctAnswer must EXACTLY match one of the options (case-sensitive)
-- For true_false questions, correctAnswer must be "true" or "false" (lowercase)
-- You can provide a single quiz object OR an array of multiple quiz objects
+🎯 QUIZ GENERATION RULES:
 
-Please create a quiz about: [YOUR TOPIC HERE]`;
+1. TOPIC RELEVANCE:
+   - If topic is clear: Create questions directly related to that specific topic
+   - If topic is vague: Interpret it broadly and cover popular subtopics people commonly search for
+   - If topic is unknown: Create a general knowledge quiz on trending/popular subjects
+
+2. QUESTION QUALITY:
+   - Questions must be factually accurate and verifiable
+   - Avoid ambiguous wording - only ONE answer should be clearly correct
+   - Include a mix of recall, understanding, and application questions
+   - Add context when needed (e.g., "In JavaScript, which..." instead of just "Which...")
+
+3. DIFFICULTY CALIBRATION:
+   - Beginner: Basic facts, definitions, simple concepts
+   - Intermediate: Requires understanding, some analysis
+   - Advanced: Complex scenarios, edge cases, deeper knowledge
+   - Expert: Nuanced details, expert-level distinctions, tricky scenarios
+
+4. OPTION RANDOMIZATION:
+   - Randomize the position of the correct answer (don't always put it first or last)
+   - Make wrong options plausible but clearly incorrect to experts
+   - Avoid patterns like "All of the above" or "None of the above" unless necessary
+   - Options should be similar in length and style
+
+5. VARIETY:
+   - Mix multiple_choice and true_false questions (80% MCQ, 20% T/F recommended)
+   - Cover different aspects/subtopics within the main theme
+   - Progress from easier to harder questions when possible
+
+⚠️ STRICT REQUIREMENTS:
+- 5 to 15 questions per quiz
+- For multiple_choice: exactly 4 options, correctAnswer MUST match one option exactly
+- For true_false: correctAnswer must be "true" or "false" (lowercase string)
+- Return ONLY valid JSON, no additional text or explanations
+
+📌 NUMBER OF QUESTIONS: [5-15]
+📌 DIFFICULTY LEVEL: [Beginner/Intermediate/Advanced/Expert]
+📌 CREATE A QUIZ ABOUT: [YOUR TOPIC HERE]`;
+
 
     const validateQuiz = (quiz) => {
         const errors = [];
@@ -274,20 +307,20 @@ Please create a quiz about: [YOUR TOPIC HERE]`;
                 flexWrap: 'wrap'
             }}>
                 <button
-                    onClick={() => { setShowSample(true); setShowPrompt(false); }}
+                    onClick={() => { setShowSample(false); setShowPrompt(false); }}
                     style={{
-                        background: showSample ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                        background: !showSample && !showPrompt ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
                         border: 'none',
-                        color: showSample ? '#f59e0b' : 'var(--text-muted)',
+                        color: !showSample && !showPrompt ? '#f59e0b' : 'var(--text-muted)',
                         padding: '0.5rem 0.75rem',
                         cursor: 'pointer',
                         borderRadius: '4px',
-                        fontWeight: showSample ? '600' : '400',
+                        fontWeight: !showSample && !showPrompt ? '600' : '400',
                         fontSize: '0.85rem',
                         whiteSpace: 'nowrap'
                     }}
                 >
-                    📋 Sample JSON
+                    📤 Upload
                 </button>
                 <button
                     onClick={() => { setShowSample(false); setShowPrompt(true); }}
@@ -306,20 +339,20 @@ Please create a quiz about: [YOUR TOPIC HERE]`;
                     🤖 AI Prompt Template
                 </button>
                 <button
-                    onClick={() => { setShowSample(false); setShowPrompt(false); }}
+                    onClick={() => { setShowSample(true); setShowPrompt(false); }}
                     style={{
-                        background: !showSample && !showPrompt ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                        background: showSample ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
                         border: 'none',
-                        color: !showSample && !showPrompt ? '#f59e0b' : 'var(--text-muted)',
+                        color: showSample ? '#f59e0b' : 'var(--text-muted)',
                         padding: '0.5rem 0.75rem',
                         cursor: 'pointer',
                         borderRadius: '4px',
-                        fontWeight: !showSample && !showPrompt ? '600' : '400',
+                        fontWeight: showSample ? '600' : '400',
                         fontSize: '0.85rem',
                         whiteSpace: 'nowrap'
                     }}
                 >
-                    📤 Upload
+                    📋 Sample JSON
                 </button>
             </div>
 
@@ -411,7 +444,7 @@ Please create a quiz about: [YOUR TOPIC HERE]`;
                         {aiPrompt}
                     </pre>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-                        🤖 Copy this prompt and paste it into ChatGPT, Claude, or any AI assistant. Replace [YOUR TOPIC HERE] with your desired quiz topic!
+                        🤖 Copy this prompt and paste it into ChatGPT, Claude, Gemini, or any AI. Replace the placeholders at the bottom: <strong style={{ color: '#f59e0b' }}>[YOUR TOPIC HERE]</strong>, <strong style={{ color: '#f59e0b' }}>[Difficulty]</strong>, and <strong style={{ color: '#f59e0b' }}>[Number of Questions]</strong>. Then paste the AI's JSON response above to upload!
                     </p>
                 </div>
             )}
