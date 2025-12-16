@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
@@ -7,58 +7,49 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
     const { user, fetchWithAuth } = useAuth();
     const { showSuccess, showError } = useToast();
 
-    const [quizzes, setQuizzes] = useState([]);
+    const [myQuizzes, setMyQuizzes] = useState([]);
+    const [publicQuizzes, setPublicQuizzes] = useState([]);
+    const [searchResults, setSearchResults] = useState([]);
     const [filteredQuizzes, setFilteredQuizzes] = useState([]);
     const [selectedQuiz, setSelectedQuiz] = useState(null);
     const [maxParticipants, setMaxParticipants] = useState(8);
     const [creating, setCreating] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [searching, setSearching] = useState(false);
     const [activeTab, setActiveTab] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
+    const searchTimeoutRef = useRef(null);
 
+    // Initial fetch - user's quizzes + limited public quizzes
     useEffect(() => {
-        fetchQuizzes();
+        fetchInitialQuizzes();
     }, []);
 
+    // Filter quizzes when tab or data changes
     useEffect(() => {
-        filterQuizzes();
-    }, [quizzes, activeTab, searchQuery]);
+        applyFilters();
+    }, [myQuizzes, publicQuizzes, searchResults, activeTab, searchQuery]);
 
-    const fetchQuizzes = async () => {
+    const fetchInitialQuizzes = async () => {
         try {
-            // Fetch user's quizzes (includes full data with questions)
+            // Fetch user's quizzes
             const myQuizzesResponse = await fetchWithAuth(`${API_URL}/api/quizzes/my-quizzes`);
-
             if (!myQuizzesResponse.ok) {
                 throw new Error('Failed to fetch quizzes');
             }
+            const myQuizzesData = await myQuizzesResponse.json();
+            setMyQuizzes(myQuizzesData);
 
-            const myQuizzes = await myQuizzesResponse.json();
+            // Fetch public quizzes with limit (handled by backend now)
+            const publicResponse = await fetchWithAuth(`${API_URL}/api/quizzes/public?limit=50`);
+            if (publicResponse.ok) {
+                const publicData = await publicResponse.json();
+                // Filter out user's own quizzes (backend already limits to 50)
+                const filteredPublic = (Array.isArray(publicData) ? publicData : [])
+                    .filter(q => !myQuizzesData.find(mq => mq.id === q.id));
+                setPublicQuizzes(filteredPublic);
+            }
 
-            // Fetch public quizzes list
-            const publicResponse = await fetchWithAuth(`${API_URL}/api/quizzes`);
-            const publicQuizzesList = publicResponse.ok ? await publicResponse.json() : [];
-
-            // For public quizzes, fetch full details to get question count
-            const publicQuizzesWithDetails = await Promise.all(
-                publicQuizzesList
-                    .filter(q => !myQuizzes.find(mq => mq.id === q.id)) // Exclude user's own quizzes
-                    .map(async (quiz) => {
-                        try {
-                            const detailResponse = await fetchWithAuth(`${API_URL}/api/quizzes/${quiz.id}`);
-                            if (detailResponse.ok) {
-                                return await detailResponse.json();
-                            }
-                            return quiz;
-                        } catch {
-                            return quiz;
-                        }
-                    })
-            );
-
-            const allQuizzes = [...myQuizzes, ...publicQuizzesWithDetails];
-
-            setQuizzes(allQuizzes);
             setLoading(false);
         } catch (err) {
             showError(err.message);
@@ -66,32 +57,97 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
         }
     };
 
-    const filterQuizzes = () => {
-        let filtered = quizzes;
-
-        // Filter by tab
-        if (activeTab === 'my-quizzes') {
-            filtered = filtered.filter(q => q.creator_id === user.id);
-        } else if (activeTab === 'public') {
-            filtered = filtered.filter(q => q.creator_id !== user.id);
+    // Debounced search for public quizzes
+    const searchPublicQuizzes = useCallback(async (query) => {
+        if (!query || query.length < 3) {
+            setSearchResults([]);
+            setSearching(false);
+            return;
         }
 
-        // Filter by search query
+        setSearching(true);
+        try {
+            // Search by quiz ID if query is numeric
+            const isNumeric = /^\d+$/.test(query.trim());
+
+            if (isNumeric) {
+                // Try to fetch specific quiz by ID
+                const response = await fetchWithAuth(`${API_URL}/api/quizzes/${query.trim()}`);
+                if (response.ok) {
+                    const quiz = await response.json();
+                    // Only add if not already in myQuizzes
+                    if (!myQuizzes.find(mq => mq.id === quiz.id)) {
+                        setSearchResults([quiz]);
+                    } else {
+                        setSearchResults([]);
+                    }
+                } else {
+                    setSearchResults([]);
+                }
+            } else {
+                // For text search, filter from already loaded quizzes
+                // (Backend search would be better but using local filter for now)
+                setSearchResults([]);
+            }
+        } catch (err) {
+            console.error('Search failed:', err);
+            setSearchResults([]);
+        } finally {
+            setSearching(false);
+        }
+    }, [myQuizzes, fetchWithAuth]);
+
+    // Handle search input with debounce
+    const handleSearchChange = (value) => {
+        setSearchQuery(value);
+
+        // Clear previous timeout
+        if (searchTimeoutRef.current) {
+            clearTimeout(searchTimeoutRef.current);
+        }
+
+        // Debounce search API call
+        if (value.length >= 3) {
+            searchTimeoutRef.current = setTimeout(() => {
+                searchPublicQuizzes(value);
+            }, 300);
+        } else {
+            setSearchResults([]);
+        }
+    };
+
+    const applyFilters = () => {
+        let allQuizzes = [];
+
+        if (activeTab === 'my-quizzes') {
+            allQuizzes = [...myQuizzes];
+        } else {
+            // Combine all sources, avoiding duplicates
+            const quizMap = new Map();
+
+            myQuizzes.forEach(q => quizMap.set(q.id, q));
+            publicQuizzes.forEach(q => {
+                if (!quizMap.has(q.id)) quizMap.set(q.id, q);
+            });
+            searchResults.forEach(q => {
+                if (!quizMap.has(q.id)) quizMap.set(q.id, q);
+            });
+
+            allQuizzes = Array.from(quizMap.values());
+        }
+
+        // Apply local text filter
         if (searchQuery.trim()) {
             const query = searchQuery.toLowerCase().trim();
-            filtered = filtered.filter(q => {
-                // Search by ID
+            allQuizzes = allQuizzes.filter(q => {
                 const idMatch = q.id.toString().includes(query);
-                // Search by title
                 const titleMatch = q.title.toLowerCase().includes(query);
-                // Search by category
                 const categoryMatch = q.category.toLowerCase().includes(query);
-
                 return idMatch || titleMatch || categoryMatch;
             });
         }
 
-        setFilteredQuizzes(filtered);
+        setFilteredQuizzes(allQuizzes);
     };
 
     const handleCreate = async () => {
@@ -181,9 +237,9 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
                             </div>
                         </div>
 
-                        {/* Tabs */}
+                        {/* Tabs - Only All and My Quizzes */}
                         <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                            {['all', 'my-quizzes', 'public'].map(tab => (
+                            {['all', 'my-quizzes'].map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab)}
@@ -198,22 +254,21 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
                                         fontWeight: '600'
                                     }}
                                 >
-                                    {tab === 'all' ? '🌐 All Quizzes' : tab === 'my-quizzes' ? '📝 My Quizzes' : '🌍 Public'}
+                                    {tab === 'all' ? '🌐 All Quizzes' : '📝 My Quizzes'}
                                 </button>
                             ))}
                         </div>
 
-
                         {/* Search Box */}
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>
-                                Search Quizzes
+                                Search Quizzes {searching && <span style={{ color: 'var(--text-muted)', fontWeight: 'normal' }}>(searching...)</span>}
                             </label>
                             <div style={{ position: 'relative' }}>
                                 <input
                                     type="text"
                                     value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onChange={(e) => handleSearchChange(e.target.value)}
                                     placeholder="Search by Quiz ID, title, or category..."
                                     style={{
                                         width: '100%',
@@ -227,7 +282,7 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
                                 />
                                 {searchQuery && (
                                     <button
-                                        onClick={() => setSearchQuery('')}
+                                        onClick={() => handleSearchChange('')}
                                         style={{
                                             position: 'absolute',
                                             right: '0.5rem',
@@ -245,6 +300,9 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
                                     </button>
                                 )}
                             </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                                💡 Enter a Quiz ID to find any public quiz
+                            </div>
                         </div>
 
                         {/* Quiz Selection */}
@@ -255,7 +313,7 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
                             {filteredQuizzes.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                                     <p>No quizzes found for the current filters.</p>
-                                    {quizzes.length === 0 && <p>Try browsing public quizzes or create your own!</p>}
+                                    {myQuizzes.length === 0 && <p>Create your own quiz first!</p>}
                                 </div>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '400px', overflow: 'auto' }}>

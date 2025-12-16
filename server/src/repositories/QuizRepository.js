@@ -73,10 +73,11 @@ class QuizRepository {
     }
 
     /**
- * Get public quizzes
- * @returns {Promise<Array>}
- */
-    async findPublic() {
+     * Get public quizzes with limit for performance
+     * @param {number} limit - Maximum number of quizzes to return (default 50)
+     * @returns {Promise<Array>}
+     */
+    async findPublic(limit = 50) {
         const { User } = require('../models/sequelize');
 
         return await Quiz.findAll({
@@ -100,7 +101,11 @@ class QuizRepository {
                     attributes: ['id', 'username']
                 }
             ],
-            order: [['created_at', 'DESC']]
+            order: [
+                [sequelize.literal('likesCount'), 'DESC'], // Order by popularity (likes)
+                ['created_at', 'DESC']
+            ],
+            limit: limit
         });
     }
 

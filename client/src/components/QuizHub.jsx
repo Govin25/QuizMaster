@@ -51,23 +51,12 @@ const QuizHub = ({ onBack, onViewProfile }) => {
         };
     }, []);
 
-    // Apply library filtering whenever addedQuizzes or quizzesByCategory changes
+    // Sync filteredQuizzes when quizzesByCategory changes (show all quizzes, don't hide added ones)
     useEffect(() => {
         if (Object.keys(quizzesByCategory).length > 0 && !searchQuery.trim()) {
-            applyLibraryFilter();
+            setFilteredQuizzes(quizzesByCategory);
         }
-    }, [addedQuizzes, quizzesByCategory]);
-
-    const applyLibraryFilter = () => {
-        const filtered = {};
-        Object.entries(quizzesByCategory).forEach(([category, quizzes]) => {
-            const nonLibraryQuizzes = quizzes.filter(quiz => !addedQuizzes.has(quiz.id));
-            if (nonLibraryQuizzes.length > 0) {
-                filtered[category] = nonLibraryQuizzes;
-            }
-        });
-        setFilteredQuizzes(filtered);
-    };
+    }, [quizzesByCategory, searchQuery]);
 
     const fetchRecommendations = async () => {
         try {
@@ -179,15 +168,8 @@ const QuizHub = ({ onBack, onViewProfile }) => {
         setSearchQuery(query);
 
         if (!query.trim()) {
-            // Filter out library quizzes when not searching
-            const filtered = {};
-            Object.entries(quizzesByCategory).forEach(([category, quizzes]) => {
-                const nonLibraryQuizzes = quizzes.filter(quiz => !addedQuizzes.has(quiz.id));
-                if (nonLibraryQuizzes.length > 0) {
-                    filtered[category] = nonLibraryQuizzes;
-                }
-            });
-            setFilteredQuizzes(filtered);
+            // Show all quizzes when not searching (consistent with Trending & Recommended)
+            setFilteredQuizzes(quizzesByCategory);
             return;
         }
 
@@ -196,9 +178,6 @@ const QuizHub = ({ onBack, onViewProfile }) => {
 
         Object.entries(quizzesByCategory).forEach(([category, quizzes]) => {
             const matchedQuizzes = quizzes.filter(quiz => {
-                // Exclude library quizzes
-                if (addedQuizzes.has(quiz.id)) return false;
-
                 // Search by ID (exact or partial match)
                 const idMatch = quiz.id.toString().includes(lowerQuery);
 

@@ -55,17 +55,19 @@ const upload = multer({
     })
 });
 
-// Get public quizzes (Quiz Hub)
+// Get public quizzes (Quiz Hub) with optional limit
 router.get('/public', async (req, res) => {
     try {
-        const cacheKey = 'public_quizzes';
+        // Default limit of 50, max 100 to prevent unbounded queries
+        const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+        const cacheKey = `public_quizzes_${limit}`;
 
         // Check cache first
         if (cache.has(cacheKey)) {
             return res.json(cache.get(cacheKey));
         }
 
-        const quizzes = await Quiz.getPublicQuizzes();
+        const quizzes = await Quiz.getPublicQuizzes(limit);
 
         // Cache for 5 minutes
         cache.set(cacheKey, quizzes, 5 * 60 * 1000);

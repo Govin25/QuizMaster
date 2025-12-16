@@ -64,8 +64,8 @@ class Quiz {
         return await QuizRepository.findAll();
     }
 
-    static async getPublicQuizzes() {
-        return await QuizRepository.findPublic();
+    static async getPublicQuizzes(limit = 50) {
+        return await QuizRepository.findPublic(limit);
     }
 
     static async getUserQuizzes(userId) {
