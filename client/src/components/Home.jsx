@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 import { LikeButton } from './SocialFeatures';
+import { formatDateShort } from '../utils/dateUtils';
 
 const Home = ({ onStartQuiz, onViewReport, onViewAllAttempts }) => {
     const { fetchWithAuth } = useAuth();
@@ -524,7 +525,7 @@ const Home = ({ onStartQuiz, onViewReport, onViewAllAttempts }) => {
                     }}>
                         <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📅</div>
                         <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>
-                            {new Date(selectedQuiz.created_at).toLocaleDateString()}
+                            {formatDateShort(selectedQuiz.created_at)}
                         </div>
                         <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Created</div>
                     </div>

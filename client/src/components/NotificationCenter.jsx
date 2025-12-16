@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNotifications } from '../context/NotificationContext';
+import { safeParseDate } from '../utils/dateUtils';
 
 const NotificationCenter = () => {
     const { notifications, unreadCount, markAsRead, markAllAsRead, clearAllNotifications } = useNotifications();
@@ -59,7 +60,9 @@ const NotificationCenter = () => {
     };
 
     const formatDate = (dateString) => {
-        const date = new Date(dateString);
+        const date = safeParseDate(dateString);
+        if (!date) return '-';
+
         const now = new Date();
         const diffInSeconds = Math.floor((now - date) / 1000);
 

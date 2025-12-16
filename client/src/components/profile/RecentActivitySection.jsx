@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDateShort } from '../../utils/dateUtils';
 
 const RecentActivitySection = ({ activity, loading, error }) => {
     const getScoreColor = (score) => {
@@ -57,7 +58,7 @@ const RecentActivitySection = ({ activity, loading, error }) => {
                             {attempt.score}%
                         </div>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', minWidth: '100px', textAlign: 'right' }}>
-                            {new Date(attempt.completed_at).toLocaleDateString()}
+                            {formatDateShort(attempt.completed_at)}
                         </div>
                     </div>
                 ))}

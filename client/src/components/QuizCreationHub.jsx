@@ -111,7 +111,7 @@ const QuizCreationHub = ({ onBack, onCreated, onManualCreate }) => {
 
     // Render hub
     return (
-        <div className="glass-card" style={{ maxWidth: '900px', width: '100%' }}>
+        <div className="glass-card" style={{ width: '100%' }}>
             {/* Header */}
             <div style={{
                 textAlign: 'center',

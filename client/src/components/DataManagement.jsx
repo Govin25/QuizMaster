@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 import ConfirmDialog from './ConfirmDialog';
+import { formatDateShort } from '../utils/dateUtils';
 
 const DataManagement = () => {
     const { user, logout, fetchWithAuth } = useAuth();
@@ -69,7 +70,7 @@ const DataManagement = () => {
             }
 
             const data = await response.json();
-            showSuccess(`Account deletion requested. Your account will be deleted on ${new Date(data.deletionDate).toLocaleDateString()}`);
+            showSuccess(`Account deletion requested. Your account will be deleted on ${formatDateShort(data.deletionDate)}`);
             fetchDeletionStatus();
         } catch (error) {
             console.error('Error requesting deletion:', error);
@@ -222,7 +223,7 @@ const DataManagement = () => {
                             </p>
                             <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem' }}>
                                 Your account will be permanently deleted on{' '}
-                                <strong>{new Date(deletionStatus.deletionDate).toLocaleDateString()}</strong>
+                                <strong>{formatDateShort(deletionStatus.deletionDate)}</strong>
                                 {' '}({deletionStatus.daysRemaining} days remaining)
                             </p>
                         </div>

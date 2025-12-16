@@ -89,7 +89,7 @@ const Leaderboard = ({ onBack, onViewProfile }) => {
     };
 
     return (
-        <div className="glass-card" style={{ maxWidth: '900px', width: '100%' }}>
+        <div className="glass-card" style={{ width: '100%' }}>
             <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',

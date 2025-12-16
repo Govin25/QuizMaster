@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatDateShort } from '../../utils/dateUtils';
 
 const AchievementsSection = ({ achievements, loading, error }) => {
     if (loading) {
@@ -46,7 +47,7 @@ const AchievementsSection = ({ achievements, loading, error }) => {
                                 <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{achievement.name}</div>
                                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{achievement.description}</div>
                                 <div style={{ fontSize: '0.75rem', color: '#22c55e', marginTop: '0.5rem' }}>
-                                    {new Date(achievement.unlockedAt).toLocaleDateString()}
+                                    {formatDateShort(achievement.unlockedAt)}
                                 </div>
                             </div>
                         ))}

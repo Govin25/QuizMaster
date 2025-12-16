@@ -342,8 +342,9 @@ const AppContent = () => {
           flexDirection: 'column',
           gap: '1rem',
           width: '100%',
-          maxWidth: '1200px',
-          margin: '0 auto'
+          maxWidth: '1280px',
+          margin: '0 auto',
+          padding: '0 clamp(1rem, 3vw, 2rem)'
         }}>
           {/* Top row: Logo, Greeting, Toggle */}
           <div style={{

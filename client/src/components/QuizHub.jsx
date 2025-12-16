@@ -5,6 +5,7 @@ import API_URL from '../config';
 import TrendingQuizzes from './TrendingQuizzes';
 import TopCreators from './TopCreators';
 import PublicUserProfile from './PublicUserProfile';
+import { formatDateShort } from '../utils/dateUtils';
 
 const QuizHub = ({ onBack, onViewProfile }) => {
     const { fetchWithAuth } = useAuth();
@@ -579,7 +580,7 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                     }}>
                         <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📅</div>
                         <div style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '0.25rem' }}>
-                            {new Date(selectedQuiz.created_at).toLocaleDateString()}
+                            {formatDateShort(selectedQuiz.created_at)}
                         </div>
                         <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Created</div>
                     </div>

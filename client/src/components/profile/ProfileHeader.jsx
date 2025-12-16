@@ -1,4 +1,5 @@
 import React from 'react';
+import { formatMonthYear } from '../../utils/dateUtils';
 
 const ProfileHeader = ({ user, userStats, onBack }) => {
     return (
@@ -23,7 +24,7 @@ const ProfileHeader = ({ user, userStats, onBack }) => {
                     <div style={{ display: 'flex', gap: '1rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                         <span>Level {userStats?.level || 1}</span>
                         <span>•</span>
-                        <span>Joined {userStats?.joinedAt ? new Date(userStats.joinedAt).toLocaleDateString() : '-'}</span>
+                        <span>Joined {formatMonthYear(userStats?.joinedAt)}</span>
                     </div>
                 </div>
             </div>
