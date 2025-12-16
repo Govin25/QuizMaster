@@ -306,6 +306,8 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                     showInfo('Quiz is already in your home!');
                     // Update local state even if backend says it's already there
                     setInLibrary(prev => new Set(prev).add(quizId));
+                    // Redirect to home page
+                    onBack();
                     return;
                 }
                 throw new Error(errorData.error || 'Failed to add quiz to home');
@@ -313,6 +315,8 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
             showSuccess('Quiz added to home successfully!');
             // Update local state to reflect the quiz is now in library
             setInLibrary(prev => new Set(prev).add(quizId));
+            // Redirect to home page so user can start the quiz
+            onBack();
         } catch (err) {
             showError(err.message);
         }
