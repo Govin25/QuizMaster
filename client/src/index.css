@@ -1192,20 +1192,20 @@ h3 {
 }
 
 .float-1 {
-  top: 15%;
-  left: 5%;
+  top: 10%;
+  left: 2%;
   animation-delay: 0s;
 }
 
 .float-2 {
-  top: 50%;
-  right: 5%;
+  top: 25%;
+  right: 2%;
   animation-delay: -5s;
 }
 
 .float-3 {
-  bottom: 15%;
-  left: 8%;
+  bottom: 10%;
+  left: 2%;
   animation-delay: -10s;
 }
 
@@ -1303,6 +1303,14 @@ h3 {
   color: #fbbf24;
   font-size: 0.9rem;
 }
+
+/* Hide floating elements on tablets and smaller to prevent overlap */
+@media (max-width: 1200px) {
+  .floating-elements {
+    display: none;
+  }
+}
+
 
 /* Statistics Bar */
 .stats-bar {

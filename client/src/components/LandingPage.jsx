@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AuthForm from './AuthForm';
+import API_URL from '../config';
 
 const LandingPage = () => {
     const [showAuthModal, setShowAuthModal] = useState(false);
@@ -45,11 +46,11 @@ const LandingPage = () => {
     const faqs = [
         {
             question: "Is Quainy really free?",
-            answer: "Yes! Quainy is completely free to use with all core features including AI quiz generation, real-time gameplay, analytics, and challenges. We're planning premium features for the future, but the current platform is 100% free."
+            answer: "Yes! Quainy is completely free to use with all core features including quiz generation, real-time gameplay, analytics, and challenges. We're planning premium features for the future, but the current platform is 100% free."
         },
         {
             question: "How does the AI quiz generation work?",
-            answer: "Our AI analyzes your text input or uploaded documents (PDF, TXT, DOCX) to generate relevant multiple-choice questions. You can specify the number of questions and difficulty level, then review and edit before saving."
+            answer: "Our AI analyzes your text input or uploaded documents (PDF, TXT) to generate relevant multiple-choice questions. You can specify the number of questions and difficulty level, then review and edit before saving."
         },
         {
             question: "Is my data secure and private?",
@@ -227,30 +228,50 @@ const LandingPage = () => {
         return () => observer.disconnect();
     }, [hasAnimated]);
 
-    const animateCounters = () => {
-        const duration = 1500; // Reduced from 2000ms for faster animation
-        const steps = 40; // Reduced from 60 for better performance
-        const interval = duration / steps;
+    const animateCounters = async () => {
+        try {
+            // Fetch real statistics from backend
+            const response = await fetch(`${API_URL}/api/public/stats`);
+            if (!response.ok) throw new Error('Failed to fetch stats');
 
-        const targets = { users: 10000, quizzes: 50000, attempts: 500000 };
-        let current = { users: 0, quizzes: 0, attempts: 0 };
+            const data = await response.json();
+            const targets = {
+                users: data.totalUsers || 0,
+                quizzes: data.totalQuizzes || 0,
+                attempts: data.totalAttempts || 0
+            };
 
-        const timer = setInterval(() => {
-            current.users += targets.users / steps;
-            current.quizzes += targets.quizzes / steps;
-            current.attempts += targets.attempts / steps;
+            const duration = 1500; // Reduced from 2000ms for faster animation
+            const steps = 40; // Reduced from 60 for better performance
+            const interval = duration / steps;
 
-            if (current.users >= targets.users) {
-                current = targets;
-                clearInterval(timer);
-            }
+            let current = { users: 0, quizzes: 0, attempts: 0 };
 
+            const timer = setInterval(() => {
+                current.users += targets.users / steps;
+                current.quizzes += targets.quizzes / steps;
+                current.attempts += targets.attempts / steps;
+
+                if (current.users >= targets.users) {
+                    current = targets;
+                    clearInterval(timer);
+                }
+
+                setCounters({
+                    users: Math.floor(current.users),
+                    quizzes: Math.floor(current.quizzes),
+                    attempts: Math.floor(current.attempts)
+                });
+            }, interval);
+        } catch (error) {
+            console.error('Error fetching statistics:', error);
+            // Fallback to default values if API fails
             setCounters({
-                users: Math.floor(current.users),
-                quizzes: Math.floor(current.quizzes),
-                attempts: Math.floor(current.attempts)
+                users: 10000,
+                quizzes: 50000,
+                attempts: 500000
             });
-        }, interval);
+        }
     };
 
     // Auto-rotate testimonials - optimized
@@ -337,7 +358,7 @@ const LandingPage = () => {
             <section className="stats-bar" ref={statsRef}>
                 <div className="stat-item">
                     <div className="stat-number">{formatNumber(counters.users)}+</div>
-                    <div className="stat-label">Active Users</div>
+                    <div className="stat-label">Total Users</div>
                 </div>
                 <div className="stat-divider"></div>
                 <div className="stat-item">
@@ -429,7 +450,7 @@ const LandingPage = () => {
             {/* Trust Indicators */}
             <section className="trust-section">
                 <div className="section-header">
-                    <h2 className="section-title">Loved by Learners Worldwide</h2>
+                    <h2 className="section-title">Loved by Learners</h2>
                     <p className="section-subtitle">See what our users have to say</p>
                 </div>
 
@@ -469,7 +490,7 @@ const LandingPage = () => {
                     </div>
                 </div>
 
-                {/* Trust Badges */}
+                {/* Trust Badges
                 <div className="trust-badges">
                     <div className="trust-badge">
                         <div className="trust-icon">🔒</div>
@@ -487,7 +508,7 @@ const LandingPage = () => {
                         <div className="trust-icon">⚡</div>
                         <div className="trust-text">99.9% Uptime</div>
                     </div>
-                </div>
+                </div> */}
             </section>
 
             {/* FAQ Section */}
