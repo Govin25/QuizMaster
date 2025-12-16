@@ -1855,7 +1855,8 @@ h3 {
 }
 
 .faq-question.active {
-  color: var(--primary);
+  background: rgba(139, 92, 246, 0.1);
+  color: white;
 }
 
 .faq-icon {

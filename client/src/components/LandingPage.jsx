@@ -57,10 +57,6 @@ const LandingPage = () => {
             answer: "Absolutely! We're GDPR compliant with full data encryption. You have complete control over your data with options to export or delete your account at any time. We never share your personal information with third parties."
         },
         {
-            question: "Can I use Quainy offline?",
-            answer: "Yes! Quainy is a Progressive Web App (PWA) that works offline. You can install it on your device and access your quizzes even without an internet connection."
-        },
-        {
             question: "How do 1v1 challenges work?",
             answer: "Challenge other users to compete on the same quiz in real-time! Both players answer questions simultaneously, and the highest score wins. It's a great way to make learning competitive and engaging."
         },
@@ -542,7 +538,7 @@ const LandingPage = () => {
                         Start Learning for Free
                         <span className="arrow">→</span>
                     </button>
-                    <p className="final-cta-note">No credit card required • Free forever • Cancel anytime</p>
+                    <p className="final-cta-note">Free forever • Quick signup • Start learning in seconds</p>
                 </div>
             </section>
 
