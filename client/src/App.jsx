@@ -17,11 +17,10 @@ import QuizCreationHub from './components/QuizCreationHub';
 import QuizReview from './components/QuizReview';
 import UserProfile from './components/UserProfile';
 import PublicUserProfile from './components/PublicUserProfile';
-import ChallengeHub from './components/ChallengeHub';
+import UnifiedChallengeHub from './components/UnifiedChallengeHub';
 import ChallengeGame from './components/ChallengeGame';
 import ChallengeCreator from './components/ChallengeCreator';
 import ChallengeResults from './components/ChallengeResults';
-import GroupChallengeHub from './components/GroupChallengeHub';
 import GroupChallengeLobby from './components/GroupChallengeLobby';
 import GroupChallengeGame from './components/GroupChallengeGame';
 import GroupChallengeResults from './components/GroupChallengeResults';
@@ -406,11 +405,8 @@ const AppContent = () => {
             <button onClick={() => { setView('create-quiz'); closeMenu(); }} className={view === 'create-quiz' ? 'active' : ''}>
               ✨ Create Quiz
             </button>
-            <button onClick={() => { setView('challenges'); closeMenu(); }} className={view === 'challenges' ? 'active' : ''}>
-              ⚔️ Challenges
-            </button>
-            <button onClick={() => { setView('group-challenges'); closeMenu(); }} className={view === 'group-challenges' || view === 'group-lobby' || view === 'group-game' || view === 'group-results' ? 'active' : ''}>
-              🎯 Group Challenges
+            <button onClick={() => { setView('challenges'); closeMenu(); }} className={view === 'challenges' || view === 'challenge-game' || view === 'challenge-results' || view === 'group-lobby' || view === 'group-game' || view === 'group-results' ? 'active' : ''}>
+              🎮 Challenges
             </button>
             <button onClick={() => { setView('leaderboard'); closeMenu(); }} className={view === 'leaderboard' ? 'active' : ''}>
               🏆 Leaderboard
@@ -506,19 +502,39 @@ const AppContent = () => {
       )}
       {view === 'challenges' && (
         <>
-          <ChallengeHub
-            key={showChallengeCreator ? 'creating' : 'viewing'}
+          <UnifiedChallengeHub
+            key={showChallengeCreator || showGroupChallengeCreator ? 'creating' : 'viewing'}
             onStartChallenge={startChallenge}
             onViewResults={viewChallengeResults}
             onCreateChallenge={() => setShowChallengeCreator(true)}
+            onJoinRoom={(roomId, quizId) => {
+              setActiveGroupRoomId(roomId);
+              setActiveQuizId(quizId);
+              setView('group-lobby');
+            }}
+            onCreateRoom={() => setShowGroupChallengeCreator(true)}
+            onShowGroupResults={(roomId, onCloseCallback) => {
+              setActiveGroupRoomId(roomId);
+              setView('group-results');
+              window.__groupChallengeResultsCloseCallback = onCloseCallback;
+            }}
           />
           {showChallengeCreator && (
             <ChallengeCreator
               onClose={() => setShowChallengeCreator(false)}
               onChallengeCreated={() => {
                 setShowChallengeCreator(false);
-                // Force re-render of ChallengeHub to refresh the list
-                // The key change will trigger useEffect to fetch challenges again
+              }}
+            />
+          )}
+          {showGroupChallengeCreator && (
+            <GroupChallengeCreator
+              onClose={() => setShowGroupChallengeCreator(false)}
+              onCreated={(room) => {
+                setShowGroupChallengeCreator(false);
+                setActiveGroupRoomId(room.id);
+                setActiveQuizId(room.quiz_id);
+                setView('group-lobby');
               }}
             />
           )}
@@ -546,42 +562,13 @@ const AppContent = () => {
         />
       )}
 
-      {/* Group Challenges */}
-      {view === 'group-challenges' && (
-        <>
-          <GroupChallengeHub
-            onJoinRoom={(roomId, quizId) => {
-              setActiveGroupRoomId(roomId);
-              setActiveQuizId(quizId);
-              setView('group-lobby');
-            }}
-            onCreate={() => setShowGroupChallengeCreator(true)}
-            onShowResults={(roomId, onCloseCallback) => {
-              setActiveGroupRoomId(roomId);
-              setView('group-results');
-              // Store callback for later use
-              window.__groupChallengeResultsCloseCallback = onCloseCallback;
-            }}
-          />
-          {showGroupChallengeCreator && (
-            <GroupChallengeCreator
-              onClose={() => setShowGroupChallengeCreator(false)}
-              onCreated={(room) => {
-                setShowGroupChallengeCreator(false);
-                setActiveGroupRoomId(room.id);
-                setActiveQuizId(room.quiz_id);
-                setView('group-lobby');
-              }}
-            />
-          )}
-        </>
-      )}
+      {/* Group Challenges section is now handled by UnifiedChallengeHub */}
       {view === 'group-lobby' && activeGroupRoomId && activeQuizId && (
         <GroupChallengeLobby
           roomId={activeGroupRoomId}
           quizId={activeQuizId}
           onStartGame={() => setView('group-game')}
-          onBack={() => setView('group-challenges')}
+          onBack={() => setView('challenges')}
         />
       )}
       {view === 'group-game' && activeGroupRoomId && activeQuizId && (
@@ -603,7 +590,7 @@ const AppContent = () => {
               window.__groupChallengeResultsCloseCallback();
               window.__groupChallengeResultsCloseCallback = null;
             }
-            setView('group-challenges');
+            setView('challenges');
           }}
           onViewQuiz={(quizId) => {
             setActiveQuizId(quizId);
