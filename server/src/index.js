@@ -648,14 +648,9 @@ io.on('connection', (socket) => {
                 points = 10;
             }
 
-            // Get current participant score
-            const participants = await GroupChallengeRepository.getRoomParticipants(roomId);
-            const participant = participants.find(p => p.user_id === userId);
-            const newScore = (participant?.score || 0) + points;
-            const newTime = (participant?.total_time_seconds || 0) + timeTaken;
-
-            // Update participant score
-            await GroupChallengeRepository.updateParticipantScore(roomId, userId, newScore, newTime);
+            // Update participant score using atomic increment (prevents race conditions)
+            // Pass the increment values, not absolute values
+            await GroupChallengeRepository.updateParticipantScore(roomId, userId, points, timeTaken);
 
             // Get updated leaderboard
             const leaderboard = await GroupChallengeService.getLiveLeaderboard(roomId);
@@ -671,7 +666,6 @@ io.on('connection', (socket) => {
                 isCorrect,
                 correctAnswer: question.correctAnswer,
                 points,
-                newScore,
                 currentQuestionIndex
             });
 
@@ -680,8 +674,7 @@ io.on('connection', (socket) => {
                 userId,
                 questionId,
                 isCorrect,
-                points,
-                newScore
+                points
             });
         } catch (err) {
             logger.error('Failed to process group challenge answer', {

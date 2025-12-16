@@ -159,6 +159,20 @@ class ChallengeService {
                 return { completed: false };
             }
 
+            // IMPORTANT: Check if challenge is already completed to prevent double-updating stats
+            // This function gets called by both players when they finish, so we need to ensure
+            // stats are only updated once when the challenge transitions from 'active' to 'completed'
+            const challenge = await ChallengeRepository.getChallengeById(challengeId);
+
+            if (challenge.status === 'completed') {
+                // Challenge already completed and stats already updated, just return the result
+                logger.debug('Challenge already completed, skipping stats update', { challengeId });
+                return {
+                    completed: true,
+                    alreadyProcessed: true
+                };
+            }
+
             // Determine winner
             const [participant1, participant2] = participants;
             const { winnerId, result } = this.determineWinner(participant1, participant2);

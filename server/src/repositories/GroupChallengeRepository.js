@@ -304,21 +304,22 @@ VALUES(?, ?)`,
         });
     }
 
-    // Update participant score
-    static updateParticipantScore(roomId, userId, score, timeTaken) {
+    // Update participant score (using atomic increment to prevent race conditions)
+    static updateParticipantScore(roomId, userId, scoreIncrement, timeIncrement) {
         return new Promise((resolve, reject) => {
             db.run(
                 `UPDATE group_challenge_participants
-         SET score = ?, total_time_seconds = ?
-    WHERE group_challenge_id = ? AND user_id = ? `,
-                [score, timeTaken, roomId, userId],
+         SET score = score + ?,
+             total_time_seconds = total_time_seconds + ?
+    WHERE group_challenge_id = ? AND user_id = ?`,
+                [scoreIncrement, timeIncrement, roomId, userId],
                 (err) => {
                     if (err) {
                         logger.error('Failed to update participant score', { error: err, roomId, userId });
                         return reject(err);
                     }
 
-                    logger.debug('Participant score updated', { roomId, userId, score, timeTaken });
+                    logger.debug('Participant score updated atomically', { roomId, userId, scoreIncrement, timeIncrement });
                     resolve();
                 }
             );
@@ -350,6 +351,18 @@ VALUES(?, ?)`,
     static async completeChallenge(roomId) {
         return new Promise(async (resolve, reject) => {
             try {
+                // IMPORTANT: Check if already completed to prevent double-updating stats
+                // This function can be called multiple times, so we need to ensure
+                // stats are only updated once when the room transitions to 'completed'
+                const currentRoom = await this.getRoomById(roomId);
+
+                if (currentRoom.status === 'completed') {
+                    // Already completed and stats already updated, just return participants
+                    logger.debug('Room already completed, skipping stats update', { roomId });
+                    const participants = await this.getRoomParticipants(roomId);
+                    return resolve(participants);
+                }
+
                 // Get all participants with scores
                 const participants = await this.getRoomParticipants(roomId);
 
@@ -366,7 +379,7 @@ VALUES(?, ?)`,
                         db.run(
                             `UPDATE group_challenge_participants
                SET rank = ?
-    WHERE id = ? `,
+    WHERE id = ?`,
                             [rank, participants[i].id],
                             (err) => {
                                 if (err) rej(err);
@@ -384,7 +397,7 @@ VALUES(?, ?)`,
                     db.run(
                         `UPDATE group_challenges
              SET status = 'completed', completed_at = CURRENT_TIMESTAMP
-             WHERE id = ? `,
+             WHERE id = ?`,
                         [roomId],
                         (err) => {
                             if (err) rej(err);
