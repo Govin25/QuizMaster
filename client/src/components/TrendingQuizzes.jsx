@@ -77,7 +77,7 @@ const TrendingQuizzes = ({ onViewDetails: parentOnViewDetails, selectedQuiz, sel
             <div className="glass-card">
                 <h2 style={{ marginBottom: '1.5rem' }}>🔥 Trending Quizzes</h2>
                 <div className="grid" style={{
-                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                     gap: '1.5rem'
                 }}>
                     {[1, 2, 3].map(i => (
@@ -96,7 +96,7 @@ const TrendingQuizzes = ({ onViewDetails: parentOnViewDetails, selectedQuiz, sel
         <div className="glass-card">
             <h2 style={{ marginBottom: '1.5rem' }}>🔥 Trending Quizzes</h2>
             <div className="grid" style={{
-                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                 gap: '1.5rem'
             }}>
                 {quizzes.map(quiz => (

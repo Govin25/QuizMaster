@@ -715,14 +715,14 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                     </div>
 
                     {loadingRecommendations ? (
-                        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                        <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
                             {[1, 2, 3].map(i => (
                                 <div key={i} className="skeleton" style={{ height: '350px', borderRadius: '16px' }} />
                             ))}
                         </div>
                     ) : (
                         <div className="grid" style={{
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                             gap: '1.5rem'
                         }}>
                             {recommendations.map(quiz => (
@@ -807,7 +807,7 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                         {[1, 2, 3].map(i => (
                             <div key={i}>
                                 <div className="skeleton" style={{ height: '40px', width: '200px', marginBottom: '1rem', borderRadius: '8px' }} />
-                                <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+                                <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
                                     {[1, 2].map(j => (
                                         <div key={j} className="skeleton" style={{ height: '350px', borderRadius: '16px' }} />
                                     ))}
@@ -862,7 +862,7 @@ const QuizHub = ({ onBack, onViewProfile }) => {
 
                                     {/* Quiz Grid */}
                                     <div className="grid" style={{
-                                        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                                         gap: '1.5rem',
                                         marginBottom: hasMoreByCategory[category] ? '1.5rem' : 0
                                     }}>

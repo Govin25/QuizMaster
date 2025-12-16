@@ -669,7 +669,7 @@ const ChallengeHub = ({ onStartChallenge, onViewResults, onCreateChallenge }) =>
                 ) : (
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                         gap: '1.5rem'
                     }}>
                         {challenges.map(renderChallengeCard)}
