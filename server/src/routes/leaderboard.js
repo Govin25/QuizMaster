@@ -68,9 +68,12 @@ router.get('/', authenticateToken, validateSearch, (req, res) => {
                 u.id as user_id,
                 u.username, 
                 r.score, 
-                q.title as quizTitle, 
+                q.title as quizTitle,
+                q.category,
+                q.difficulty,
                 r.completed_at,
                 qc.total_questions,
+                r.score / 10 as questions_correct,
                 CASE 
                     WHEN qc.total_questions > 0 THEN ROUND((r.score * 100.0) / (qc.total_questions * 10), 1)
                     ELSE 0 
@@ -81,7 +84,32 @@ router.get('/', authenticateToken, validateSearch, (req, res) => {
                     WHERE r2.user_id = r.user_id 
                     AND r2.quiz_id = r.quiz_id 
                     AND r2.completed_at <= r.completed_at
-                ) as attemptNumber
+                ) as attemptNumber,
+                COALESCE((
+                    SELECT SUM(time_taken_seconds) 
+                    FROM question_attempts qa 
+                    WHERE qa.result_id = r.id
+                ), 0) as time_taken,
+                CASE 
+                    WHEN r.score = (
+                        SELECT MAX(r3.score) 
+                        FROM results r3 
+                        WHERE r3.user_id = r.user_id AND r3.quiz_id = r.quiz_id
+                    ) THEN 1 ELSE 0 
+                END as is_personal_best,
+                CASE 
+                    WHEN r.score = (
+                        SELECT MAX(r4.score) 
+                        FROM results r4 
+                        WHERE r4.quiz_id = r.quiz_id
+                    ) AND r.completed_at = (
+                        SELECT MIN(r5.completed_at) 
+                        FROM results r5 
+                        WHERE r5.quiz_id = r.quiz_id AND r5.score = (
+                            SELECT MAX(r6.score) FROM results r6 WHERE r6.quiz_id = r.quiz_id
+                        )
+                    ) THEN 1 ELSE 0 
+                END as is_quiz_champion
             ${fromClause}
         `;
 
@@ -133,13 +161,41 @@ router.get('/', authenticateToken, validateSearch, (req, res) => {
                 u.id as user_id,
                 u.username, 
                 r.score, 
-                q.title as quizTitle, 
+                q.title as quizTitle,
+                q.category,
+                q.difficulty,
                 r.completed_at,
                 qc.total_questions,
+                r.score / 10 as questions_correct,
                 CASE 
                     WHEN qc.total_questions > 0 THEN ROUND((r.score * 100.0) / (qc.total_questions * 10), 1)
                     ELSE 0 
-                END as percentage
+                END as percentage,
+                COALESCE((
+                    SELECT SUM(time_taken_seconds) 
+                    FROM question_attempts qa 
+                    WHERE qa.result_id = r.id
+                ), 0) as time_taken,
+                CASE 
+                    WHEN r.score = (
+                        SELECT MAX(r3.score) 
+                        FROM results r3 
+                        WHERE r3.user_id = r.user_id AND r3.quiz_id = r.quiz_id
+                    ) THEN 1 ELSE 0 
+                END as is_personal_best,
+                CASE 
+                    WHEN r.score = (
+                        SELECT MAX(r4.score) 
+                        FROM results r4 
+                        WHERE r4.quiz_id = r.quiz_id
+                    ) AND r.completed_at = (
+                        SELECT MIN(r5.completed_at) 
+                        FROM results r5 
+                        WHERE r5.quiz_id = r.quiz_id AND r5.score = (
+                            SELECT MAX(r6.score) FROM results r6 WHERE r6.quiz_id = r.quiz_id
+                        )
+                    ) THEN 1 ELSE 0 
+                END as is_quiz_champion
             FROM results r
             JOIN users u ON r.user_id = u.id
             JOIN quizzes q ON r.quiz_id = q.id

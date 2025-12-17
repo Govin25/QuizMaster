@@ -16,19 +16,25 @@ const Leaderboard = ({ onBack, onViewProfile }) => {
         attempt: ''
     });
     const [initialLoadDone, setInitialLoadDone] = React.useState(false);
+    const [loading, setLoading] = React.useState(true); // Add loading state
 
-    // Fetch user's most recent quiz on mount to pre-populate search
+    // Fetch user's most recent PUBLIC quiz on mount to pre-populate search
+    // (Private quizzes don't appear in leaderboard)
     React.useEffect(() => {
         const fetchRecentQuiz = async () => {
             try {
                 const response = await fetchWithAuth(`${API_URL}/api/quizzes/my-library`);
                 if (response.ok) {
                     const data = await response.json();
-                    // Get the most recent completed quiz
+                    // Find the most recent completed PUBLIC quiz
                     if (data.completed && data.completed.length > 0) {
-                        const mostRecent = data.completed[0];
-                        // Set both search and initialLoadDone together to prevent flicker
-                        setSearch(prev => ({ ...prev, quiz: mostRecent.title }));
+                        const mostRecentPublic = data.completed.find(q => q.is_public === true);
+                        if (mostRecentPublic) {
+                            // Set both search and debouncedSearch together to prevent any lag
+                            setSearch(prev => ({ ...prev, quiz: mostRecentPublic.title }));
+                            setDebouncedSearch(prev => ({ ...prev, quiz: mostRecentPublic.title }));
+                        }
+                        // Mark as done whether or not we found a public quiz
                         setInitialLoadDone(true);
                     } else {
                         // No completed quizzes, just mark as done
@@ -49,16 +55,21 @@ const Leaderboard = ({ onBack, onViewProfile }) => {
     const [debouncedSearch, setDebouncedSearch] = React.useState(search);
 
     React.useEffect(() => {
+        // Skip debounce if we haven't done initial load yet
+        if (!initialLoadDone) return;
+
         const timer = setTimeout(() => {
             setDebouncedSearch(search);
             setPage(1); // Reset to page 1 on search change
         }, 500);
         return () => clearTimeout(timer);
-    }, [search]);
+    }, [search, initialLoadDone]);
 
     React.useEffect(() => {
         // Don't fetch until initial load is done (to avoid double fetch)
         if (!initialLoadDone) return;
+
+        setLoading(true); // Set loading when fetching
 
         const queryParams = new URLSearchParams({
             filter,
@@ -80,8 +91,12 @@ const Leaderboard = ({ onBack, onViewProfile }) => {
                     // Fallback for old API if needed (though we updated it)
                     setScores(data);
                 }
+                setLoading(false);
             })
-            .catch(err => console.error(err));
+            .catch(err => {
+                console.error(err);
+                setLoading(false);
+            });
     }, [filter, page, debouncedSearch, myQuizzesOnly, fetchWithAuth, initialLoadDone]);
 
     const handleSearchChange = (field, value) => {
@@ -237,97 +252,126 @@ const Leaderboard = ({ onBack, onViewProfile }) => {
                 )}
             </div>
 
-            <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                        <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                            <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-muted)' }}>Rank</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-muted)' }}>Player</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-muted)' }}>Quiz</th>
-                            {filter === 'all' && (
-                                <th style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)' }}>Attempt</th>
-                            )}
-                            <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-muted)' }}>Date</th>
-                            <th style={{ padding: '1rem', textAlign: 'right', color: 'var(--text-muted)' }}>Score</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {scores.map((entry, idx) => (
-                            <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                <td style={{ padding: '1rem', textAlign: 'left' }}>
-                                    <span style={{
-                                        display: 'inline-block',
-                                        width: '24px',
-                                        height: '24px',
-                                        lineHeight: '24px',
-                                        textAlign: 'center',
-                                        borderRadius: '50%',
-                                        background: (page - 1) * 10 + idx < 3 ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
-                                        color: (page - 1) * 10 + idx < 3 ? 'black' : 'white',
-                                        fontWeight: 'bold',
-                                        fontSize: '0.8rem'
-                                    }}>
-                                        {(page - 1) * 10 + idx + 1}
-                                    </span>
-                                </td>
-                                <td
-                                    onClick={() => onViewProfile && onViewProfile(entry.user_id)}
-                                    style={{
-                                        padding: '1rem',
-                                        textAlign: 'left',
-                                        fontWeight: '500',
-                                        cursor: onViewProfile ? 'pointer' : 'default',
-                                        color: onViewProfile ? 'var(--primary)' : 'white',
-                                        transition: 'all 0.2s ease'
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        if (onViewProfile) {
-                                            e.currentTarget.style.textDecoration = 'underline';
-                                            e.currentTarget.style.color = '#818cf8';
-                                        }
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        if (onViewProfile) {
-                                            e.currentTarget.style.textDecoration = 'none';
-                                            e.currentTarget.style.color = 'var(--primary)';
-                                        }
-                                    }}
-                                >
-                                    {entry.username}
-                                </td>
-                                <td style={{ padding: '1rem', textAlign: 'left' }}>{entry.quizTitle}</td>
+            {loading ? (
+                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                    Loading leaderboard...
+                </div>
+            ) : (
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '700px' }}>
+                        <thead>
+                            <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
+                                <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Rank</th>
+                                <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Player</th>
+                                <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Quiz</th>
+                                <th style={{ padding: '0.75rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Difficulty</th>
+                                <th style={{ padding: '0.75rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Score</th>
+                                <th style={{ padding: '0.75rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Time</th>
                                 {filter === 'all' && (
-                                    <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                        {entry.attemptNumber ? (
+                                    <th style={{ padding: '0.75rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Attempt</th>
+                                )}
+                                <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-muted)', fontSize: '0.85rem' }}>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {scores.map((entry, idx) => {
+                                const rank = (page - 1) * 10 + idx + 1;
+                                const isTop3 = rank <= 3;
+                                const difficultyColors = {
+                                    easy: { bg: 'rgba(34, 197, 94, 0.2)', color: '#22c55e' },
+                                    medium: { bg: 'rgba(245, 158, 11, 0.2)', color: '#f59e0b' },
+                                    hard: { bg: 'rgba(239, 68, 68, 0.2)', color: '#ef4444' }
+                                };
+                                const difficulty = entry.difficulty?.toLowerCase() || 'medium';
+                                const diffStyle = difficultyColors[difficulty] || difficultyColors.medium;
+
+                                // Format time
+                                const formatTime = (seconds) => {
+                                    if (!seconds) return '-';
+                                    const mins = Math.floor(seconds / 60);
+                                    const secs = seconds % 60;
+                                    return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+                                };
+
+                                return (
+                                    <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                                        <td style={{ padding: '0.75rem', textAlign: 'left' }}>
                                             <span style={{
                                                 display: 'inline-block',
+                                                width: '28px',
+                                                height: '28px',
+                                                lineHeight: '28px',
+                                                textAlign: 'center',
+                                                borderRadius: '50%',
+                                                background: isTop3 ? 'var(--primary)' : 'rgba(255,255,255,0.1)',
+                                                color: isTop3 ? 'black' : 'white',
+                                                fontWeight: 'bold',
+                                                fontSize: '0.8rem'
+                                            }}>
+                                                {rank}
+                                            </span>
+                                        </td>
+                                        <td
+                                            onClick={() => onViewProfile && onViewProfile(entry.user_id)}
+                                            style={{
+                                                padding: '0.75rem',
+                                                textAlign: 'left',
+                                                fontWeight: '500',
+                                                cursor: onViewProfile ? 'pointer' : 'default',
+                                                color: onViewProfile ? 'var(--primary)' : 'white',
+                                            }}
+                                        >
+                                            {entry.username}
+                                        </td>
+                                        <td style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-muted)' }}>
+                                            {entry.quizTitle}
+                                        </td>
+                                        <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                            <span style={{
                                                 padding: '0.25rem 0.6rem',
                                                 borderRadius: '12px',
-                                                background: 'rgba(139, 92, 246, 0.2)',
-                                                color: 'var(--primary)',
-                                                fontSize: '0.85rem',
-                                                fontWeight: '600'
+                                                background: diffStyle.bg,
+                                                color: diffStyle.color,
+                                                fontSize: '0.75rem',
+                                                fontWeight: '600',
+                                                textTransform: 'capitalize'
                                             }}>
-                                                #{entry.attemptNumber}
+                                                {entry.difficulty || 'Medium'}
                                             </span>
-                                        ) : (
-                                            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>-</span>
+                                        </td>
+                                        <td style={{ padding: '0.75rem', textAlign: 'center', color: 'var(--primary)', fontWeight: 'bold', fontSize: '1rem' }}>
+                                            {entry.percentage}%
+                                        </td>
+                                        <td style={{ padding: '0.75rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                            {formatTime(entry.time_taken)}
+                                        </td>
+                                        {filter === 'all' && (
+                                            <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                                <span style={{
+                                                    padding: '0.2rem 0.5rem',
+                                                    borderRadius: '8px',
+                                                    background: 'rgba(139, 92, 246, 0.2)',
+                                                    color: 'var(--primary)',
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: '600'
+                                                }}>
+                                                    #{entry.attemptNumber || 1}
+                                                </span>
+                                            </td>
                                         )}
-                                    </td>
-                                )}
-                                <td style={{ padding: '1rem', textAlign: 'left', fontSize: '0.9rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
-                                    {formatDate(entry.completed_at)}
-                                </td>
-                                <td style={{ padding: '1rem', textAlign: 'right', color: 'var(--primary)', fontWeight: 'bold', fontSize: '1.1rem' }}>
-                                    {entry.percentage}%
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
 
-            {scores.length === 0 && (
+                                        <td style={{ padding: '0.75rem', textAlign: 'left', fontSize: '0.85rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+                                            {formatDate(entry.completed_at)}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                        </tbody>
+                    </table>
+                </div>
+            )}
+
+            {!loading && scores.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
                     No scores found.
                 </div>
