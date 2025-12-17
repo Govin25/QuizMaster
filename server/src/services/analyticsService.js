@@ -5,6 +5,31 @@
 
 const db = require('../db');
 
+/**
+ * Calculate user level from XP
+ * Level formula: Each level requires progressively more XP
+ * Level 1: 0-99 XP
+ * Level 2: 100-299 XP (need 100 XP)
+ * Level 3: 300-599 XP (need 200 XP more)
+ * Level 4: 600-999 XP (need 300 XP more)
+ * etc. Formula: XP required for level N = 100 * (N-1) * N / 2
+ * Inverse: Level = floor((sqrt(8*XP/100 + 1) - 1) / 2) + 1
+ */
+function calculateLevelFromXP(xp) {
+    if (!xp || xp < 0) return 1;
+    // Simplified formula: sqrt(XP/50) + 1, capped at reasonable level
+    const level = Math.floor(Math.sqrt(xp / 50)) + 1;
+    return Math.min(level, 100); // Cap at level 100
+}
+
+/**
+ * Get XP required for next level
+ */
+function getXPForNextLevel(currentLevel) {
+    // XP needed for next level: (nextLevel - 1)^2 * 50
+    return (currentLevel) * (currentLevel) * 50;
+}
+
 class AnalyticsService {
     /**
      * Get comprehensive user statistics
@@ -24,8 +49,7 @@ class AnalyticsService {
           END as avgScore,
           (SELECT COUNT(*) FROM results WHERE user_id = ? AND score = 100) as perfectScores,
           (SELECT COUNT(DISTINCT quiz_id) FROM results WHERE user_id = ?) as uniqueQuizzes,
-          u.level,
-          u.xp,
+          COALESCE(u.xp, 0) as xp,
           u.created_at as joinedAt
         FROM users u
         LEFT JOIN user_stats us ON u.id = us.user_id
@@ -34,7 +58,24 @@ class AnalyticsService {
 
             db.get(query, [userId, userId, userId], (err, row) => {
                 if (err) return reject(err);
-                resolve(row || {});
+                if (!row) return resolve({});
+
+                // Calculate level dynamically from XP
+                const xp = row.xp || 0;
+                const level = calculateLevelFromXP(xp);
+                const xpForNextLevel = getXPForNextLevel(level);
+                const xpForCurrentLevel = level > 1 ? getXPForNextLevel(level - 1) : 0;
+                const xpProgress = xp - xpForCurrentLevel;
+                const xpNeeded = xpForNextLevel - xpForCurrentLevel;
+
+                resolve({
+                    ...row,
+                    level,
+                    xpForNextLevel,
+                    xpProgress: Math.max(0, xpProgress),
+                    xpNeeded,
+                    levelProgress: xpNeeded > 0 ? Math.round((xpProgress / xpNeeded) * 100) : 100
+                });
             });
         });
     }

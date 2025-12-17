@@ -5,6 +5,21 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
+/**
+ * Calculate XP to award based on quiz score
+ * - Base: 10 XP for completing any quiz
+ * - Score bonus: score / 10 (rounded) = 0-10 XP
+ * - Perfect score bonus: +15 XP
+ */
+function calculateXP(score) {
+    let xp = 10; // Base XP for completing quiz
+    xp += Math.round(score / 10); // 0-10 XP based on score
+    if (score === 100) {
+        xp += 15; // Perfect score bonus
+    }
+    return xp;
+}
+
 router.get('/:userId', authenticateToken, (req, res) => {
     const userId = parseInt(req.params.userId);
 
@@ -57,18 +72,40 @@ router.post('/', authenticateToken, (req, res) => {
             return res.status(500).json({ error: 'Failed to save result' });
         }
 
-        logger.info('Result saved successfully', {
-            resultId: this.lastID,
-            userId,
-            quizId,
-            score,
-            requestId: req.requestId
-        });
+        const resultId = this.lastID;
 
-        res.status(201).json({
-            message: 'Result saved successfully',
-            resultId: this.lastID
-        });
+        // Calculate and award XP
+        const xpEarned = calculateXP(score);
+
+        db.run(
+            `UPDATE users SET xp = COALESCE(xp, 0) + ? WHERE id = ?`,
+            [xpEarned, userId],
+            function (xpErr) {
+                if (xpErr) {
+                    logger.error('Failed to award XP', {
+                        error: xpErr,
+                        context: { userId, xpEarned },
+                        requestId: req.requestId
+                    });
+                    // Don't fail the request, just log the error
+                }
+
+                logger.info('Result saved successfully', {
+                    resultId,
+                    userId,
+                    quizId,
+                    score,
+                    xpEarned,
+                    requestId: req.requestId
+                });
+
+                res.status(201).json({
+                    message: 'Result saved successfully',
+                    resultId,
+                    xpEarned
+                });
+            }
+        );
     });
 });
 
