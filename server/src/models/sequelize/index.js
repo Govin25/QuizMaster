@@ -21,6 +21,8 @@ const GroupMemberModel = require('./GroupMember.model');
 const GroupPermissionModel = require('./GroupPermission.model');
 const UserPermissionModel = require('./UserPermission.model');
 const ActiveQuizSessionModel = require('./ActiveQuizSession.model');
+const QuizCommentModel = require('./QuizComment.model');
+const QuizCommentUpvoteModel = require('./QuizCommentUpvote.model');
 
 // Initialize models
 const User = UserModel(sequelize);
@@ -43,6 +45,8 @@ const GroupMember = GroupMemberModel(sequelize);
 const GroupPermission = GroupPermissionModel(sequelize);
 const UserPermission = UserPermissionModel(sequelize);
 const ActiveQuizSession = ActiveQuizSessionModel(sequelize);
+const QuizComment = QuizCommentModel(sequelize);
+const QuizCommentUpvote = QuizCommentUpvoteModel(sequelize);
 
 // Define associations
 
@@ -58,6 +62,8 @@ User.belongsToMany(Quiz, { through: UserQuizLibrary, foreignKey: 'user_id', as: 
 User.hasMany(UserFollow, { foreignKey: 'follower_id', as: 'following' });
 User.hasMany(UserFollow, { foreignKey: 'following_id', as: 'followers' });
 User.hasMany(QuizLike, { foreignKey: 'user_id', as: 'likedQuizzes' });
+User.hasMany(QuizComment, { foreignKey: 'user_id', as: 'comments' });
+User.hasMany(QuizCommentUpvote, { foreignKey: 'user_id', as: 'commentUpvotes' });
 
 // Quiz associations
 Quiz.belongsTo(User, { foreignKey: 'creator_id', as: 'creator' });
@@ -67,6 +73,7 @@ Quiz.hasMany(QuestionAttempt, { foreignKey: 'quiz_id', as: 'questionAttempts' })
 Quiz.hasMany(QuizReview, { foreignKey: 'quiz_id', as: 'reviews' });
 Quiz.belongsToMany(User, { through: UserQuizLibrary, foreignKey: 'quiz_id', as: 'usersInLibrary' });
 Quiz.hasMany(QuizLike, { foreignKey: 'quiz_id', as: 'likes' });
+Quiz.hasMany(QuizComment, { foreignKey: 'quiz_id', as: 'comments' });
 
 // Question associations
 Question.belongsTo(Quiz, { foreignKey: 'quiz_id', as: 'quiz' });
@@ -107,6 +114,17 @@ QuizLike.belongsTo(Quiz, { foreignKey: 'quiz_id', as: 'quiz' });
 
 // UserSocialStats associations
 UserSocialStats.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+
+// QuizComment associations
+QuizComment.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+QuizComment.belongsTo(Quiz, { foreignKey: 'quiz_id', as: 'quiz' });
+QuizComment.belongsTo(QuizComment, { foreignKey: 'parent_id', as: 'parent' });
+QuizComment.hasMany(QuizComment, { foreignKey: 'parent_id', as: 'replies' });
+QuizComment.hasMany(QuizCommentUpvote, { foreignKey: 'comment_id', as: 'upvoteRecords' });
+
+// QuizCommentUpvote associations
+QuizCommentUpvote.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+QuizCommentUpvote.belongsTo(QuizComment, { foreignKey: 'comment_id', as: 'comment' });
 
 // RBAC associations
 
@@ -159,4 +177,7 @@ module.exports = {
     GroupPermission,
     UserPermission,
     ActiveQuizSession,
+    QuizComment,
+    QuizCommentUpvote,
 };
+

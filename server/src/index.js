@@ -165,6 +165,7 @@ app.use('/api/social', require('./routes/social'));
 app.use('/api/usage', require('./routes/usage')); // NEW: Usage tracking
 app.use('/api/subscription', require('./routes/subscription')); // NEW: Subscription management
 app.use('/api/quiz-sessions', require('./routes/quizSession')); // NEW: Quiz session management
+app.use('/api/comments', require('./routes/comments')); // NEW: Quiz comments and reviews
 app.use('/api/admin', adminRoutes); // Registered admin routes
 app.use('/api/public', require('./routes/public')); // Public endpoints (no auth required)
 
