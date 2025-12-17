@@ -687,7 +687,8 @@ const UnifiedChallengeHub = ({
                 {/* Action Buttons */}
                 <button
                     onClick={() => {
-                        if (isCompleted) {
+                        if (isCompleted || (isActive && room.my_completed)) {
+                            // Show results if room is completed OR if user has completed in an active room
                             onShowGroupResults(room.id, () => {
                                 window.__challengeHubActiveTab = 'completed';
                                 window.__challengeHubMode = 'group';
@@ -698,18 +699,25 @@ const UnifiedChallengeHub = ({
                     }}
                     style={{
                         width: '100%',
-                        background: isWaiting || isActive ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'rgba(99, 102, 241, 0.2)',
-                        border: isWaiting || isActive ? 'none' : '1px solid rgba(99, 102, 241, 0.3)',
+                        background: (isWaiting || (isActive && !room.my_completed))
+                            ? 'linear-gradient(135deg, var(--primary), var(--secondary))'
+                            : 'rgba(99, 102, 241, 0.2)',
+                        border: (isWaiting || (isActive && !room.my_completed))
+                            ? 'none'
+                            : '1px solid rgba(99, 102, 241, 0.3)',
                         color: 'white',
                         padding: '0.75rem',
                         fontSize: '0.95rem',
                         cursor: 'pointer',
                         borderRadius: '8px',
                         fontWeight: '600',
-                        animation: isActive ? 'pulse 2s infinite' : 'none'
+                        animation: (isActive && !room.my_completed) ? 'pulse 2s infinite' : 'none'
                     }}
                 >
-                    {isWaiting ? '🚪 Enter Lobby' : isActive ? '🎮 Join Game!' : '📊 View Results'}
+                    {isWaiting ? '🚪 Enter Lobby' :
+                        isActive && room.my_completed ? '⏳ Awaiting Results...' :
+                            isActive ? '🎮 Join Game!' :
+                                '📊 View Results'}
                 </button>
             </div>
         );

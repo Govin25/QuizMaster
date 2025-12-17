@@ -505,6 +505,7 @@ VALUES(?, 1, ?, ?, ?, ?, ?, ?)`,
                 u.username as leader_username,
                 gcp.rank as my_rank,
                 gcp.score as my_score,
+                gcp.completed as my_completed,
                 (SELECT COUNT(*) FROM questions WHERE quiz_id = gc.quiz_id) as question_count,
                 (SELECT COUNT(*) FROM group_challenge_participants WHERE group_challenge_id = gc.id) as participant_count
             FROM group_challenges gc

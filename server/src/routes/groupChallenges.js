@@ -7,6 +7,11 @@ const NotificationService = require('../services/notificationService');
 const logger = require('../utils/logger');
 const { handleError } = require('../utils/errorHandler');
 
+// Max game duration - 10 minutes (600000ms)
+const MAX_GAME_DURATION_MS = 10 * 60 * 1000;
+// Track game timeout timers for rooms
+const gameTimeoutTimers = new Map(); // roomId -> timeoutId
+
 // Create a new group challenge room
 router.post('/create', authenticateToken, requirePermission('challenge:create'), async (req, res) => {
     try {
@@ -280,6 +285,41 @@ router.post('/:id/start', authenticateToken, async (req, res) => {
                     roomId
                 });
             }, 3000);
+
+            // Start max game duration timer (10 minutes)
+            // This ensures the game ends even if players crash/disconnect
+            const gameTimeoutId = setTimeout(async () => {
+                try {
+                    logger.info('Max game duration reached, force completing challenge', {
+                        roomId,
+                        maxDurationMs: MAX_GAME_DURATION_MS
+                    });
+
+                    // Check if challenge is still active
+                    const currentRoom = await GroupChallengeRepository.getRoomById(roomId);
+                    if (currentRoom && currentRoom.status === 'active') {
+                        // Force complete with current scores
+                        const result = await GroupChallengeService.forceCompleteChallenge(roomId);
+
+                        io.to(`group_challenge_${roomId}`).emit('group_challenge_finished', {
+                            participants: result.participants,
+                            winner: result.winner,
+                            reason: 'max_duration_reached'
+                        });
+                    }
+
+                    // Clean up timer
+                    gameTimeoutTimers.delete(roomId);
+                } catch (err) {
+                    logger.error('Failed to force complete challenge on timeout', {
+                        error: err,
+                        roomId
+                    });
+                }
+            }, MAX_GAME_DURATION_MS);
+
+            // Store timer so we can cancel it if challenge ends normally
+            gameTimeoutTimers.set(roomId, gameTimeoutId);
         }
 
         res.json({ message: 'Challenge starting' });
@@ -423,3 +463,4 @@ router.delete('/:id', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.gameTimeoutTimers = gameTimeoutTimers;

@@ -579,6 +579,7 @@ const AppContent = () => {
             setActiveGroupRoomId(roomId);
             setView('group-results');
           }}
+          onBack={() => setView('challenges')}
         />
       )}
       {view === 'group-results' && activeGroupRoomId && (

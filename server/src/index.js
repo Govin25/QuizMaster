@@ -566,6 +566,7 @@ io.on('connection', (socket) => {
     const GroupChallengeRepository = require('./repositories/GroupChallengeRepository');
     const GroupChallengeService = require('./services/groupChallengeService');
     const Quiz = require('./models/Quiz');
+    const { gameTimeoutTimers } = require('./routes/groupChallenges');
 
     // Track auto-end timers for rooms
     const autoEndTimers = new Map(); // roomId -> timeoutId
@@ -661,12 +662,17 @@ io.on('connection', (socket) => {
                 leaderboard
             });
 
+            // Get the player's new score from the leaderboard
+            const playerEntry = leaderboard.find(p => p.user_id === userId);
+            const newScore = playerEntry ? playerEntry.score : 0;
+
             // Send result to the player who answered
             socket.emit('group_challenge_answer_result', {
                 questionId,
                 isCorrect,
                 correctAnswer: question.correctAnswer,
                 points,
+                newScore,
                 currentQuestionIndex
             });
 
@@ -675,7 +681,8 @@ io.on('connection', (socket) => {
                 userId,
                 questionId,
                 isCorrect,
-                points
+                points,
+                newScore
             });
         } catch (err) {
             logger.error('Failed to process group challenge answer', {
@@ -739,8 +746,12 @@ io.on('connection', (socket) => {
                             });
                         }
 
-                        // Clean up timer
+                        // Clean up timers
                         autoEndTimers.delete(roomId);
+                        if (gameTimeoutTimers.has(roomId)) {
+                            clearTimeout(gameTimeoutTimers.get(roomId));
+                            gameTimeoutTimers.delete(roomId);
+                        }
                     } catch (err) {
                         logger.error('Failed to force complete challenge', { error: err, roomId });
                     }
@@ -758,6 +769,13 @@ io.on('connection', (socket) => {
                     clearTimeout(autoEndTimers.get(roomId));
                     autoEndTimers.delete(roomId);
                     logger.info('Cancelled auto-end timer - all players finished', { roomId });
+                }
+
+                // Cancel max game duration timer if it exists
+                if (gameTimeoutTimers.has(roomId)) {
+                    clearTimeout(gameTimeoutTimers.get(roomId));
+                    gameTimeoutTimers.delete(roomId);
+                    logger.info('Cancelled game timeout timer - challenge completed normally', { roomId });
                 }
 
                 // Complete the challenge
