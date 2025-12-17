@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
@@ -18,6 +18,38 @@ const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
     const [isSearching, setIsSearching] = useState(false);
     const [suggestedUsers, setSuggestedUsers] = useState([]);
     const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+
+    // Handle browser back button for mobile
+    useEffect(() => {
+        // Push initial state when modal opens
+        window.history.pushState({ modal: 'challenge-creator', step: 1 }, '');
+
+        const handlePopState = (event) => {
+            // If user pressed back, close modal or go to previous step
+            if (step > 1) {
+                // Go to previous step
+                setStep(prev => prev - 1);
+                // Push new state for current step
+                window.history.pushState({ modal: 'challenge-creator', step: step - 1 }, '');
+            } else {
+                // Close the modal
+                onClose();
+            }
+        };
+
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, [step, onClose]);
+
+    // Update history when step changes (but not on initial mount)
+    useEffect(() => {
+        if (step > 1) {
+            window.history.pushState({ modal: 'challenge-creator', step }, '');
+        }
+    }, [step]);
 
     useEffect(() => {
         fetchQuizzes();

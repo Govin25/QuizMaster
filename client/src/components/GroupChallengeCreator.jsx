@@ -20,6 +20,23 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
     const [searchQuery, setSearchQuery] = useState('');
     const searchTimeoutRef = useRef(null);
 
+    // Handle browser back button for mobile
+    useEffect(() => {
+        // Push initial state when modal opens
+        window.history.pushState({ modal: 'group-challenge-creator' }, '');
+
+        const handlePopState = (event) => {
+            // Close the modal when back is pressed
+            onClose();
+        };
+
+        window.addEventListener('popstate', handlePopState);
+
+        return () => {
+            window.removeEventListener('popstate', handlePopState);
+        };
+    }, [onClose]);
+
     // Initial fetch - user's quizzes + limited public quizzes
     useEffect(() => {
         fetchInitialQuizzes();
