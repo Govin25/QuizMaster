@@ -532,15 +532,19 @@ const GroupChallengeGame = ({ roomId, quizId, onShowResults, onBack }) => {
                                     }}>
                                         {participant.username}{isMe && ' (You)'}
                                     </div>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                                        Score: {participant.score}
+                                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+                                        Time: {Math.floor((participant.total_time_seconds || 0) / 60)}:{String((participant.total_time_seconds || 0) % 60).padStart(2, '0')}
                                     </div>
                                 </div>
 
-                                {/* Completed Badge */}
-                                {participant.completed && (
-                                    <div style={{ fontSize: '1rem' }}>✅</div>
-                                )}
+                                {/* Score on right */}
+                                <div style={{
+                                    fontSize: '1.2rem',
+                                    fontWeight: 'bold',
+                                    color: isMe ? '#a5b4fc' : 'var(--text-muted)'
+                                }}>
+                                    {participant.score ?? 0}
+                                </div>
                             </div>
                         );
                     })}

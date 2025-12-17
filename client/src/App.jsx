@@ -576,10 +576,19 @@ const AppContent = () => {
           roomId={activeGroupRoomId}
           quizId={activeQuizId}
           onShowResults={(roomId) => {
+            // Set callback to return to group challenges completed tab
+            window.__groupChallengeResultsCloseCallback = () => {
+              window.__challengeHubActiveTab = 'completed';
+              window.__challengeHubMode = 'group';
+            };
             setActiveGroupRoomId(roomId);
             setView('group-results');
           }}
-          onBack={() => setView('challenges')}
+          onBack={() => {
+            window.__challengeHubActiveTab = 'completed';
+            window.__challengeHubMode = 'group';
+            setView('challenges');
+          }}
         />
       )}
       {view === 'group-results' && activeGroupRoomId && (
