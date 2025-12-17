@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node update-sw-version.js",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

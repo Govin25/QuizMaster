@@ -4,34 +4,59 @@ let deferredPrompt = null;
 let swRegistration = null;
 
 /**
- * Register the service worker
+ * Register the service worker with aggressive update checking
  */
 export async function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         try {
             const registration = await navigator.serviceWorker.register('/service-worker.js', {
-                scope: '/'
+                scope: '/',
+                // Don't use cached script - always check for updates
+                updateViaCache: 'none'
             });
 
             swRegistration = registration;
             console.log('[PWA] Service Worker registered successfully:', registration.scope);
 
-            // Check for updates periodically
+            // Check for updates immediately on page load
+            registration.update();
+
+            // Check for updates more frequently (every 30 seconds)
             setInterval(() => {
                 registration.update();
-            }, 60000); // Check every minute
+            }, 30000);
 
-            // Handle updates
+            // Handle updates - auto-update when new SW is ready
             registration.addEventListener('updatefound', () => {
                 const newWorker = registration.installing;
+                console.log('[PWA] New service worker found, state:', newWorker.state);
 
                 newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        // New service worker available
-                        console.log('[PWA] New version available!');
-                        showUpdateNotification();
+                    console.log('[PWA] Service worker state changed:', newWorker.state);
+
+                    if (newWorker.state === 'installed') {
+                        if (navigator.serviceWorker.controller) {
+                            // New service worker available, auto-update
+                            console.log('[PWA] New version installed, triggering update...');
+                            newWorker.postMessage({ type: 'SKIP_WAITING' });
+                        }
                     }
                 });
+            });
+
+            // Listen for SW_UPDATED message and reload
+            navigator.serviceWorker.addEventListener('message', (event) => {
+                if (event.data && event.data.type === 'SW_UPDATED') {
+                    console.log('[PWA] Service worker updated to version:', event.data.version);
+                    // Auto-reload to get new version (do it gracefully)
+                    window.location.reload();
+                }
+            });
+
+            // Handle controller change (when new SW takes over)
+            navigator.serviceWorker.addEventListener('controllerchange', () => {
+                console.log('[PWA] Controller changed, reloading page...');
+                window.location.reload();
             });
 
             return registration;
@@ -42,6 +67,20 @@ export async function registerServiceWorker() {
     } else {
         console.warn('[PWA] Service Workers are not supported in this browser');
         return null;
+    }
+}
+
+/**
+ * Force update the service worker
+ */
+export async function forceUpdate() {
+    if (swRegistration) {
+        console.log('[PWA] Forcing service worker update...');
+        await swRegistration.update();
+
+        if (swRegistration.waiting) {
+            swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+        }
     }
 }
 
@@ -59,16 +98,29 @@ export async function unregisterServiceWorker() {
 }
 
 /**
- * Show update notification to user
+ * Clear all caches and force reload
  */
-function showUpdateNotification() {
-    // You can integrate this with your toast notification system
-    const updateAvailable = confirm('A new version of Quainy is available! Reload to update?');
+export async function hardRefresh() {
+    console.log('[PWA] Performing hard refresh...');
 
-    if (updateAvailable && swRegistration && swRegistration.waiting) {
-        swRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
-        window.location.reload();
+    // Clear all caches
+    if ('caches' in window) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map(name => caches.delete(name)));
+        console.log('[PWA] All caches cleared');
     }
+
+    // Unregister service worker
+    if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (registration) {
+            await registration.unregister();
+            console.log('[PWA] Service worker unregistered');
+        }
+    }
+
+    // Force reload from server
+    window.location.reload(true);
 }
 
 /**
@@ -201,5 +253,28 @@ export function setupConnectivityListeners(onOnline, onOffline) {
     window.addEventListener('offline', () => {
         console.log('[PWA] Connection lost');
         if (onOffline) onOffline();
+    });
+}
+
+/**
+ * Get current service worker version
+ */
+export async function getServiceWorkerVersion() {
+    if (!navigator.serviceWorker.controller) {
+        return null;
+    }
+
+    return new Promise((resolve) => {
+        const messageChannel = new MessageChannel();
+        messageChannel.port1.onmessage = (event) => {
+            resolve(event.data.version);
+        };
+        navigator.serviceWorker.controller.postMessage(
+            { type: 'GET_VERSION' },
+            [messageChannel.port2]
+        );
+
+        // Timeout after 1 second
+        setTimeout(() => resolve(null), 1000);
     });
 }
