@@ -20,13 +20,8 @@ const UpgradePrompt = ({ onClose, limitType, currentUsage, limit, tier }) => {
     };
 
     const upgradeTiers = tier === 'free'
-        ? [
-            { name: 'Pro', price: '$9/month', aiLimit: 50, docLimit: 30 },
-            { name: 'Premium', price: '$19/month', aiLimit: 200, docLimit: 100 }
-        ]
-        : tier === 'pro'
-            ? [{ name: 'Premium', price: '$19/month', aiLimit: 200, docLimit: 100 }]
-            : [];
+        ? [{ name: 'Premium', price: '₹499/month', aiLimit: 100, docLimit: 50 }]
+        : [];
 
     return (
         <div className="auth-modal-overlay" onClick={onClose}>
