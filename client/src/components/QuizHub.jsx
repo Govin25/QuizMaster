@@ -659,7 +659,7 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '2rem',
+                marginBottom: '1.5rem',
                 gap: '1rem',
                 flexWrap: 'wrap'
             }}>
@@ -685,6 +685,93 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                 }}>
                     ← Back
                 </button>
+            </div>
+
+            {/* Global Search Bar - Prominent at the top */}
+            <div style={{
+                marginBottom: '2rem',
+                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1))',
+                borderRadius: '16px',
+                padding: '1.5rem',
+                border: '1px solid rgba(139, 92, 246, 0.2)'
+            }}>
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    marginBottom: '0.75rem'
+                }}>
+                    <span style={{ fontSize: '1.5rem' }}>🔍</span>
+                    <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'white' }}>Find Your Perfect Quiz</h3>
+                </div>
+                <div style={{
+                    position: 'relative',
+                    background: 'rgba(15, 23, 42, 0.6)',
+                    borderRadius: '12px',
+                    border: '1px solid var(--glass-border)',
+                    overflow: 'hidden',
+                    transition: 'all 0.3s ease'
+                }}
+                    onFocus={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--primary)';
+                        e.currentTarget.style.boxShadow = '0 0 20px rgba(139, 92, 246, 0.3)';
+                    }}
+                    onBlur={(e) => {
+                        e.currentTarget.style.borderColor = 'var(--glass-border)';
+                        e.currentTarget.style.boxShadow = 'none';
+                    }}>
+                    <input
+                        type="text"
+                        placeholder="Search by Quiz ID, title, category, or creator..."
+                        value={searchQuery}
+                        onChange={(e) => handleSearch(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '1rem 3rem 1rem 1rem',
+                            background: 'transparent',
+                            border: 'none',
+                            color: 'white',
+                            fontSize: '1rem',
+                            outline: 'none',
+                            margin: 0
+                        }}
+                    />
+                    {searchQuery && (
+                        <button
+                            onClick={() => handleSearch('')}
+                            style={{
+                                position: 'absolute',
+                                right: '1rem',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text-muted)',
+                                fontSize: '1.2rem',
+                                cursor: 'pointer',
+                                padding: '0.5rem'
+                            }}
+                        >
+                            ✕
+                        </button>
+                    )}
+                </div>
+                <div style={{
+                    display: 'flex',
+                    gap: '0.5rem',
+                    marginTop: '0.75rem',
+                    flexWrap: 'wrap'
+                }}>
+                    <span style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        background: 'rgba(255, 255, 255, 0.05)',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '6px'
+                    }}>
+                        💡 Try: "Science", "123", or "JavaScript"
+                    </span>
+                </div>
             </div>
 
             {/* Trending Quizzes Section */}
@@ -745,71 +832,6 @@ const QuizHub = ({ onBack, onViewProfile }) => {
             {/* Browse by Category Section */}
             <div style={{ marginBottom: '2rem' }}>
                 <h2 style={{ marginBottom: '1.5rem', textAlign: 'left' }}>📚 Browse by Category</h2>
-
-                {/* Search Box */}
-                <div style={{
-                    position: 'relative',
-                    background: 'rgba(15, 23, 42, 0.5)',
-                    borderRadius: '12px',
-                    border: '1px solid var(--glass-border)',
-                    overflow: 'hidden',
-                    transition: 'all 0.3s ease',
-                    marginBottom: '2rem'
-                }}
-                    onFocus={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--primary)';
-                        e.currentTarget.style.boxShadow = '0 0 20px rgba(139, 92, 246, 0.3)';
-                    }}
-                    onBlur={(e) => {
-                        e.currentTarget.style.borderColor = 'var(--glass-border)';
-                        e.currentTarget.style.boxShadow = 'none';
-                    }}>
-                    <span style={{
-                        position: 'absolute',
-                        left: '1rem',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        fontSize: '1.2rem',
-                        color: 'var(--text-muted)'
-                    }}>
-                        🔍
-                    </span>
-                    <input
-                        type="text"
-                        placeholder="Search by Quiz ID, title, or category..."
-                        value={searchQuery}
-                        onChange={(e) => handleSearch(e.target.value)}
-                        style={{
-                            width: '100%',
-                            padding: '1rem 1rem 1rem 3rem',
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'white',
-                            fontSize: '1rem',
-                            outline: 'none',
-                            margin: 0
-                        }}
-                    />
-                    {searchQuery && (
-                        <button
-                            onClick={() => handleSearch('')}
-                            style={{
-                                position: 'absolute',
-                                right: '1rem',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--text-muted)',
-                                fontSize: '1.2rem',
-                                cursor: 'pointer',
-                                padding: '0.5rem'
-                            }}
-                        >
-                            ✕
-                        </button>
-                    )}
-                </div>
 
                 {loadingCategories ? (
                     <div style={{ display: 'grid', gap: '2rem' }}>
