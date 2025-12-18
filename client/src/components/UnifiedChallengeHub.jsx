@@ -745,7 +745,6 @@ const UnifiedChallengeHub = ({
     return (
         <div style={{ maxWidth: '1200px', width: '100%' }}>
             <div className="glass-card">
-                {/* Header */}
                 <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -764,34 +763,37 @@ const UnifiedChallengeHub = ({
                             padding: '0.75rem 1.5rem',
                             fontSize: '1rem',
                             cursor: 'pointer',
-                            borderRadius: '8px',
-                            fontWeight: '600'
+                            borderRadius: '12px',
+                            fontWeight: '700',
+                            boxShadow: '0 4px 15px rgba(139, 92, 246, 0.4)',
+                            transition: 'all 0.3s ease'
                         }}
                     >
-                        ➕ {challengeMode === '1v1' ? 'Create Challenge' : 'Create Room'}
+                        {challengeMode === '1v1' ? '⚔️ Create Challenge' : '🚀 Create Room'}
                     </button>
                 </div>
 
                 {/* Primary Mode Tabs */}
                 <div style={{
                     display: 'flex',
-                    background: 'rgba(255, 255, 255, 0.05)',
+                    background: 'rgba(0, 0, 0, 0.2)',
                     borderRadius: '12px',
                     padding: '0.25rem',
                     marginBottom: '1.5rem',
-                    gap: '0.25rem'
+                    gap: '0.25rem',
+                    border: '1px solid var(--glass-border)'
                 }}>
                     <button
                         onClick={() => handleModeChange('1v1')}
                         style={{
                             flex: 1,
                             background: challengeMode === '1v1'
-                                ? 'linear-gradient(135deg, var(--primary), var(--secondary))'
+                                ? 'rgba(99, 102, 241, 0.3)'
                                 : 'transparent',
                             border: 'none',
-                            color: 'white',
+                            color: challengeMode === '1v1' ? 'white' : 'var(--text-muted)',
                             padding: '0.75rem 1rem',
-                            fontSize: '1rem',
+                            fontSize: '0.95rem',
                             cursor: 'pointer',
                             borderRadius: '10px',
                             fontWeight: '600',
@@ -805,12 +807,12 @@ const UnifiedChallengeHub = ({
                         style={{
                             flex: 1,
                             background: challengeMode === 'group'
-                                ? 'linear-gradient(135deg, var(--primary), var(--secondary))'
+                                ? 'rgba(99, 102, 241, 0.3)'
                                 : 'transparent',
                             border: 'none',
-                            color: 'white',
+                            color: challengeMode === 'group' ? 'white' : 'var(--text-muted)',
                             padding: '0.75rem 1rem',
-                            fontSize: '1rem',
+                            fontSize: '0.95rem',
                             cursor: 'pointer',
                             borderRadius: '10px',
                             fontWeight: '600',

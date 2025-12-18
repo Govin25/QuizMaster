@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
@@ -18,6 +18,7 @@ const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
     const [isSearching, setIsSearching] = useState(false);
     const [suggestedUsers, setSuggestedUsers] = useState([]);
     const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+    const modalContentRef = useRef(null);
 
     // Handle browser back button for mobile
     useEffect(() => {
@@ -194,219 +195,235 @@ const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
     };
 
     const renderStep1 = () => (
-        <div>
-            <h3 style={{ marginTop: 0, marginBottom: '1.5rem' }}>Select a Quiz</h3>
-
-            {/* Search Bar */}
-            <div style={{ marginBottom: '1rem' }}>
-                <div style={{ position: 'relative' }}>
-                    <input
-                        type="text"
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search by Quiz ID, title, or category..."
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem 2.5rem 0.75rem 1rem',
-                            background: 'rgba(255, 255, 255, 0.05)',
-                            border: '1px solid var(--glass-border)',
-                            borderRadius: '8px',
-                            color: 'white',
-                            fontSize: '1rem'
-                        }}
-                    />
-                    {searchQuery && (
-                        <button
-                            onClick={() => setSearchQuery('')}
-                            style={{
-                                position: 'absolute',
-                                right: '0.5rem',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                background: 'transparent',
-                                border: 'none',
-                                color: 'var(--text-muted)',
-                                cursor: 'pointer',
-                                fontSize: '1.2rem',
-                                padding: '0.25rem 0.5rem'
-                            }}
-                        >
-                            ✕
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Filter Toggle */}
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
-                <button
-                    onClick={() => setSearchFilter('all')}
-                    style={{
-                        flex: 1,
-                        background: searchFilter === 'all' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                        border: searchFilter === 'all' ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid var(--glass-border)',
-                        color: searchFilter === 'all' ? '#a5b4fc' : 'var(--text-muted)',
-                        padding: '0.5rem',
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        borderRadius: '8px',
-                        fontWeight: '600',
-                        transition: 'all 0.2s'
-                    }}
-                >
-                    🌐 All Quizzes
-                </button>
-                <button
-                    onClick={() => setSearchFilter('mine')}
-                    style={{
-                        flex: 1,
-                        background: searchFilter === 'mine' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                        border: searchFilter === 'mine' ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid var(--glass-border)',
-                        color: searchFilter === 'mine' ? '#a5b4fc' : 'var(--text-muted)',
-                        padding: '0.5rem',
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        borderRadius: '8px',
-                        fontWeight: '600',
-                        transition: 'all 0.2s'
-                    }}
-                >
-                    📝 My Quizzes
-                </button>
-            </div>
-
-            {(loading || isSearching) ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    {isSearching ? 'Searching...' : 'Loading quizzes...'}
-                </div>
-            ) : quizzes.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                    <p>{searchQuery ? 'No quizzes found matching your search.' : 'No quizzes available. Add some quizzes to your library first!'}</p>
-                </div>
-            ) : (
-                <div style={{
-                    display: 'grid',
-                    gap: '1rem',
-                    maxHeight: '400px',
-                    overflowY: 'auto',
-                    padding: '0.5rem'
-                }}>
-                    {quizzes.map(quiz => (
-                        <div
-                            key={quiz.id}
-                            onClick={() => setSelectedQuiz(quiz)}
-                            style={{
-                                padding: '1rem',
-                                background: selectedQuiz?.id === quiz.id
-                                    ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))'
-                                    : 'rgba(255, 255, 255, 0.05)',
-                                border: selectedQuiz?.id === quiz.id
-                                    ? '2px solid rgba(99, 102, 241, 0.5)'
-                                    : '1px solid var(--glass-border)',
-                                borderRadius: '12px',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                            onMouseEnter={(e) => {
-                                if (selectedQuiz?.id !== quiz.id) {
-                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-                                }
-                            }}
-                            onMouseLeave={(e) => {
-                                if (selectedQuiz?.id !== quiz.id) {
-                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                                }
-                            }}
-                        >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                                <div style={{ flex: 1 }}>
-                                    <h4 style={{ margin: '0 0 0.5rem 0' }}>{quiz.title}</h4>
-                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-                                        <span style={{
-                                            color: 'var(--text-muted)',
-                                            fontSize: '0.75rem',
-                                            padding: '0.25rem 0.5rem',
-                                            fontFamily: 'monospace',
-                                            background: 'rgba(99, 102, 241, 0.1)',
-                                            borderRadius: '6px'
-                                        }}>
-                                            🆔 {quiz.id}
-                                        </span>
-                                        <span style={{
-                                            background: 'rgba(99, 102, 241, 0.2)',
-                                            border: '1px solid rgba(99, 102, 241, 0.3)',
-                                            color: '#a5b4fc',
-                                            padding: '0.25rem 0.5rem',
-                                            borderRadius: '8px',
-                                            fontSize: '0.75rem'
-                                        }}>
-                                            {quiz.category}
-                                        </span>
-                                        <span style={{
-                                            background: 'rgba(251, 146, 60, 0.2)',
-                                            border: '1px solid rgba(251, 146, 60, 0.3)',
-                                            color: '#fb923c',
-                                            padding: '0.25rem 0.5rem',
-                                            borderRadius: '8px',
-                                            fontSize: '0.75rem'
-                                        }}>
-                                            {quiz.difficulty}
-                                        </span>
-                                        <span style={{
-                                            color: 'var(--text-muted)',
-                                            fontSize: '0.75rem',
-                                            padding: '0.25rem 0.5rem'
-                                        }}>
-                                            📝 {quiz.questionCount || 0} questions
-                                        </span>
-                                        <span style={{
-                                            background: quiz.is_public ? 'rgba(34, 197, 94, 0.2)' : 'rgba(100, 116, 139, 0.2)',
-                                            border: quiz.is_public ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(100, 116, 139, 0.3)',
-                                            color: quiz.is_public ? '#22c55e' : '#94a3b8',
-                                            padding: '0.25rem 0.5rem',
-                                            borderRadius: '8px',
-                                            fontSize: '0.75rem'
-                                        }}>
-                                            {quiz.is_public ? '🌐 Public' : '🔒 Private'}
-                                        </span>
-                                    </div>
-                                </div>
-                                {selectedQuiz?.id === quiz.id && (
-                                    <div style={{ fontSize: '1.5rem' }}>✅</div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '2rem' }}>
+        <>
+            {/* Header with close button */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <h3 style={{ margin: 0 }}>Select a Quiz</h3>
                 <button
                     onClick={onClose}
                     style={{
-                        flex: 1,
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        border: '1px solid rgba(255, 255, 255, 0.2)',
+                        background: 'transparent',
+                        border: 'none',
                         color: 'white',
-                        padding: '0.75rem',
-                        fontSize: '1rem',
+                        fontSize: '1.5rem',
                         cursor: 'pointer',
-                        borderRadius: '8px'
+                        padding: '0.5rem'
                     }}
                 >
-                    Cancel
+                    ✕
                 </button>
+            </div>
+            <div>
+
+                {/* Search Bar */}
+                <div style={{ marginBottom: '1rem' }}>
+                    <div style={{ position: 'relative' }}>
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search by Quiz ID, title, or category..."
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem 2.5rem 0.75rem 1rem',
+                                background: 'rgba(255, 255, 255, 0.05)',
+                                border: '1px solid var(--glass-border)',
+                                borderRadius: '8px',
+                                color: 'white',
+                                fontSize: '1rem'
+                            }}
+                        />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery('')}
+                                style={{
+                                    position: 'absolute',
+                                    right: '0.5rem',
+                                    top: '50%',
+                                    transform: 'translateY(-50%)',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'var(--text-muted)',
+                                    cursor: 'pointer',
+                                    fontSize: '1.2rem',
+                                    padding: '0.25rem 0.5rem'
+                                }}
+                            >
+                                ✕
+                            </button>
+                        )}
+                    </div>
+                </div>
+
+                {/* Filter Toggle */}
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                    <button
+                        onClick={() => setSearchFilter('all')}
+                        style={{
+                            flex: 1,
+                            background: searchFilter === 'all' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                            border: searchFilter === 'all' ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid var(--glass-border)',
+                            color: searchFilter === 'all' ? '#a5b4fc' : 'var(--text-muted)',
+                            padding: '0.5rem',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            borderRadius: '8px',
+                            fontWeight: '600',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        🌐 All Quizzes
+                    </button>
+                    <button
+                        onClick={() => setSearchFilter('mine')}
+                        style={{
+                            flex: 1,
+                            background: searchFilter === 'mine' ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                            border: searchFilter === 'mine' ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid var(--glass-border)',
+                            color: searchFilter === 'mine' ? '#a5b4fc' : 'var(--text-muted)',
+                            padding: '0.5rem',
+                            fontSize: '0.85rem',
+                            cursor: 'pointer',
+                            borderRadius: '8px',
+                            fontWeight: '600',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        📝 My Quizzes
+                    </button>
+                </div>
+
+                {(loading || isSearching) ? (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                        {isSearching ? 'Searching...' : 'Loading quizzes...'}
+                    </div>
+                ) : quizzes.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                        <p>{searchQuery ? 'No quizzes found matching your search.' : 'No quizzes available. Add some quizzes to your library first!'}</p>
+                    </div>
+                ) : (
+                    <div style={{
+                        display: 'grid',
+                        gap: '1rem',
+                        maxHeight: '400px',
+                        overflowY: 'auto',
+                        padding: '0.5rem'
+                    }}>
+                        {quizzes.map(quiz => (
+                            <div
+                                key={quiz.id}
+                                onClick={() => {
+                                    setSelectedQuiz(quiz);
+                                    // Scroll to top of modal so Next button is visible
+                                    if (modalContentRef.current) {
+                                        modalContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }
+                                }}
+                                style={{
+                                    padding: '1rem',
+                                    background: selectedQuiz?.id === quiz.id
+                                        ? 'linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(139, 92, 246, 0.2))'
+                                        : 'rgba(255, 255, 255, 0.05)',
+                                    border: selectedQuiz?.id === quiz.id
+                                        ? '2px solid rgba(99, 102, 241, 0.5)'
+                                        : '1px solid var(--glass-border)',
+                                    borderRadius: '12px',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseEnter={(e) => {
+                                    if (selectedQuiz?.id !== quiz.id) {
+                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
+                                    }
+                                }}
+                                onMouseLeave={(e) => {
+                                    if (selectedQuiz?.id !== quiz.id) {
+                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                    }
+                                }}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <h4 style={{ margin: '0 0 0.5rem 0' }}>{quiz.title}</h4>
+                                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                                            <span style={{
+                                                color: 'var(--text-muted)',
+                                                fontSize: '0.75rem',
+                                                padding: '0.25rem 0.5rem',
+                                                fontFamily: 'monospace',
+                                                background: 'rgba(99, 102, 241, 0.1)',
+                                                borderRadius: '6px'
+                                            }}>
+                                                🆔 {quiz.id}
+                                            </span>
+                                            <span style={{
+                                                background: 'rgba(99, 102, 241, 0.2)',
+                                                border: '1px solid rgba(99, 102, 241, 0.3)',
+                                                color: '#a5b4fc',
+                                                padding: '0.25rem 0.5rem',
+                                                borderRadius: '8px',
+                                                fontSize: '0.75rem'
+                                            }}>
+                                                {quiz.category}
+                                            </span>
+                                            <span style={{
+                                                background: 'rgba(251, 146, 60, 0.2)',
+                                                border: '1px solid rgba(251, 146, 60, 0.3)',
+                                                color: '#fb923c',
+                                                padding: '0.25rem 0.5rem',
+                                                borderRadius: '8px',
+                                                fontSize: '0.75rem'
+                                            }}>
+                                                {quiz.difficulty}
+                                            </span>
+                                            <span style={{
+                                                color: 'var(--text-muted)',
+                                                fontSize: '0.75rem',
+                                                padding: '0.25rem 0.5rem'
+                                            }}>
+                                                📝 {quiz.questionCount || 0} questions
+                                            </span>
+                                            <span style={{
+                                                background: quiz.is_public ? 'rgba(34, 197, 94, 0.2)' : 'rgba(100, 116, 139, 0.2)',
+                                                border: quiz.is_public ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(100, 116, 139, 0.3)',
+                                                color: quiz.is_public ? '#22c55e' : '#94a3b8',
+                                                padding: '0.25rem 0.5rem',
+                                                borderRadius: '8px',
+                                                fontSize: '0.75rem'
+                                            }}>
+                                                {quiz.is_public ? '🌐 Public' : '🔒 Private'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    {selectedQuiz?.id === quiz.id && (
+                                        <div style={{ fontSize: '1.5rem' }}>✅</div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+
+            {/* Sticky Footer */}
+            <div style={{
+                position: 'sticky',
+                bottom: 0,
+                background: 'linear-gradient(to top, var(--card-bg, rgba(30, 30, 50, 1)) 80%, transparent)',
+                paddingTop: '1rem',
+                marginTop: '1rem'
+            }}>
                 <button
                     onClick={() => setStep(2)}
                     disabled={!selectedQuiz}
                     style={{
-                        flex: 1,
+                        width: '100%',
                         background: selectedQuiz
                             ? 'linear-gradient(135deg, var(--primary), var(--secondary))'
-                            : 'rgba(255, 255, 255, 0.1)',
+                            : 'rgba(100, 116, 139, 0.2)',
                         border: 'none',
                         color: 'white',
-                        padding: '0.75rem',
+                        padding: '1rem',
                         fontSize: '1rem',
                         cursor: selectedQuiz ? 'pointer' : 'not-allowed',
                         borderRadius: '8px',
@@ -417,7 +434,7 @@ const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
                     Next →
                 </button>
             </div>
-        </div>
+        </>
     );
 
     const renderStep2 = () => (
@@ -639,17 +656,15 @@ const ChallengeCreator = ({ onClose, onChallengeCreated }) => {
             zIndex: 1000,
             backdropFilter: 'blur(4px)'
         }}>
-            <div style={{
-                background: 'linear-gradient(135deg, rgba(30, 30, 50, 0.95), rgba(20, 20, 40, 0.95))',
-                border: '1px solid var(--glass-border)',
-                borderRadius: '16px',
-                padding: '2rem',
-                maxWidth: '600px',
-                width: '90%',
-                maxHeight: '80vh',
-                overflowY: 'auto',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
-            }}>
+            <div
+                ref={modalContentRef}
+                className="glass-card"
+                style={{
+                    maxWidth: '600px',
+                    width: '90%',
+                    maxHeight: '80vh',
+                    overflow: 'auto'
+                }}>
                 {/* Progress Indicator */}
                 {step < 3 && (
                     <div style={{

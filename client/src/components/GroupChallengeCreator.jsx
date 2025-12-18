@@ -19,6 +19,7 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
     const [activeTab, setActiveTab] = useState('all');
     const [searchQuery, setSearchQuery] = useState('');
     const searchTimeoutRef = useRef(null);
+    const modalContentRef = useRef(null);
 
     // Handle browser back button for mobile
     useEffect(() => {
@@ -213,9 +214,9 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
             zIndex: 1000,
             padding: '1rem'
         }}>
-            <div className="glass-card" style={{ maxWidth: '700px', width: '100%', maxHeight: '90vh', overflow: 'auto' }}>
+            <div ref={modalContentRef} className="glass-card" style={{ maxWidth: '700px', width: '100%', maxHeight: '90vh', overflow: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h2 style={{ margin: 0 }}>Create Group Challenge</h2>
+                    <h3 style={{ margin: 0 }}>Select a Quiz</h3>
                     <button
                         onClick={onClose}
                         style={{
@@ -235,52 +236,8 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
                     <div style={{ textAlign: 'center', padding: '2rem' }}>Loading quizzes...</div>
                 ) : (
                     <>
-                        {/* Max Participants */}
-                        <div style={{ marginBottom: '1.5rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600' }}>
-                                Max Participants: {maxParticipants}
-                            </label>
-                            <input
-                                type="range"
-                                min="2"
-                                max="8"
-                                value={maxParticipants}
-                                onChange={(e) => setMaxParticipants(parseInt(e.target.value))}
-                                style={{ width: '100%' }}
-                            />
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                                <span>2</span>
-                                <span>8</span>
-                            </div>
-                        </div>
-
-                        {/* Tabs - Only All and My Quizzes */}
-                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                            {['all', 'my-quizzes'].map(tab => (
-                                <button
-                                    key={tab}
-                                    onClick={() => setActiveTab(tab)}
-                                    style={{
-                                        background: activeTab === tab ? 'rgba(99, 102, 241, 0.2)' : 'transparent',
-                                        border: activeTab === tab ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid rgba(255, 255, 255, 0.1)',
-                                        color: activeTab === tab ? '#a5b4fc' : 'var(--text-muted)',
-                                        padding: '0.5rem 1rem',
-                                        fontSize: '0.85rem',
-                                        cursor: 'pointer',
-                                        borderRadius: '8px',
-                                        fontWeight: '600'
-                                    }}
-                                >
-                                    {tab === 'all' ? '🌐 All Quizzes' : '📝 My Quizzes'}
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Search Box */}
+                        {/* Search Box - First like 1v1 */}
                         <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '600', fontSize: '0.9rem' }}>
-                                Search Quizzes {searching && <span style={{ color: 'var(--text-muted)', fontWeight: 'normal' }}>(searching...)</span>}
-                            </label>
                             <div style={{ position: 'relative' }}>
                                 <input
                                     type="text"
@@ -291,10 +248,10 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
                                         width: '100%',
                                         padding: '0.75rem 2.5rem 0.75rem 1rem',
                                         background: 'rgba(255, 255, 255, 0.05)',
-                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        border: '1px solid var(--glass-border)',
                                         borderRadius: '8px',
                                         color: 'white',
-                                        fontSize: '0.95rem'
+                                        fontSize: '1rem'
                                     }}
                                 />
                                 {searchQuery && (
@@ -317,78 +274,122 @@ const GroupChallengeCreator = ({ onClose, onCreated }) => {
                                     </button>
                                 )}
                             </div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                                💡 Enter a Quiz ID to find any public quiz
+                        </div>
+
+                        {/* Filter Toggle - After search like 1v1 */}
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem' }}>
+                            {['all', 'my-quizzes'].map(tab => (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    style={{
+                                        flex: 1,
+                                        background: activeTab === tab ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                                        border: activeTab === tab ? '1px solid rgba(99, 102, 241, 0.3)' : '1px solid var(--glass-border)',
+                                        color: activeTab === tab ? '#a5b4fc' : 'var(--text-muted)',
+                                        padding: '0.5rem',
+                                        fontSize: '0.85rem',
+                                        cursor: 'pointer',
+                                        borderRadius: '8px',
+                                        fontWeight: '600',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {tab === 'all' ? '🌐 All Quizzes' : '📝 My Quizzes'}
+                                </button>
+                            ))}
+                        </div>
+
+
+
+                        {/* Quiz List */}
+                        {filteredQuizzes.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                                <p>No quizzes found for the current filters.</p>
+                                {myQuizzes.length === 0 && <p>Create your own quiz first!</p>}
                             </div>
-                        </div>
-
-                        {/* Quiz Selection */}
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: '600' }}>
-                                Select Quiz
-                            </label>
-                            {filteredQuizzes.length === 0 ? (
-                                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-                                    <p>No quizzes found for the current filters.</p>
-                                    {myQuizzes.length === 0 && <p>Create your own quiz first!</p>}
-                                </div>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '400px', overflow: 'auto' }}>
-                                    {filteredQuizzes.map(quiz => (
-                                        <div
-                                            key={quiz.id}
-                                            onClick={() => setSelectedQuiz(quiz)}
-                                            style={{
-                                                background: selectedQuiz?.id === quiz.id ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
-                                                border: selectedQuiz?.id === quiz.id ? '2px solid rgba(99, 102, 241, 0.5)' : '1px solid var(--glass-border)',
-                                                borderRadius: '8px',
-                                                padding: '1rem',
-                                                cursor: 'pointer',
-                                                transition: 'all 0.2s'
-                                            }}
-                                        >
-                                            <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{quiz.title}</div>
-                                            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                                <span style={{
-                                                    fontFamily: 'monospace',
-                                                    background: 'rgba(99, 102, 241, 0.1)',
-                                                    padding: '0.1rem 0.4rem',
-                                                    borderRadius: '4px'
-                                                }}>
-                                                    🆔 {quiz.id}
-                                                </span>
-                                                <span>{quiz.category}</span>
-                                                <span>•</span>
-                                                <span>{quiz.difficulty}</span>
-                                                <span>•</span>
-                                                <span>{quiz.questionCount || quiz.questions?.length || 0} questions</span>
+                        ) : (
+                            <div style={{
+                                display: 'grid',
+                                gap: '1rem',
+                                maxHeight: '300px',
+                                overflowY: 'auto',
+                                padding: '0.5rem'
+                            }}>
+                                {filteredQuizzes.map(quiz => (
+                                    <div
+                                        key={quiz.id}
+                                        onClick={() => {
+                                            setSelectedQuiz(quiz);
+                                            // Scroll to top so Create Room button is visible
+                                            if (modalContentRef.current) {
+                                                modalContentRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+                                            }
+                                        }}
+                                        style={{
+                                            background: selectedQuiz?.id === quiz.id ? 'rgba(99, 102, 241, 0.2)' : 'rgba(255, 255, 255, 0.05)',
+                                            border: selectedQuiz?.id === quiz.id ? '2px solid rgba(99, 102, 241, 0.5)' : '1px solid var(--glass-border)',
+                                            borderRadius: '8px',
+                                            padding: '1rem',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <div style={{ fontWeight: '600', marginBottom: '0.25rem' }}>{quiz.title}</div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                    <span style={{
+                                                        fontFamily: 'monospace',
+                                                        background: 'rgba(99, 102, 241, 0.1)',
+                                                        padding: '0.1rem 0.4rem',
+                                                        borderRadius: '4px'
+                                                    }}>
+                                                        🆔 {quiz.id}
+                                                    </span>
+                                                    <span>{quiz.category}</span>
+                                                    <span>•</span>
+                                                    <span>{quiz.difficulty}</span>
+                                                    <span>•</span>
+                                                    <span>{quiz.questionCount || quiz.questions?.length || 0} questions</span>
+                                                </div>
                                             </div>
+                                            {selectedQuiz?.id === quiz.id && (
+                                                <div style={{ fontSize: '1.5rem' }}>✅</div>
+                                            )}
                                         </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
 
-                        {/* Create Button */}
-                        <button
-                            onClick={handleCreate}
-                            disabled={!selectedQuiz || creating}
-                            style={{
-                                width: '100%',
-                                marginTop: '1.5rem',
-                                background: selectedQuiz && !creating ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'rgba(100, 116, 139, 0.2)',
-                                border: 'none',
-                                color: 'white',
-                                padding: '1rem',
-                                fontSize: '1rem',
-                                cursor: selectedQuiz && !creating ? 'pointer' : 'not-allowed',
-                                borderRadius: '8px',
-                                fontWeight: '600',
-                                opacity: selectedQuiz && !creating ? 1 : 0.5
-                            }}
-                        >
-                            {creating ? 'Creating...' : '🚀 Create Room'}
-                        </button>
+                        {/* Sticky Footer */}
+                        <div style={{
+                            position: 'sticky',
+                            bottom: 0,
+                            background: 'linear-gradient(to top, var(--card-bg, rgba(30, 30, 50, 1)) 80%, transparent)',
+                            paddingTop: '1rem',
+                            marginTop: '1rem'
+                        }}>
+                            <button
+                                onClick={handleCreate}
+                                disabled={!selectedQuiz || creating}
+                                style={{
+                                    width: '100%',
+                                    background: selectedQuiz && !creating ? 'linear-gradient(135deg, var(--primary), var(--secondary))' : 'rgba(100, 116, 139, 0.2)',
+                                    border: 'none',
+                                    color: 'white',
+                                    padding: '1rem',
+                                    fontSize: '1rem',
+                                    cursor: selectedQuiz && !creating ? 'pointer' : 'not-allowed',
+                                    borderRadius: '8px',
+                                    fontWeight: '600',
+                                    opacity: selectedQuiz && !creating ? 1 : 0.5
+                                }}
+                            >
+                                {creating ? 'Creating...' : '🚀 Create Room'}
+                            </button>
+                        </div>
                     </>
                 )}
             </div>
