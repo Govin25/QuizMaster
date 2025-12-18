@@ -1,10 +1,25 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import ReactDOM from 'react-dom';
 import './ActivityGraph.css';
 
 const ActivityGraph = ({ heatmap, loading, error }) => {
     const [hoveredCell, setHoveredCell] = useState(null);
     const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
+    // Dismiss tooltip on scroll or touch elsewhere (for mobile)
+    useEffect(() => {
+        if (!hoveredCell) return;
+
+        const dismissTooltip = () => setHoveredCell(null);
+
+        window.addEventListener('scroll', dismissTooltip, true);
+        window.addEventListener('touchstart', dismissTooltip, { passive: true });
+
+        return () => {
+            window.removeEventListener('scroll', dismissTooltip, true);
+            window.removeEventListener('touchstart', dismissTooltip);
+        };
+    }, [hoveredCell]);
 
     // Generate calendar data for the past year
     const calendarData = useMemo(() => {
