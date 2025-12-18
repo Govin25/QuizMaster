@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { useAuth } from '../context/AuthContext';
 import AIGenerator from './AIGenerator';
 import DocumentQuizGenerator from './DocumentQuizGenerator';
 import VideoQuizGenerator from './VideoQuizGenerator';
 import JSONQuizUploader from './JSONQuizUploader';
 
 const QuizCreationHub = ({ onBack, onCreated, onManualCreate }) => {
+    const { user } = useAuth();
     const [activeGenerator, setActiveGenerator] = useState(null);
 
     const creationOptions = [
@@ -53,7 +55,7 @@ const QuizCreationHub = ({ onBack, onCreated, onManualCreate }) => {
             gradient: 'linear-gradient(135deg, #14b8a6, #22d3d1)',
             glow: 'rgba(20, 184, 166, 0.3)'
         }
-    ];
+    ].filter(option => option.id !== 'video' || user?.role === 'admin');
 
     const handleOptionClick = (optionId) => {
         if (optionId === 'manual') {

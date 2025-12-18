@@ -6,7 +6,7 @@ const crypto = require('crypto');
 const logger = require('../utils/logger');
 const Quiz = require('../models/Quiz');
 const QuizResult = require('../models/QuizResult');
-const { authenticateToken, requirePermission } = require('../middleware/authMiddleware');
+const { authenticateToken, requirePermission, requireRole } = require('../middleware/authMiddleware');
 const documentParser = require('../services/documentParser');
 const aiQuizGenerator = require('../services/aiQuizGenerator');
 const videoQuizService = require('../services/videoQuizService');
@@ -841,7 +841,7 @@ router.post('/save-document-quiz', authenticateToken, async (req, res) => {
 // ============================================
 
 // Validate video URL
-router.post('/video/validate', authenticateToken, async (req, res) => {
+router.post('/video/validate', authenticateToken, requireRole('admin'), async (req, res) => {
     try {
         const { url } = req.body;
 
@@ -882,7 +882,7 @@ router.post('/video/validate', authenticateToken, async (req, res) => {
 });
 
 // Extract transcript from video
-router.post('/video/extract-transcript', authenticateToken, async (req, res) => {
+router.post('/video/extract-transcript', authenticateToken, requireRole('admin'), async (req, res) => {
     try {
         const { url } = req.body;
 
@@ -931,7 +931,7 @@ router.post('/video/extract-transcript', authenticateToken, async (req, res) => 
 });
 
 // Generate quiz from video
-router.post('/video/generate', authenticateToken, async (req, res) => {
+router.post('/video/generate', authenticateToken, requireRole('admin'), async (req, res) => {
     try {
         const { url, config } = req.body;
 
@@ -998,7 +998,7 @@ router.post('/video/generate', authenticateToken, async (req, res) => {
 });
 
 // Save video-generated quiz (after user confirms)
-router.post('/save-video-quiz', authenticateToken, async (req, res) => {
+router.post('/save-video-quiz', authenticateToken, requireRole('admin'), async (req, res) => {
     try {
         const {
             title,

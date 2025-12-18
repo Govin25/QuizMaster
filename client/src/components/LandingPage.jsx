@@ -148,7 +148,6 @@ const LandingPage = () => {
             features: [
                 "3 AI quiz generations/month",
                 "2 document quiz generations/month",
-                "1 video quiz generation/month",
                 "Unlimited manual quizzes",
                 "Unlimited quiz attempts",
                 "Unlimited 1v1 challenges",
@@ -170,7 +169,6 @@ const LandingPage = () => {
             features: [
                 "100 AI quiz generations/month",
                 "50 document quiz generations/month",
-                "25 video quiz generations/month",
                 "Unlimited manual quizzes",
                 "Unlimited quiz attempts",
                 "Unlimited 1v1 challenges",

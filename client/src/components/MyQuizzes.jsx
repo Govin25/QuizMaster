@@ -6,7 +6,7 @@ import ConfirmDialog from './ConfirmDialog';
 import { handleConcurrencyError } from '../utils/concurrencyHandler';
 
 const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
-    const { fetchWithAuth } = useAuth();
+    const { user, fetchWithAuth } = useAuth();
     const { showSuccess, showError, showInfo } = useToast();
     const [quizzes, setQuizzes] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -25,7 +25,7 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
         { id: 'ai_video', label: 'From Video', icon: '🎬', color: '#f472b6' },
         { id: 'json_upload', label: 'JSON Import', icon: '📥', color: '#34d399' },
         { id: 'manual', label: 'Manual', icon: '✍️', color: '#fb923c' }
-    ];
+    ].filter(filter => (filter.id !== 'ai_video' && filter.id !== 'video') || user?.role === 'admin');
 
     // Get filtered quizzes based on selected source
     const getFilteredQuizzes = () => {

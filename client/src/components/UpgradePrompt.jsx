@@ -7,8 +7,6 @@ const UpgradePrompt = ({ onClose, limitType, currentUsage, limit, tier }) => {
                 return 'AI Quiz Generation Limit Reached';
             case 'documentQuizGeneration':
                 return 'Document Generation Limit Reached';
-            case 'videoQuizGeneration':
-                return 'Video Generation Limit Reached';
             default:
                 return 'Monthly Limit Reached';
         }
@@ -16,19 +14,18 @@ const UpgradePrompt = ({ onClose, limitType, currentUsage, limit, tier }) => {
 
     const getMessage = () => {
         const typeName = limitType === 'aiQuizGeneration' ? 'AI quiz generations'
-            : limitType === 'documentQuizGeneration' ? 'document generations'
-                : 'video generations';
+            : 'document generations';
 
         return `You've used all ${limit} ${typeName} for this month on your ${tier.charAt(0).toUpperCase() + tier.slice(1)} plan.`;
     };
 
     const upgradeTiers = tier === 'free'
         ? [
-            { name: 'Pro', price: '$9/month', aiLimit: 50, docLimit: 30, videoLimit: 20 },
-            { name: 'Premium', price: '$19/month', aiLimit: 200, docLimit: 100, videoLimit: 75 }
+            { name: 'Pro', price: '$9/month', aiLimit: 50, docLimit: 30 },
+            { name: 'Premium', price: '$19/month', aiLimit: 200, docLimit: 100 }
         ]
         : tier === 'pro'
-            ? [{ name: 'Premium', price: '$19/month', aiLimit: 200, docLimit: 100, videoLimit: 75 }]
+            ? [{ name: 'Premium', price: '$19/month', aiLimit: 200, docLimit: 100 }]
             : [];
 
     return (
@@ -122,7 +119,7 @@ const UpgradePrompt = ({ onClose, limitType, currentUsage, limit, tier }) => {
                                     </div>
                                     <div style={{
                                         display: 'grid',
-                                        gridTemplateColumns: 'repeat(3, 1fr)',
+                                        gridTemplateColumns: 'repeat(2, 1fr)',
                                         gap: '0.75rem',
                                         fontSize: '0.85rem',
                                         color: 'var(--text-muted)'
@@ -134,10 +131,6 @@ const UpgradePrompt = ({ onClose, limitType, currentUsage, limit, tier }) => {
                                         <div>
                                             <div style={{ fontWeight: '600', color: 'white' }}>{upgradeTier.docLimit}</div>
                                             <div>Documents</div>
-                                        </div>
-                                        <div>
-                                            <div style={{ fontWeight: '600', color: 'white' }}>{upgradeTier.videoLimit}</div>
-                                            <div>Videos</div>
                                         </div>
                                     </div>
                                 </div>

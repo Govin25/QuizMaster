@@ -46,8 +46,8 @@ const UsageQuota = ({ generationType, compact = false }) => {
                 return usage.usage.aiQuiz;
             case 'documentQuizGeneration':
                 return usage.usage.documentQuiz;
-            case 'videoQuizGeneration':
-                return usage.usage.videoQuiz;
+            case 'documentQuizGeneration':
+                return usage.usage.documentQuiz;
             default:
                 return null;
         }
@@ -59,8 +59,8 @@ const UsageQuota = ({ generationType, compact = false }) => {
                 return 'AI Quiz Generations';
             case 'documentQuizGeneration':
                 return 'Document Generations';
-            case 'videoQuizGeneration':
-                return 'Video Generations';
+            case 'documentQuizGeneration':
+                return 'Document Generations';
             default:
                 return 'Generations';
         }
