@@ -16,6 +16,21 @@ module.exports = {
             idle: 10000,
         },
     },
+    test: {
+        dialect: 'sqlite',
+        storage: path.resolve(__dirname, '../../quizmaster_test.db'),
+        logging: false,
+        define: {
+            timestamps: false,
+            underscored: true,
+        },
+        pool: {
+            max: 5,
+            min: 1,
+            acquire: 30000,
+            idle: 10000,
+        },
+    },
     production: {
         dialect: 'postgres',
         host: process.env.DB_HOST || 'localhost',

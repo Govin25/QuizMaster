@@ -3,6 +3,249 @@
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
     async up(queryInterface, Sequelize) {
+        // ========================================
+        // PHASE 1: CREATE RBAC TABLES
+        // ========================================
+
+        // Create permissions table
+        await queryInterface.createTable('permissions', {
+            id: {
+                type: Sequelize.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            name: {
+                type: Sequelize.STRING(100),
+                allowNull: false,
+                unique: true,
+            },
+            resource: {
+                type: Sequelize.STRING(50),
+                allowNull: false,
+            },
+            action: {
+                type: Sequelize.STRING(50),
+                allowNull: false,
+            },
+            description: {
+                type: Sequelize.TEXT,
+                allowNull: true,
+            },
+            created_at: {
+                type: Sequelize.DATE,
+                allowNull: false,
+            },
+        });
+
+        await queryInterface.addIndex('permissions', ['resource', 'action'], {
+            name: 'permissions_resource_action',
+        });
+
+        // Create roles table
+        await queryInterface.createTable('roles', {
+            id: {
+                type: Sequelize.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            name: {
+                type: Sequelize.STRING(50),
+                allowNull: false,
+                unique: true,
+            },
+            description: {
+                type: Sequelize.TEXT,
+                allowNull: true,
+            },
+            is_system: {
+                type: Sequelize.BOOLEAN,
+                defaultValue: false,
+            },
+            created_at: {
+                type: Sequelize.DATE,
+                allowNull: false,
+            },
+        });
+
+        // Create role_permissions junction table
+        await queryInterface.createTable('role_permissions', {
+            role_id: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'roles',
+                    key: 'id',
+                },
+                onDelete: 'CASCADE',
+                onUpdate: 'CASCADE',
+                primaryKey: true,
+            },
+            permission_id: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'permissions',
+                    key: 'id',
+                },
+                onDelete: 'CASCADE',
+                onUpdate: 'CASCADE',
+                primaryKey: true,
+            },
+            created_at: {
+                type: Sequelize.DATE,
+                allowNull: false,
+            },
+        });
+
+        await queryInterface.addConstraint('role_permissions', {
+            fields: ['role_id', 'permission_id'],
+            type: 'unique',
+            name: 'role_permissions_role_id_permission_id',
+        });
+
+        // Create user_groups table
+        await queryInterface.createTable('user_groups', {
+            id: {
+                type: Sequelize.INTEGER,
+                primaryKey: true,
+                autoIncrement: true,
+            },
+            name: {
+                type: Sequelize.STRING(100),
+                allowNull: false,
+                unique: true,
+            },
+            description: {
+                type: Sequelize.TEXT,
+                allowNull: true,
+            },
+            created_at: {
+                type: Sequelize.DATE,
+                allowNull: false,
+            },
+            updated_at: {
+                type: Sequelize.DATE,
+                allowNull: false,
+            },
+        });
+
+        // Create group_members junction table
+        await queryInterface.createTable('group_members', {
+            group_id: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'user_groups',
+                    key: 'id',
+                },
+                onDelete: 'CASCADE',
+                onUpdate: 'CASCADE',
+                primaryKey: true,
+            },
+            user_id: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'users',
+                    key: 'id',
+                },
+                onDelete: 'CASCADE',
+                onUpdate: 'CASCADE',
+                primaryKey: true,
+            },
+            created_at: {
+                type: Sequelize.DATE,
+                allowNull: false,
+            },
+        });
+
+        await queryInterface.addConstraint('group_members', {
+            fields: ['group_id', 'user_id'],
+            type: 'unique',
+            name: 'group_members_group_id_user_id',
+        });
+
+        // Create group_permissions junction table
+        await queryInterface.createTable('group_permissions', {
+            group_id: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'user_groups',
+                    key: 'id',
+                },
+                onDelete: 'CASCADE',
+                onUpdate: 'CASCADE',
+                primaryKey: true,
+            },
+            permission_id: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'permissions',
+                    key: 'id',
+                },
+                onDelete: 'CASCADE',
+                onUpdate: 'CASCADE',
+                primaryKey: true,
+            },
+            created_at: {
+                type: Sequelize.DATE,
+                allowNull: false,
+            },
+        });
+
+        await queryInterface.addConstraint('group_permissions', {
+            fields: ['group_id', 'permission_id'],
+            type: 'unique',
+            name: 'group_permissions_group_id_permission_id',
+        });
+
+        // Create user_permissions junction table
+        await queryInterface.createTable('user_permissions', {
+            user_id: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'users',
+                    key: 'id',
+                },
+                onDelete: 'CASCADE',
+                onUpdate: 'CASCADE',
+                primaryKey: true,
+            },
+            permission_id: {
+                type: Sequelize.INTEGER,
+                allowNull: false,
+                references: {
+                    model: 'permissions',
+                    key: 'id',
+                },
+                onDelete: 'CASCADE',
+                onUpdate: 'CASCADE',
+                primaryKey: true,
+            },
+            granted: {
+                type: Sequelize.BOOLEAN,
+                allowNull: false,
+                defaultValue: true,
+            },
+            created_at: {
+                type: Sequelize.DATE,
+                allowNull: false,
+            },
+        });
+
+        await queryInterface.addConstraint('user_permissions', {
+            fields: ['user_id', 'permission_id'],
+            type: 'unique',
+            name: 'user_permissions_user_id_permission_id',
+        });
+
+        // ========================================
+        // PHASE 2: SEED RBAC DATA
+        // ========================================
+
         const PERMISSIONS = [
             // Quiz Permissions
             { name: 'quiz:create', resource: 'quiz', action: 'create', description: 'Create new quizzes' },
@@ -75,133 +318,77 @@ module.exports = {
             }
         ];
 
-        const transaction = await queryInterface.sequelize.transaction();
+        const timestamp = new Date();
 
-        try {
-            // 1. Fetch existing permissions
-            const [existingPermissions] = await queryInterface.sequelize.query(
-                "SELECT name FROM permissions",
-                { transaction }
-            );
-            const existingPermissionNames = new Set(existingPermissions.map(p => p.name));
+        // Insert permissions
+        const permissionsData = PERMISSIONS.map(p => ({
+            ...p,
+            created_at: timestamp
+        }));
+        await queryInterface.bulkInsert('permissions', permissionsData);
 
-            const timestamp = new Date();
-            const permissionsData = PERMISSIONS
-                .filter(p => !existingPermissionNames.has(p.name))
-                .map(p => ({
-                    ...p,
-                    created_at: timestamp
-                }));
+        // Insert roles
+        const rolesData = ROLES.map(r => ({
+            name: r.name,
+            description: r.description,
+            is_system: r.is_system,
+            created_at: timestamp
+        }));
+        await queryInterface.bulkInsert('roles', rolesData);
 
-            if (permissionsData.length > 0) {
-                await queryInterface.bulkInsert('permissions', permissionsData, { transaction });
-            }
+        // Fetch IDs for mapping
+        const [allPermissions] = await queryInterface.sequelize.query(
+            "SELECT id, name FROM permissions"
+        );
+        const [allRoles] = await queryInterface.sequelize.query(
+            "SELECT id, name FROM roles"
+        );
 
-            // 2. Fetch existing roles
-            const [existingRoles] = await queryInterface.sequelize.query(
-                "SELECT name FROM roles",
-                { transaction }
-            );
-            const existingRoleNames = new Set(existingRoles.map(r => r.name));
+        const permissionMap = new Map(allPermissions.map(p => [p.name, p.id]));
+        const roleMap = new Map(allRoles.map(r => [r.name, r.id]));
 
-            const rolesData = ROLES
-                .filter(r => !existingRoleNames.has(r.name))
-                .map(r => ({
-                    name: r.name,
-                    description: r.description,
-                    is_system: r.is_system,
-                    created_at: timestamp
-                }));
+        // Create role-permission mappings
+        const rolePermissionsData = [];
+        for (const roleDef of ROLES) {
+            const roleId = roleMap.get(roleDef.name);
+            if (!roleId) continue;
 
-            if (rolesData.length > 0) {
-                await queryInterface.bulkInsert('roles', rolesData, { transaction });
-            }
-
-            // 3. Fetch all IDs to map them (re-fetch all to ensure we have IDs for both new and existing)
-            const [allPermissions] = await queryInterface.sequelize.query(
-                "SELECT id, name FROM permissions",
-                { transaction }
-            );
-
-            const [allRoles] = await queryInterface.sequelize.query(
-                "SELECT id, name FROM roles",
-                { transaction }
-            );
-
-            const permissionMap = new Map(allPermissions.map(p => [p.name, p.id]));
-            const roleMap = new Map(allRoles.map(r => [r.name, r.id]));
-
-            // 4. Prepare RolePermissions
-            // We need to avoid duplicate role_permissions too.
-            const [existingRolePermissions] = await queryInterface.sequelize.query(
-                "SELECT role_id, permission_id FROM role_permissions",
-                { transaction }
-            );
-            const existingRolePermSet = new Set(
-                existingRolePermissions.map(rp => `${rp.role_id}:${rp.permission_id}`)
-            );
-
-            const rolePermissionsData = [];
-
-            for (const roleDef of ROLES) {
-                const roleId = roleMap.get(roleDef.name);
-                if (!roleId) continue;
-
-                if (roleDef.permissions.includes('*')) {
-                    // Assign all permissions
-                    for (const perm of allPermissions) {
-                        if (!existingRolePermSet.has(`${roleId}:${perm.id}`)) {
-                            rolePermissionsData.push({
-                                role_id: roleId,
-                                permission_id: perm.id,
-                                created_at: timestamp
-                            });
-                            // Add to set to prevent duplicates within this loop if logic is flawed
-                            existingRolePermSet.add(`${roleId}:${perm.id}`);
-                        }
-                    }
-                } else {
-                    for (const permName of roleDef.permissions) {
-                        const permId = permissionMap.get(permName);
-                        if (permId && !existingRolePermSet.has(`${roleId}:${permId}`)) {
-                            rolePermissionsData.push({
-                                role_id: roleId,
-                                permission_id: permId,
-                                created_at: timestamp
-                            });
-                            existingRolePermSet.add(`${roleId}:${permId}`);
-                        }
+            if (roleDef.permissions.includes('*')) {
+                // Admin gets all permissions
+                for (const perm of allPermissions) {
+                    rolePermissionsData.push({
+                        role_id: roleId,
+                        permission_id: perm.id,
+                        created_at: timestamp
+                    });
+                }
+            } else {
+                for (const permName of roleDef.permissions) {
+                    const permId = permissionMap.get(permName);
+                    if (permId) {
+                        rolePermissionsData.push({
+                            role_id: roleId,
+                            permission_id: permId,
+                            created_at: timestamp
+                        });
                     }
                 }
             }
+        }
 
-            if (rolePermissionsData.length > 0) {
-                await queryInterface.bulkInsert('role_permissions', rolePermissionsData, { transaction });
-            }
-
-            await transaction.commit();
-        } catch (error) {
-            await transaction.rollback();
-            console.error('RBAC Seeding Failed:', error);
-            throw error;
+        if (rolePermissionsData.length > 0) {
+            await queryInterface.bulkInsert('role_permissions', rolePermissionsData);
         }
     },
 
     async down(queryInterface, Sequelize) {
-        const transaction = await queryInterface.sequelize.transaction();
-        try {
-            // We can just truncate these tables or delete the specific rows.
-            // Since this is a seed migration, clearing the tables is likely what we want if we revert it,
-            // assuming these tables are only for RBAC.
-
-            await queryInterface.bulkDelete('role_permissions', null, { transaction });
-            await queryInterface.bulkDelete('roles', null, { transaction });
-            await queryInterface.bulkDelete('permissions', null, { transaction });
-
-            await transaction.commit();
-        } catch (error) {
-            await transaction.rollback();
-            throw error;
-        }
+        // Drop tables in reverse order
+        await queryInterface.dropTable('user_permissions');
+        await queryInterface.dropTable('group_permissions');
+        await queryInterface.dropTable('group_members');
+        await queryInterface.dropTable('user_groups');
+        await queryInterface.dropTable('role_permissions');
+        await queryInterface.dropTable('roles');
+        await queryInterface.dropTable('permissions');
     }
 };
