@@ -15,6 +15,7 @@ const QuizHub = ({ onBack, onViewProfile }) => {
     const [recommendations, setRecommendations] = useState([]);
     const [loadingRecommendations, setLoadingRecommendations] = useState(true);
     const [hasRecommendations, setHasRecommendations] = useState(false);
+    const [displayedRecommendationsCount, setDisplayedRecommendationsCount] = useState(5);
 
     // State for category-based quizzes
     const [quizzesByCategory, setQuizzesByCategory] = useState({});
@@ -774,39 +775,51 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                 </div>
             </div>
 
-            {/* Trending Quizzes Section */}
-            <div style={{ marginBottom: '2rem' }}>
-                <TrendingQuizzes
-                    onViewDetails={(quizId) => handleViewDetails(quizId, 'trending')}
-                    selectedQuiz={selectedQuiz}
-                    selectedQuizSource={selectedQuizSource}
-                />
-            </div>
+            {/* Trending Quizzes Section - Hide when searching */}
+            {!searchQuery.trim() && (
+                <div style={{ marginBottom: '2rem' }}>
+                    <TrendingQuizzes
+                        onViewDetails={(quizId) => handleViewDetails(quizId, 'trending')}
+                        selectedQuiz={selectedQuiz}
+                        selectedQuizSource={selectedQuizSource}
+                    />
+                </div>
+            )}
 
-            {/* Top Creators Section */}
-            <div style={{ marginBottom: '2rem' }}>
-                <TopCreators onViewProfile={onViewProfile} />
-            </div>
+            {/* Top Creators Section - Hide when searching */}
+            {!searchQuery.trim() && (
+                <div style={{ marginBottom: '2rem' }}>
+                    <TopCreators onViewProfile={onViewProfile} />
+                </div>
+            )}
 
-            {/* Recommended for You Section */}
-            {hasRecommendations && (
-                <div style={{ marginBottom: '3rem' }}>
+
+            {/* Recommended for You Section - Hide when searching */}
+            {hasRecommendations && !searchQuery.trim() && (
+                <div className="glass-card" style={{ marginBottom: '2rem' }}>
                     <div style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.75rem',
-                        marginBottom: '1.5rem'
+                        justifyContent: 'space-between',
+                        marginBottom: '1.5rem',
+                        flexWrap: 'wrap',
+                        gap: '0.5rem'
                     }}>
-                        <h2 style={{ margin: 0 }}>✨ Recommended for You</h2>
-                        <span style={{
-                            background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
-                            color: 'white',
-                            padding: '0.25rem 0.75rem',
-                            borderRadius: '12px',
-                            fontSize: '0.75rem',
-                            fontWeight: '600'
-                        }}>
-                            Personalized
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <h2 style={{ margin: 0 }}>✨ Recommended for You</h2>
+                            <span style={{
+                                background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+                                color: 'white',
+                                padding: '0.25rem 0.75rem',
+                                borderRadius: '12px',
+                                fontSize: '0.75rem',
+                                fontWeight: '600'
+                            }}>
+                                Personalized
+                            </span>
+                        </div>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                            {Math.min(displayedRecommendationsCount, recommendations.length)} of {recommendations.length}
                         </span>
                     </div>
 
@@ -817,21 +830,53 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                             ))}
                         </div>
                     ) : (
-                        <div className="grid" style={{
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                            gap: '1.5rem'
-                        }}>
-                            {recommendations.map(quiz => (
-                                <QuizCard key={quiz.id} quiz={quiz} source="recommended" />
-                            ))}
-                        </div>
+                        <>
+                            <div className="grid" style={{
+                                gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                                gap: '1.5rem',
+                                marginBottom: displayedRecommendationsCount < recommendations.length ? '1.5rem' : 0
+                            }}>
+                                {recommendations.slice(0, displayedRecommendationsCount).map(quiz => (
+                                    <QuizCard key={quiz.id} quiz={quiz} source="recommended" />
+                                ))}
+                            </div>
+                            {displayedRecommendationsCount < recommendations.length && (
+                                <button
+                                    onClick={() => setDisplayedRecommendationsCount(prev => prev + 5)}
+                                    style={{
+                                        width: '100%',
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        border: '1px solid var(--glass-border)',
+                                        color: 'white',
+                                        padding: '0.75rem',
+                                        fontSize: '0.95rem',
+                                        borderRadius: '12px',
+                                        fontWeight: '600',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.3s'
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+                                        e.target.style.borderColor = 'var(--primary)';
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                                        e.target.style.borderColor = 'var(--glass-border)';
+                                    }}
+                                >
+                                    ▼ Load More Recommendations
+                                </button>
+                            )}
+                        </>
                     )}
                 </div>
             )}
 
-            {/* Browse by Category Section */}
-            <div style={{ marginBottom: '2rem' }}>
-                <h2 style={{ marginBottom: '1.5rem', textAlign: 'left' }}>📚 Browse by Category</h2>
+            {/* Browse by Category Section / Search Results */}
+            <div className="glass-card" style={{ marginBottom: '2rem' }}>
+                <h2 style={{ marginBottom: '1.5rem' }}>
+                    {searchQuery.trim() ? `� Search Results for "${searchQuery}"` : '�📚 Browse by Category'}
+                </h2>
 
                 {loadingCategories ? (
                     <div style={{ display: 'grid', gap: '2rem' }}>
@@ -857,7 +902,7 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                         <p>{searchQuery ? 'Try a different search term or Quiz ID' : 'Check back soon for new quizzes!'}</p>
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gap: '3rem' }}>
+                    <div style={{ display: 'grid', gap: '2rem' }}>
                         {Object.entries(filteredQuizzes).map(([category, quizzes]) => {
 
                             return (

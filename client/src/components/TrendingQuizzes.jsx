@@ -27,7 +27,7 @@ const TrendingQuizzes = ({ onViewDetails: parentOnViewDetails, selectedQuiz, sel
 
     const fetchTrendingQuizzes = async () => {
         try {
-            const response = await fetch(`${API_URL}/api/social/trending?limit=6`);
+            const response = await fetch(`${API_URL}/api/social/trending?limit=5`);
             if (response.ok) {
                 const data = await response.json();
                 setQuizzes(data);
