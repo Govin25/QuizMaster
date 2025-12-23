@@ -13,31 +13,24 @@ const LandingPage = () => {
     // Testimonials data
     const testimonials = [
         {
-            name: "Sarah Johnson",
-            role: "Computer Science Student",
-            avatar: "👩‍💻",
-            text: "Quainy transformed how I study! The AI-generated quizzes are incredibly accurate, and the 1v1 challenges make learning competitive and fun.",
-            rating: 5
-        },
-        {
-            name: "Michael Chen",
-            role: "High School Teacher",
-            avatar: "👨‍🏫",
-            text: "I use Quainy to create engaging quizzes for my students. The analytics help me identify areas where they need more support. Absolutely fantastic!",
-            rating: 5
-        },
-        {
-            name: "Emily Rodriguez",
-            role: "Medical Student",
-            avatar: "👩‍⚕️",
-            text: "The comprehensive analytics and achievement system keep me motivated. I've improved my retention rate by 40% since using Quainy!",
-            rating: 5
-        },
-        {
-            name: "David Park",
+            name: "Rahul Meena",
             role: "Software Engineer",
             avatar: "👨‍💼",
-            text: "Perfect for interview prep! The real-time feedback and detailed reports help me track my progress across different topics.",
+            text: "I'd learn a new framework, then blank on it in interviews. Now I quiz myself right after tutorials. No more 'I knew this yesterday' moments.",
+            rating: 5
+        },
+        {
+            name: "Amrita Priya",
+            role: "Computer Science Student",
+            avatar: "👩‍💻",
+            text: "I used to study for hours and forget everything by exam day. Quainy's instant quizzes helped me actually retain what I learned. My grades improved from B's to A's.",
+            rating: 5
+        },
+        {
+            name: "Shanti Nareda",
+            role: "High School Teacher",
+            avatar: "👨‍🏫",
+            text: "My students would watch tutorials and forget them a week later. Now they quiz themselves right after learning, and the knowledge actually sticks!",
             rating: 5
         }
     ];
@@ -69,44 +62,44 @@ const LandingPage = () => {
     // Features data
     const features = [
         {
-            icon: "✨",
-            title: "AI Quiz Generation",
-            description: "Generate quizzes instantly from text or documents using advanced AI technology"
+            icon: "🧠",
+            title: "Instant Active Recall",
+            description: "Turn any topic into a quiz in seconds. Test yourself before you forget."
         },
         {
-            icon: "⚡",
-            title: "Real-time Gameplay",
-            description: "Live scoring and instant feedback with 30-second timer per question"
+            icon: "✨",
+            title: "AI Quiz Generation",
+            description: "Paste notes, upload PDFs, or describe a topic. AI creates targeted questions that expose your blind spots"
         },
         {
             icon: "📊",
-            title: "Comprehensive Analytics",
-            description: "Track performance, identify strengths, and get personalized recommendations"
+            title: "Know What You Don't Know",
+            description: "Analytics reveal exactly where you're weak, so you stop wasting time on what you already know"
         },
         {
             icon: "⚔️",
-            title: "1v1 Challenges",
-            description: "Compete with friends in real-time quiz battles and climb the leaderboard"
+            title: "Compete to Remember",
+            description: "Challenge friends in real-time. Competition triggers emotion, and emotion creates lasting memories"
         },
         {
-            icon: "🏆",
-            title: "Achievement System",
-            description: "Unlock badges and achievements as you progress through your learning journey"
+            icon: "⚡",
+            title: "30-Second Pressure",
+            description: "Timed questions force active retrieval. If you can't recall it fast, you don't really know it"
+        },
+        {
+            icon: "🎯",
+            title: "Spaced Repetition Ready",
+            description: "Retake quizzes at intervals to move knowledge from short-term to long-term memory"
         },
         {
             icon: "🌐",
-            title: "Quiz Hub",
-            description: "Discover and share quizzes with a global community of learners"
-        },
-        {
-            icon: "🔒",
-            title: "GDPR Compliant",
-            description: "Your data is secure with full export and deletion capabilities"
+            title: "Community Quiz Hub",
+            description: "Don't create from scratch. Use quizzes from others studying the same topics"
         },
         {
             icon: "📱",
-            title: "PWA Support",
-            description: "Install on any device and use offline - works like a native app"
+            title: "Install & Quiz Anytime",
+            description: "Install like an app on any device. One tap to open and start quizzing instantly"
         }
     ];
 
@@ -114,27 +107,27 @@ const LandingPage = () => {
     const steps = [
         {
             number: "1",
-            title: "Sign Up Free",
-            description: "Create your account in seconds - no credit card required",
-            icon: "👤"
+            title: "Learn Something",
+            description: "Watch a video, read notes, attend a lecture. Any learning counts.",
+            icon: "📚"
         },
         {
             number: "2",
-            title: "Create or Browse",
-            description: "Generate AI quizzes, create your own, or explore the Quiz Hub",
-            icon: "🎯"
+            title: "Quiz Yourself Immediately",
+            description: "Paste your notes or topic → AI generates questions in seconds",
+            icon: "⚡"
         },
         {
             number: "3",
-            title: "Play & Learn",
-            description: "Take quizzes, challenge friends, and track your progress",
-            icon: "🚀"
+            title: "Discover Gaps",
+            description: "See exactly what you thought you knew vs. what you actually remember",
+            icon: "🔍"
         },
         {
             number: "4",
-            title: "Master Topics",
-            description: "Use analytics to improve and unlock achievements",
-            icon: "🎓"
+            title: "Retain Forever",
+            description: "Retake quizzes over time. Move knowledge to long-term memory",
+            icon: "🧠"
         }
     ];
 
@@ -288,27 +281,27 @@ const LandingPage = () => {
             {/* Hero Section */}
             <section className="hero-section">
                 <div className="hero-content">
-                    <div className="floating-badge">🎯 #1 Memory Retention Platform</div>
+                    <div className="floating-badge">🧠 Stop Forgetting What You Study</div>
                     <h1 className="hero-title">
-                        Retain More, Learn Smarter with
-                        <span className="gradient-text"> AI-Powered Quizzes</span>
+                        You Studied for Hours.
+                        <span className="gradient-text"> Can You Actually Recall It?</span>
                     </h1>
                     <p className="hero-subtitle">
-                        Boost your memory retention through personalized quizzes. Track your progress with comprehensive analytics and challenge friends in real-time battles.
+                        Most people forget 70% of what they learn within 24 hours. Quainy uses instant active recall to make knowledge stick. Generate quizzes from any topic, test yourself, and actually remember what you learn.
                     </p>
                     <div className="hero-cta">
                         <button className="cta-primary" onClick={scrollToAuth}>
-                            Get Started Free
+                            Start Retaining More
                             <span className="arrow">→</span>
                         </button>
                         <button className="cta-secondary" onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}>
-                            Explore Features
+                            See How It Works
                         </button>
                     </div>
                     <div className="hero-badges">
-                        <span className="badge-item">✓ No Credit Card Required</span>
-                        <span className="badge-item">✓ Free Forever</span>
-                        <span className="badge-item">✓ GDPR Compliant</span>
+                        <span className="badge-item">✓ Quiz yourself in 30 seconds</span>
+                        <span className="badge-item">✓ Works with any topic</span>
+                        <span className="badge-item">✓ Free forever</span>
                     </div>
                 </div>
 
@@ -365,8 +358,8 @@ const LandingPage = () => {
             {/* Features Section */}
             <section className="features-section" id="features">
                 <div className="section-header">
-                    <h2 className="section-title">Powerful Features for Effective Learning</h2>
-                    <p className="section-subtitle">Everything you need to create, play, and master quizzes</p>
+                    <h2 className="section-title">Built for How Your Brain Actually Works</h2>
+                    <p className="section-subtitle">Active recall is the #1 scientifically-proven method to retain information. We make it effortless.</p>
                 </div>
                 <div className="features-grid">
                     {features.map((feature, index) => (
@@ -382,8 +375,8 @@ const LandingPage = () => {
             {/* How It Works */}
             <section className="how-it-works-section">
                 <div className="section-header">
-                    <h2 className="section-title">How It Works</h2>
-                    <p className="section-subtitle">Get started in 4 simple steps</p>
+                    <h2 className="section-title">From Learning to Lasting Memory</h2>
+                    <p className="section-subtitle">Turn passive consumption into active retention in minutes</p>
                 </div>
                 <div className="steps-container">
                     {steps.map((step, index) => (
@@ -440,8 +433,8 @@ const LandingPage = () => {
             {/* Trust Indicators */}
             <section className="trust-section">
                 <div className="section-header">
-                    <h2 className="section-title">Loved by Learners</h2>
-                    <p className="section-subtitle">See what our users have to say</p>
+                    <h2 className="section-title">They Were Forgetting Everything Too</h2>
+                    <p className="section-subtitle">See how learners stopped wasting study time</p>
                 </div>
 
                 {/* Testimonials Carousel */}
@@ -528,15 +521,15 @@ const LandingPage = () => {
             {/* Final CTA */}
             <section className="final-cta-section">
                 <div className="final-cta-content">
-                    <h2 className="final-cta-title">Ready to Master Every Topic?</h2>
+                    <h2 className="final-cta-title">Stop Wasting Hours on Forgotten Knowledge</h2>
                     <p className="final-cta-subtitle">
-                        Join thousands of learners who are already improving their memory retention with Quainy
+                        Every hour you spend learning without active recall is time half-wasted. Start retaining today.
                     </p>
                     <button className="cta-primary large" onClick={scrollToAuth}>
-                        Start Learning for Free
+                        Start Retaining for Free
                         <span className="arrow">→</span>
                     </button>
-                    <p className="final-cta-note">Free forever • Quick signup • Start learning in seconds</p>
+                    <p className="final-cta-note">Free forever • Quiz yourself in 30 seconds • Works with any topic</p>
                 </div>
             </section>
 
