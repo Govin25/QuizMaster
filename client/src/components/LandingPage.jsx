@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AuthForm from './AuthForm';
+import DemoQuiz from './DemoQuiz';
 import API_URL from '../config';
 
 const LandingPage = () => {
     const [showAuthModal, setShowAuthModal] = useState(false);
+    const [showDemoQuiz, setShowDemoQuiz] = useState(false);
     const [activeTestimonial, setActiveTestimonial] = useState(0);
     const [expandedFaq, setExpandedFaq] = useState(null);
     const [counters, setCounters] = useState({ users: 0, quizzes: 0, attempts: 0, challenges: 0 });
@@ -290,12 +292,12 @@ const LandingPage = () => {
                         Most people forget 70% of what they learn within 24 hours. Quainy uses instant active recall to make knowledge stick. Generate quizzes from any topic, test yourself, and actually remember what you learn.
                     </p>
                     <div className="hero-cta">
-                        <button className="cta-primary" onClick={scrollToAuth}>
-                            Start Retaining More
+                        <button className="cta-primary" onClick={() => setShowDemoQuiz(true)}>
+                            Try a Quiz Now
                             <span className="arrow">→</span>
                         </button>
-                        <button className="cta-secondary" onClick={() => document.getElementById('features').scrollIntoView({ behavior: 'smooth' })}>
-                            See How It Works
+                        <button className="cta-secondary" onClick={scrollToAuth}>
+                            Create Free Account
                         </button>
                     </div>
                     <div className="hero-badges">
@@ -542,6 +544,16 @@ const LandingPage = () => {
                         <AuthForm />
                     </div>
                 </div>
+            )}
+
+            {showDemoQuiz && (
+                <DemoQuiz
+                    onClose={() => setShowDemoQuiz(false)}
+                    onSignUp={() => {
+                        setShowDemoQuiz(false);
+                        setShowAuthModal(true);
+                    }}
+                />
             )}
         </div>
     );
