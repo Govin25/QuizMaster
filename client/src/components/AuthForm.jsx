@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 import PrivacyPolicy from './PrivacyPolicy';
 import TermsOfService from './TermsOfService';
@@ -21,6 +22,7 @@ const AuthForm = ({ defaultMode = 'signup' }) => {
     const [showTermsOfService, setShowTermsOfService] = useState(false);
     const [showUsernameInfo, setShowUsernameInfo] = useState(false);
     const { login } = useAuth();
+    const { showInfo } = useToast();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -343,6 +345,27 @@ const AuthForm = ({ defaultMode = 'signup' }) => {
                     {fieldErrors.password && (
                         <div style={{ color: '#fca5a5', fontSize: '0.8rem', marginTop: '0.25rem' }}>
                             {fieldErrors.password}
+                        </div>
+                    )}
+                    {/* Forgot password link - only show on login */}
+                    {isLogin && (
+                        <div style={{ textAlign: 'right', marginTop: '0.5rem' }}>
+                            <button
+                                type="button"
+                                onClick={() => showInfo('Password reset is coming soon! For now, please contact support if you need help accessing your account.')}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#818cf8',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    padding: 0,
+                                    textDecoration: 'underline',
+                                    textUnderlineOffset: '3px'
+                                }}
+                            >
+                                Forgot password?
+                            </button>
                         </div>
                     )}
                 </div>

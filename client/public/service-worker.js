@@ -6,7 +6,8 @@ const API_CACHE_NAME = `quainy-api-${CACHE_VERSION}`;
 
 // Assets to cache on install (minimal - only offline fallback)
 const STATIC_ASSETS = [
-    '/offline.html'
+    '/offline.html',
+    '/logo.png'
 ];
 
 // Install event - cache static assets
