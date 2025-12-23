@@ -2,15 +2,73 @@ const { User } = require('../models/sequelize');
 
 class UserRepository {
     /**
-     * Create a new user
-     * @param {string} username 
+     * Generate a unique username from name
+     * Uses first name or last name + random suffix
+     * @param {string} name - Full name
+     * @returns {Promise<string>} - Unique username
+     */
+    async generateUniqueUsername(name) {
+        // Split name and get first or last name (whichever is shorter for cleaner usernames)
+        const nameParts = name.trim().split(/\s+/);
+        let baseName;
+
+        if (nameParts.length > 1) {
+            // Use whichever is shorter between first and last name
+            const firstName = nameParts[0];
+            const lastName = nameParts[nameParts.length - 1];
+            baseName = firstName.length <= lastName.length ? firstName : lastName;
+        } else {
+            baseName = nameParts[0];
+        }
+
+        // Clean and limit the base name
+        baseName = baseName.toLowerCase()
+            .replace(/[^a-z0-9]/g, '')
+            .substring(0, 12);
+
+        // If baseName is too short, use 'user'
+        if (baseName.length < 2) {
+            baseName = 'user';
+        }
+
+        // Try to generate a unique username with random suffix
+        let username;
+        let attempts = 0;
+        const maxAttempts = 10;
+
+        while (attempts < maxAttempts) {
+            const suffix = Math.random().toString(36).substring(2, 6);
+            username = `${baseName}_${suffix}`;
+
+            // Check if username exists
+            const existingUser = await User.findOne({ where: { username } });
+            if (!existingUser) {
+                return username;
+            }
+            attempts++;
+        }
+
+        // Fallback: use timestamp-based suffix
+        const timestamp = Date.now().toString(36);
+        return `${baseName}_${timestamp}`;
+    }
+
+    /**
+     * Create a new user with email-based signup
+     * @param {string} name - User's display name
+     * @param {string} email - User's email address
      * @param {string} password - Will be hashed automatically by model hook
      * @param {string} role 
      * @returns {Promise<Object>}
      */
-    async create(username, password, role = 'user') {
+    async create(name, email, password, role = 'user') {
+        // Auto-generate unique username from name
+        const username = await this.generateUniqueUsername(name);
+
         const user = await User.create({
             username,
+            email: email.toLowerCase().trim(),
+            name: name.trim(),
             password,
             role,
         });
@@ -28,6 +86,36 @@ class UserRepository {
     async findByUsername(username) {
         return await User.findOne({
             where: { username },
+        });
+    }
+
+    /**
+     * Find user by email
+     * @param {string} email 
+     * @returns {Promise<Object|null>}
+     */
+    async findByEmail(email) {
+        return await User.findOne({
+            where: { email: email.toLowerCase().trim() },
+        });
+    }
+
+    /**
+     * Find user by email or username (for flexible login)
+     * @param {string} identifier - Can be email or username
+     * @returns {Promise<Object|null>}
+     */
+    async findByEmailOrUsername(identifier) {
+        const { Op } = require('sequelize');
+        const normalizedIdentifier = identifier.toLowerCase().trim();
+
+        return await User.findOne({
+            where: {
+                [Op.or]: [
+                    { email: normalizedIdentifier },
+                    { username: normalizedIdentifier }
+                ]
+            }
         });
     }
 

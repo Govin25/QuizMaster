@@ -80,11 +80,17 @@ const TermsOfService = ({ onClose }) => {
 
     // Simple markdown to HTML converter
     const renderMarkdown = (text) => {
+        let isFirstH1 = true; // Skip first H1 since we have it in the header
         return text
             .split('\n')
             .map((line, index) => {
                 // Headers
                 if (line.startsWith('# ')) {
+                    // Skip the first H1 to avoid duplicate title
+                    if (isFirstH1) {
+                        isFirstH1 = false;
+                        return null;
+                    }
                     return <h1 key={index} style={{ fontSize: '2rem', marginTop: '2rem', marginBottom: '1rem', background: 'linear-gradient(to right, #818cf8, #c084fc)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{line.substring(2)}</h1>;
                 }
                 if (line.startsWith('## ')) {
@@ -107,7 +113,8 @@ const TermsOfService = ({ onClose }) => {
                 }
                 // Regular paragraph
                 return <p key={index} style={{ marginBottom: '0.75rem' }}>{line}</p>;
-            });
+            })
+            .filter(Boolean); // Remove null entries
     };
 
     return (
@@ -144,6 +151,33 @@ const TermsOfService = ({ onClose }) => {
                     ) : (
                         renderMarkdown(content)
                     )}
+                </div>
+                {/* Close button at bottom */}
+                <div style={{
+                    marginTop: '2rem',
+                    paddingTop: '1.5rem',
+                    borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+                    display: 'flex',
+                    justifyContent: 'center'
+                }}>
+                    <button
+                        style={{
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            border: 'none',
+                            color: 'white',
+                            padding: '0.75rem 2rem',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontSize: '1rem',
+                            fontWeight: '600',
+                            transition: 'all 0.2s'
+                        }}
+                        onClick={onClose}
+                        onMouseEnter={(e) => e.target.style.transform = 'translateY(-2px)'}
+                        onMouseLeave={(e) => e.target.style.transform = 'translateY(0)'}
+                    >
+                        Close
+                    </button>
                 </div>
             </div>
         </div>

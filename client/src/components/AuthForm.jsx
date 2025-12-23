@@ -6,7 +6,9 @@ import TermsOfService from './TermsOfService';
 
 const AuthForm = ({ defaultMode = 'signup' }) => {
     const [isLogin, setIsLogin] = useState(defaultMode === 'login');
-    const [username, setUsername] = useState('');
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [identifier, setIdentifier] = useState(''); // For login: email or username
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -17,6 +19,7 @@ const AuthForm = ({ defaultMode = 'signup' }) => {
     const [acceptedPrivacy, setAcceptedPrivacy] = useState(false);
     const [showPrivacyPolicy, setShowPrivacyPolicy] = useState(false);
     const [showTermsOfService, setShowTermsOfService] = useState(false);
+    const [showUsernameInfo, setShowUsernameInfo] = useState(false);
     const { login } = useAuth();
 
     const handleSubmit = async (e) => {
@@ -40,8 +43,8 @@ const AuthForm = ({ defaultMode = 'signup' }) => {
 
         try {
             const requestBody = isLogin
-                ? { username, password }
-                : { username, password, acceptedTerms, acceptedPrivacy };
+                ? { identifier, password }
+                : { name, email, password, acceptedTerms, acceptedPrivacy };
 
             const response = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
@@ -75,14 +78,77 @@ const AuthForm = ({ defaultMode = 'signup' }) => {
             // before we trigger state changes that cause API calls
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            // Pass isNewUser flag for signups to redirect to quiz-hub
-            // Pass token for Header-Based Auth (iOS fix)
-            login(data.user, !isLogin, data.token);
+            // Show username info for new signups
+            if (!isLogin) {
+                setShowUsernameInfo(true);
+                setTimeout(() => {
+                    // Pass isNewUser flag for signups to redirect to quiz-hub
+                    // Pass token for Header-Based Auth (iOS fix)
+                    login(data.user, true, data.token);
+                }, 2000);
+            } else {
+                login(data.user, false, data.token);
+            }
         } catch (err) {
             setError(err.message);
         }
     };
 
+    const resetForm = () => {
+        setName('');
+        setEmail('');
+        setIdentifier('');
+        setPassword('');
+        setConfirmPassword('');
+        setShowPassword(false);
+        setShowConfirmPassword(false);
+        setAcceptedTerms(false);
+        setAcceptedPrivacy(false);
+        setError('');
+        setFieldErrors({});
+        setShowUsernameInfo(false);
+    };
+
+    if (showUsernameInfo) {
+        return (
+            <div className="glass-card" style={{
+                maxWidth: '400px',
+                width: '100%',
+                background: 'rgba(15, 23, 42, 0.8)',
+                border: '1px solid rgba(99, 102, 241, 0.2)',
+                textAlign: 'center',
+                padding: '2rem'
+            }}>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎉</div>
+                <h2 style={{
+                    marginBottom: '1rem',
+                    background: 'linear-gradient(to right, #818cf8, #c084fc)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent'
+                }}>Account Created!</h2>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                    Your username is:
+                </p>
+                <div style={{
+                    background: 'rgba(99, 102, 241, 0.2)',
+                    padding: '0.75rem 1rem',
+                    borderRadius: '8px',
+                    marginBottom: '1rem',
+                    fontFamily: 'monospace',
+                    fontSize: '1.1rem',
+                    color: '#818cf8'
+                }}>
+                    @{name.toLowerCase().replace(/[^a-z0-9]/g, '').substring(0, 12)}_****
+                </div>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    Use this for challenges and to let friends find you!
+                </p>
+                <div style={{ marginTop: '1rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    Redirecting...
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="glass-card" style={{
@@ -116,7 +182,7 @@ const AuthForm = ({ defaultMode = 'signup' }) => {
                 </h2>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                     {isLogin
-                        ? 'Enter your credentials to access your account'
+                        ? 'Enter your email or username to sign in'
                         : 'Start your journey to smarter learning'}
                 </p>
             </div>
@@ -139,32 +205,94 @@ const AuthForm = ({ defaultMode = 'signup' }) => {
             )}
 
             <form onSubmit={handleSubmit}>
-                <div style={{ marginBottom: '1rem' }}>
-                    <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Username</label>
-                    <input
-                        type="text"
-                        placeholder="Enter your username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                        required
-                        style={{
-                            width: '100%',
-                            padding: '0.75rem',
-                            background: 'rgba(0, 0, 0, 0.2)',
-                            border: fieldErrors.username
-                                ? '1px solid rgba(239, 68, 68, 0.5)'
-                                : '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: '8px',
-                            color: 'white',
-                            fontSize: '1rem'
-                        }}
-                    />
-                    {fieldErrors.username && (
-                        <div style={{ color: '#fca5a5', fontSize: '0.8rem', marginTop: '0.25rem' }}>
-                            {fieldErrors.username}
+                {/* Signup fields: Name and Email */}
+                {!isLogin && (
+                    <>
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Full Name</label>
+                            <input
+                                type="text"
+                                placeholder="Enter your name"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                                required
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    background: 'rgba(0, 0, 0, 0.2)',
+                                    border: fieldErrors.name
+                                        ? '1px solid rgba(239, 68, 68, 0.5)'
+                                        : '1px solid rgba(255, 255, 255, 0.1)',
+                                    borderRadius: '8px',
+                                    color: 'white',
+                                    fontSize: '1rem'
+                                }}
+                            />
+                            {fieldErrors.name && (
+                                <div style={{ color: '#fca5a5', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                                    {fieldErrors.name}
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Email</label>
+                            <input
+                                type="email"
+                                placeholder="Enter your email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                                style={{
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    background: 'rgba(0, 0, 0, 0.2)',
+                                    border: fieldErrors.email
+                                        ? '1px solid rgba(239, 68, 68, 0.5)'
+                                        : '1px solid rgba(255, 255, 255, 0.1)',
+                                    borderRadius: '8px',
+                                    color: 'white',
+                                    fontSize: '1rem'
+                                }}
+                            />
+                            {fieldErrors.email && (
+                                <div style={{ color: '#fca5a5', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                                    {fieldErrors.email}
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+
+                {/* Login field: Email or Username */}
+                {isLogin && (
+                    <div style={{ marginBottom: '1rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Email or Username</label>
+                        <input
+                            type="text"
+                            placeholder="Enter your email or username"
+                            value={identifier}
+                            onChange={(e) => setIdentifier(e.target.value)}
+                            required
+                            style={{
+                                width: '100%',
+                                padding: '0.75rem',
+                                background: 'rgba(0, 0, 0, 0.2)',
+                                border: fieldErrors.identifier
+                                    ? '1px solid rgba(239, 68, 68, 0.5)'
+                                    : '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: '8px',
+                                color: 'white',
+                                fontSize: '1rem'
+                            }}
+                        />
+                        {fieldErrors.identifier && (
+                            <div style={{ color: '#fca5a5', fontSize: '0.8rem', marginTop: '0.25rem' }}>
+                                {fieldErrors.identifier}
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <div style={{ marginBottom: '1rem' }}>
                     <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.85rem', color: 'var(--text-muted)' }}>Password</label>
                     <div style={{ position: 'relative' }}>
@@ -281,7 +409,8 @@ const AuthForm = ({ defaultMode = 'signup' }) => {
                             background: 'rgba(99, 102, 241, 0.1)',
                             border: '1px solid rgba(99, 102, 241, 0.2)',
                             borderRadius: '8px',
-                            padding: '1rem'
+                            padding: '1rem',
+                            textAlign: 'left'
                         }}>
                             <label style={{
                                 display: 'flex',
@@ -396,15 +525,7 @@ const AuthForm = ({ defaultMode = 'signup' }) => {
                 <button
                     onClick={() => {
                         setIsLogin(!isLogin);
-                        setError('');
-                        setFieldErrors({});
-                        setUsername('');
-                        setPassword('');
-                        setConfirmPassword('');
-                        setShowPassword(false);
-                        setShowConfirmPassword(false);
-                        setAcceptedTerms(false);
-                        setAcceptedPrivacy(false);
+                        resetForm();
                     }}
                     style={{
                         background: 'none',

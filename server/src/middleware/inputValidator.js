@@ -15,7 +15,40 @@ const validate = (req, res, next) => {
     next();
 };
 
-// Validation rules for user signup/login
+// Validation rules for user signup (email-based)
+const validateSignup = [
+    body('name')
+        .trim()
+        .isLength({ min: 2, max: 100 })
+        .withMessage('Name must be between 2 and 100 characters'),
+    body('email')
+        .trim()
+        .isEmail()
+        .withMessage('Please provide a valid email address')
+        .normalizeEmail(),
+    body('password')
+        .isLength({ min: 8, max: 128 })
+        .withMessage('Password must be between 8 and 128 characters')
+        .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+        .withMessage('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
+    validate
+];
+
+// Validation rules for user login (email or username)
+const validateLogin = [
+    body('identifier')
+        .trim()
+        .notEmpty()
+        .withMessage('Email or username is required')
+        .isLength({ max: 255 })
+        .withMessage('Email or username is too long'),
+    body('password')
+        .notEmpty()
+        .withMessage('Password is required'),
+    validate
+];
+
+// Keep validateAuth for backwards compatibility (if used elsewhere)
 const validateAuth = [
     body('username')
         .trim()
@@ -144,6 +177,8 @@ const validateQuizStatus = [
 module.exports = {
     validate,
     validateAuth,
+    validateSignup,
+    validateLogin,
     validateQuiz,
     validateQuestion,
     validateSearch,

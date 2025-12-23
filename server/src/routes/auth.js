@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
 const User = require('../models/User');
 const { authLimiter } = require('../middleware/rateLimiter');
-const { validateAuth } = require('../middleware/inputValidator');
+const { validateSignup, validateLogin } = require('../middleware/inputValidator');
 
 const router = express.Router();
 const SECRET_KEY = process.env.JWT_SECRET || 'secret_key';
@@ -26,9 +26,9 @@ router.get('/health', (req, res) => {
 });
 
 
-router.post('/signup', authLimiter, validateAuth, async (req, res) => {
+router.post('/signup', authLimiter, validateSignup, async (req, res) => {
     try {
-        const { username, password, acceptedTerms, acceptedPrivacy } = req.body;
+        const { name, email, password, acceptedTerms, acceptedPrivacy } = req.body;
 
         // Validate terms acceptance
         if (!acceptedTerms || !acceptedPrivacy) {
@@ -37,7 +37,13 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
             });
         }
 
-        const user = await User.create(username, password);
+        // Check if email already exists
+        const existingUser = await User.findByEmail(email);
+        if (existingUser) {
+            return res.status(409).json({ error: 'An account with this email already exists' });
+        }
+
+        const user = await User.create(name, email, password);
 
         // Record terms acceptance timestamps
         const { User: UserModel } = require('../models/sequelize');
@@ -75,6 +81,8 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
             user: {
                 id: user.id,
                 username: user.username,
+                name: user.name,
+                email: user.email,
                 role: user.role
             },
             token // Return token for client-side storage (iOS fix)
@@ -82,31 +90,36 @@ router.post('/signup', authLimiter, validateAuth, async (req, res) => {
     } catch (err) {
         logger.error('User signup failed', {
             error: err,
-            context: { username: req.body.username },
+            context: { email: req.body.email },
             requestId: req.requestId
         });
 
         if (err.name && err.name == 'SequelizeUniqueConstraintError') {
-            return res.status(409).json({ error: 'Username already exists' });
+            // Check if it's email or username conflict
+            if (err.errors && err.errors[0]?.path === 'email') {
+                return res.status(409).json({ error: 'An account with this email already exists' });
+            }
+            return res.status(409).json({ error: 'Username already exists. Please try again.' });
         }
         res.status(500).json({ error: 'Failed to create account' });
     }
 });
 
-router.post('/login', authLimiter, async (req, res) => {
+router.post('/login', authLimiter, validateLogin, async (req, res) => {
     console.log('=== LOGIN REQUEST RECEIVED ===');
-    console.log('Body:', { username: req.body.username, hasPassword: !!req.body.password });
+    console.log('Body:', { identifier: req.body.identifier, hasPassword: !!req.body.password });
 
     try {
-        const { username, password } = req.body;
+        const { identifier, password } = req.body;
 
-        if (!username || !password) {
+        if (!identifier || !password) {
             console.log('Login failed: Missing credentials');
-            return res.status(400).json({ error: 'Username and password are required' });
+            return res.status(400).json({ error: 'Email/username and password are required' });
         }
 
-        console.log('Looking up user:', username);
-        const user = await User.findByUsername(username);
+        console.log('Looking up user:', identifier);
+        // Try to find by email or username
+        const user = await User.findByEmailOrUsername(identifier);
 
         if (!user) {
             console.log('Login failed: User not found');
@@ -152,6 +165,8 @@ router.post('/login', authLimiter, async (req, res) => {
             user: {
                 id: user.id,
                 username: user.username,
+                name: user.name,
+                email: user.email,
                 role: user.role
             },
             token // Return token for client-side storage (iOS fix)
@@ -160,7 +175,7 @@ router.post('/login', authLimiter, async (req, res) => {
         console.error('❌ Login error:', err);
         logger.error('User login failed', {
             error: err,
-            context: { username: req.body.username },
+            context: { identifier: req.body.identifier },
             requestId: req.requestId
         });
         res.status(500).json({ error: 'Login failed' });

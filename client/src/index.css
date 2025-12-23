@@ -2037,12 +2037,15 @@ h3 {
 
   .hero-cta {
     flex-direction: column;
+    align-items: center;
     width: 100%;
   }
 
   .cta-primary,
   .cta-secondary {
     width: 100%;
+    max-width: 300px;
+    justify-content: center;
   }
 
   .trust-badges {
