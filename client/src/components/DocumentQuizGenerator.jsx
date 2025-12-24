@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
+import { QUIZ_LIMITS, getMaxQuestions } from '../config/quizLimits';
 
 const DocumentQuizGenerator = ({ onClose, onQuizCreated }) => {
     const { fetchWithAuth } = useAuth();
@@ -180,8 +181,13 @@ const DocumentQuizGenerator = ({ onClose, onQuizCreated }) => {
 
     // Save quiz (create new quiz in DB)
     const saveQuiz = async () => {
-        if (editingQuestions.length < 5) {
-            showError('Quiz must have at least 5 questions');
+        if (editingQuestions.length < QUIZ_LIMITS.MIN_QUESTIONS) {
+            showError(`Quiz must have at least ${QUIZ_LIMITS.MIN_QUESTIONS} question`);
+            return;
+        }
+
+        if (editingQuestions.length > QUIZ_LIMITS.MAX_QUESTIONS) {
+            showError(`Quiz cannot have more than ${QUIZ_LIMITS.MAX_QUESTIONS} questions`);
             return;
         }
 
@@ -336,15 +342,15 @@ const DocumentQuizGenerator = ({ onClose, onQuizCreated }) => {
                     </label>
                     <input
                         type="range"
-                        min="5"
-                        max="20"
+                        min={QUIZ_LIMITS.MIN_QUESTIONS}
+                        max={QUIZ_LIMITS.MAX_QUESTIONS}
                         value={config.numQuestions}
                         onChange={(e) => setConfig({ ...config, numQuestions: parseInt(e.target.value) })}
                         style={{ width: '100%' }}
                     />
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                        <span>5</span>
-                        <span>20</span>
+                        <span>{QUIZ_LIMITS.MIN_QUESTIONS}</span>
+                        <span>{QUIZ_LIMITS.MAX_QUESTIONS}</span>
                     </div>
                 </div>
 

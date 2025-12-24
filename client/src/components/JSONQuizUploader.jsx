@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useToast } from '../context/ToastContext';
 import { useAuth } from '../context/AuthContext';
 import API_URL from '../config';
+import { QUIZ_LIMITS } from '../config/quizLimits';
 
 const JSONQuizUploader = ({ onClose, onQuizCreated }) => {
     const { showSuccess, showError } = useToast();
@@ -109,7 +110,7 @@ const JSONQuizUploader = ({ onClose, onQuizCreated }) => {
 - For true_false: correctAnswer must be "true" or "false" (lowercase string)
 - Return ONLY valid JSON, no additional text or explanations
 
-📌 NUMBER OF QUESTIONS: [5-15]
+📌 NUMBER OF QUESTIONS: [${QUIZ_LIMITS.MIN_QUESTIONS}-${QUIZ_LIMITS.MAX_QUESTIONS_PREMIUM}]
 📌 DIFFICULTY LEVEL: [Beginner/Intermediate/Advanced/Expert]
 📌 CREATE A QUIZ ABOUT: [YOUR TOPIC HERE]`;
 
@@ -134,11 +135,11 @@ const JSONQuizUploader = ({ onClose, onQuizCreated }) => {
             return errors;
         }
 
-        if (quiz.questions.length < 5) {
-            errors.push(`Quiz must have at least 5 questions (found ${quiz.questions.length})`);
+        if (quiz.questions.length < QUIZ_LIMITS.MIN_QUESTIONS) {
+            errors.push(`Quiz must have at least ${QUIZ_LIMITS.MIN_QUESTIONS} question (found ${quiz.questions.length})`);
         }
-        if (quiz.questions.length > 20) {
-            errors.push(`Quiz must have at most 20 questions (found ${quiz.questions.length})`);
+        if (quiz.questions.length > QUIZ_LIMITS.MAX_QUESTIONS_PREMIUM) {
+            errors.push(`Quiz must have at most ${QUIZ_LIMITS.MAX_QUESTIONS_PREMIUM} questions (found ${quiz.questions.length})`);
         }
 
         quiz.questions.forEach((q, idx) => {

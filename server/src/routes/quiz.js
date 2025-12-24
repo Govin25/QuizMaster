@@ -14,6 +14,7 @@ const cache = require('../utils/cache');
 const { uploadLimiter, createQuizLimiter } = require('../middleware/rateLimiter');
 const { validateQuiz, validateQuestion, validateQuizStatus, validateId } = require('../middleware/inputValidator');
 const { handleError } = require('../utils/errorHandler');
+const { QUIZ_LIMITS, getMaxQuestions, validateQuestionCount } = require('../config/quizLimits');
 
 const router = express.Router();
 
@@ -555,8 +556,10 @@ router.post('/generate', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Topic is required' });
         }
 
-        // Validate numQuestions (5-50)
-        const questionCount = Math.min(50, Math.max(5, parseInt(numQuestions) || 10));
+        // Validate numQuestions based on user's premium status
+        const isPremium = req.user.role === 'premium' || req.user.role === 'admin';
+        const maxQuestions = getMaxQuestions(isPremium);
+        const questionCount = Math.min(maxQuestions, Math.max(QUIZ_LIMITS.MIN_QUESTIONS, parseInt(numQuestions) || QUIZ_LIMITS.DEFAULT_QUESTIONS));
 
         logger.info('AI quiz generation requested', {
             topic,
@@ -671,8 +674,15 @@ router.post('/save-ai-quiz', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Quiz category is required' });
         }
 
-        if (!questions || questions.length < 5) {
-            return res.status(400).json({ error: 'Quiz must have at least 5 questions' });
+        const isPremium = req.user.role === 'premium' || req.user.role === 'admin';
+        const maxQuestions = getMaxQuestions(isPremium);
+
+        if (!questions || questions.length < QUIZ_LIMITS.MIN_QUESTIONS) {
+            return res.status(400).json({ error: `Quiz must have at least ${QUIZ_LIMITS.MIN_QUESTIONS} question` });
+        }
+
+        if (questions.length > maxQuestions) {
+            return res.status(400).json({ error: `Quiz cannot have more than ${maxQuestions} questions` });
         }
 
         logger.info('Saving AI-generated quiz', {
@@ -810,8 +820,15 @@ router.post('/save-document-quiz', authenticateToken, async (req, res) => {
     try {
         const { title, category, difficulty, questions } = req.body;
 
-        if (!title || !category || !questions || questions.length < 5) {
-            return res.status(400).json({ error: 'Invalid quiz data' });
+        const isPremium = req.user.role === 'premium' || req.user.role === 'admin';
+        const maxQuestions = getMaxQuestions(isPremium);
+
+        if (!title || !category || !questions || questions.length < QUIZ_LIMITS.MIN_QUESTIONS) {
+            return res.status(400).json({ error: `Invalid quiz data. At least ${QUIZ_LIMITS.MIN_QUESTIONS} question required.` });
+        }
+
+        if (questions.length > maxQuestions) {
+            return res.status(400).json({ error: `Quiz cannot have more than ${maxQuestions} questions` });
         }
 
         // Create quiz in database
@@ -1013,8 +1030,15 @@ router.post('/save-video-quiz', authenticateToken, requireRole('admin'), async (
             videoThumbnail
         } = req.body;
 
-        if (!title || !category || !questions || questions.length < 5) {
-            return res.status(400).json({ error: 'Invalid quiz data. Minimum 5 questions required.' });
+        const isPremium = req.user.role === 'premium' || req.user.role === 'admin';
+        const maxQuestions = getMaxQuestions(isPremium);
+
+        if (!title || !category || !questions || questions.length < QUIZ_LIMITS.MIN_QUESTIONS) {
+            return res.status(400).json({ error: `Invalid quiz data. At least ${QUIZ_LIMITS.MIN_QUESTIONS} question required.` });
+        }
+
+        if (questions.length > maxQuestions) {
+            return res.status(400).json({ error: `Quiz cannot have more than ${maxQuestions} questions` });
         }
 
         if (!videoUrl || !videoPlatform || !videoId) {
@@ -1281,11 +1305,11 @@ router.post('/upload-json', authenticateToken, async (req, res) => {
             if (!Array.isArray(quiz.questions)) {
                 errors.push('Missing or invalid "questions" array');
             } else {
-                if (quiz.questions.length < 5) {
-                    errors.push(`Quiz must have at least 5 questions (found ${quiz.questions.length})`);
+                if (quiz.questions.length < QUIZ_LIMITS.MIN_QUESTIONS) {
+                    errors.push(`Quiz must have at least ${QUIZ_LIMITS.MIN_QUESTIONS} question (found ${quiz.questions.length})`);
                 }
-                if (quiz.questions.length > 20) {
-                    errors.push(`Quiz must have at most 20 questions (found ${quiz.questions.length})`);
+                if (quiz.questions.length > QUIZ_LIMITS.MAX_QUESTIONS_PREMIUM) {
+                    errors.push(`Quiz must have at most ${QUIZ_LIMITS.MAX_QUESTIONS_PREMIUM} questions (found ${quiz.questions.length})`);
                 }
 
                 quiz.questions.forEach((q, qIdx) => {

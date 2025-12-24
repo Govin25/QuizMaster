@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 import { handleConcurrencyError } from '../utils/concurrencyHandler';
 import ConfirmDialog from './ConfirmDialog';
+import { QUIZ_LIMITS } from '../config/quizLimits';
 
 const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
     const { fetchWithAuth } = useAuth();
@@ -206,8 +207,8 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
     };
 
     const handleDeleteQuestion = (questionId) => {
-        if (questionCount <= 5) {
-            showError('Cannot delete question. Quiz must have at least 5 questions.');
+        if (questionCount <= QUIZ_LIMITS.MIN_QUESTIONS) {
+            showError(`Cannot delete question. Quiz must have at least ${QUIZ_LIMITS.MIN_QUESTIONS} question.`);
             return;
         }
 
@@ -333,15 +334,15 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
                                 borderRadius: '12px',
                                 fontSize: '0.8rem',
                                 fontWeight: 'bold',
-                                background: questionCount >= 5
+                                background: questionCount >= QUIZ_LIMITS.MIN_QUESTIONS
                                     ? 'rgba(34, 197, 94, 0.2)'
                                     : 'rgba(251, 146, 60, 0.2)',
-                                color: questionCount >= 5 ? '#22c55e' : '#fb923c',
-                                border: `1px solid ${questionCount >= 5 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(251, 146, 60, 0.3)'}`
+                                color: questionCount >= QUIZ_LIMITS.MIN_QUESTIONS ? '#22c55e' : '#fb923c',
+                                border: `1px solid ${questionCount >= QUIZ_LIMITS.MIN_QUESTIONS ? 'rgba(34, 197, 94, 0.3)' : 'rgba(251, 146, 60, 0.3)'}`
                             }}>
                                 {questionCount} {questionCount === 1 ? 'question' : 'questions'}
-                                {questionCount < 5 && ` (${5 - questionCount} more needed)`}
-                                {questionCount >= 5 && ' ✓'}
+                                {questionCount < QUIZ_LIMITS.MIN_QUESTIONS && ` (${QUIZ_LIMITS.MIN_QUESTIONS - questionCount} more needed)`}
+                                {questionCount >= QUIZ_LIMITS.MIN_QUESTIONS && ' ✓'}
                             </span>
                         </div>
                     )}
@@ -723,19 +724,19 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
                             }}>
                                 <h3 style={{ margin: 0 }}>Existing Questions</h3>
                                 <div style={{
-                                    background: questionCount >= 5
+                                    background: questionCount >= QUIZ_LIMITS.MIN_QUESTIONS
                                         ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))'
                                         : 'linear-gradient(135deg, rgba(251, 146, 60, 0.2), rgba(245, 158, 11, 0.2))',
                                     padding: '0.5rem 1rem',
                                     borderRadius: '20px',
                                     fontSize: '0.85rem',
                                     fontWeight: 'bold',
-                                    color: questionCount >= 5 ? '#22c55e' : '#fb923c',
-                                    border: `2px solid ${questionCount >= 5 ? 'rgba(34, 197, 94, 0.3)' : 'rgba(251, 146, 60, 0.3)'}`
+                                    color: questionCount >= QUIZ_LIMITS.MIN_QUESTIONS ? '#22c55e' : '#fb923c',
+                                    border: `2px solid ${questionCount >= QUIZ_LIMITS.MIN_QUESTIONS ? 'rgba(34, 197, 94, 0.3)' : 'rgba(251, 146, 60, 0.3)'}`
                                 }}>
-                                    {questionCount >= 5
+                                    {questionCount >= QUIZ_LIMITS.MIN_QUESTIONS
                                         ? `${questionCount} questions ✓`
-                                        : `${questionCount}/5 (need ${5 - questionCount} more)`
+                                        : `${questionCount}/${QUIZ_LIMITS.MIN_QUESTIONS} (need ${QUIZ_LIMITS.MIN_QUESTIONS - questionCount} more)`
                                     }
                                 </div>
                             </div>
@@ -1023,13 +1024,13 @@ const QuizCreator = ({ onBack, onCreated, editQuizId = null }) => {
 
                     <button
                         onClick={() => {
-                            if (questionCount < 5) {
-                                showError('Please add at least 5 questions before finishing');
+                            if (questionCount < QUIZ_LIMITS.MIN_QUESTIONS) {
+                                showError(`Please add at least ${QUIZ_LIMITS.MIN_QUESTIONS} question before finishing`);
                                 return;
                             }
                             onCreated();
                         }}
-                        disabled={questionCount < 5}
+                        disabled={questionCount < QUIZ_LIMITS.MIN_QUESTIONS}
                         style={{
                             width: '100%',
                             padding: '1rem',

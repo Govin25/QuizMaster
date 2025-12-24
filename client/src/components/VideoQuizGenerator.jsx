@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
+import { QUIZ_LIMITS } from '../config/quizLimits';
 
 const VideoQuizGenerator = ({ onClose, onQuizCreated }) => {
     const { fetchWithAuth } = useAuth();
@@ -141,8 +142,8 @@ const VideoQuizGenerator = ({ onClose, onQuizCreated }) => {
 
     // Remove question
     const removeQuestion = (index) => {
-        if (questions.length <= 5) {
-            showError('Quiz must have at least 5 questions');
+        if (questions.length <= QUIZ_LIMITS.MIN_QUESTIONS) {
+            showError(`Quiz must have at least ${QUIZ_LIMITS.MIN_QUESTIONS} question`);
             return;
         }
         const updated = questions.filter((_, i) => i !== index);
@@ -301,12 +302,12 @@ const VideoQuizGenerator = ({ onClose, onQuizCreated }) => {
                     <input
                         type="number"
                         id="numQuestions"
-                        min="5"
-                        max="50"
+                        min={QUIZ_LIMITS.MIN_QUESTIONS}
+                        max={QUIZ_LIMITS.MAX_QUESTIONS}
                         value={config.numQuestions}
                         onChange={(e) => setConfig({ ...config, numQuestions: parseInt(e.target.value) })}
                     />
-                    <small>5-50 questions</small>
+                    <small>{QUIZ_LIMITS.MIN_QUESTIONS}-{QUIZ_LIMITS.MAX_QUESTIONS} questions</small>
                 </div>
 
                 <div className="config-field">
@@ -408,7 +409,7 @@ const VideoQuizGenerator = ({ onClose, onQuizCreated }) => {
                             <button
                                 onClick={() => removeQuestion(currentQuestionIndex)}
                                 className="btn-danger-small"
-                                disabled={questions.length <= 5}
+                                disabled={questions.length <= QUIZ_LIMITS.MIN_QUESTIONS}
                             >
                                 Delete
                             </button>

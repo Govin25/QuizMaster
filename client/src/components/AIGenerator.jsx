@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 import './AIGenerator.css';
+import { QUIZ_LIMITS } from '../config/quizLimits';
 
 /**
  * Enhanced AI Quiz Generator with premium UI/UX
@@ -115,8 +116,8 @@ const AIGenerator = ({ onBack, onCreated }) => {
 
     // Delete question
     const deleteQuestion = (index) => {
-        if (questions.length <= 5) {
-            showError('Quiz must have at least 5 questions');
+        if (questions.length <= QUIZ_LIMITS.MIN_QUESTIONS) {
+            showError(`Quiz must have at least ${QUIZ_LIMITS.MIN_QUESTIONS} question`);
             return;
         }
         const updated = questions.filter((_, i) => i !== index);
@@ -128,8 +129,8 @@ const AIGenerator = ({ onBack, onCreated }) => {
 
     // Save quiz
     const handleSave = async () => {
-        if (questions.length < 5) {
-            showError('Quiz must have at least 5 questions');
+        if (questions.length < QUIZ_LIMITS.MIN_QUESTIONS) {
+            showError(`Quiz must have at least ${QUIZ_LIMITS.MIN_QUESTIONS} question`);
             return;
         }
         if (!quizTitle.trim()) {
@@ -207,8 +208,8 @@ const AIGenerator = ({ onBack, onCreated }) => {
                     <div className="ai-gen-slider-container">
                         <input
                             type="range"
-                            min="5"
-                            max="50"
+                            min={QUIZ_LIMITS.MIN_QUESTIONS}
+                            max={QUIZ_LIMITS.MAX_QUESTIONS}
                             value={config.numQuestions}
                             onChange={(e) => setConfig({ ...config, numQuestions: parseInt(e.target.value) })}
                             className="ai-gen-slider"
@@ -444,9 +445,9 @@ const AIGenerator = ({ onBack, onCreated }) => {
                         </span>
                         <button
                             onClick={() => deleteQuestion(currentQuestionIndex)}
-                            disabled={questions.length <= 5}
+                            disabled={questions.length <= QUIZ_LIMITS.MIN_QUESTIONS}
                             className="ai-gen-delete-btn"
-                            title={questions.length <= 5 ? 'Minimum 5 questions required' : 'Delete question'}
+                            title={questions.length <= QUIZ_LIMITS.MIN_QUESTIONS ? `Minimum ${QUIZ_LIMITS.MIN_QUESTIONS} question required` : 'Delete question'}
                         >
                             🗑️
                         </button>
@@ -534,7 +535,7 @@ const AIGenerator = ({ onBack, onCreated }) => {
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={isSaving || questions.length < 5}
+                        disabled={isSaving || questions.length < QUIZ_LIMITS.MIN_QUESTIONS}
                         className="ai-gen-save-btn"
                     >
                         {isSaving ? (

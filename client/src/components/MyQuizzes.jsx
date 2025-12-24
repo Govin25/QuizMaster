@@ -5,6 +5,7 @@ import API_URL from '../config';
 import ConfirmDialog from './ConfirmDialog';
 import QuizPDFExport from './QuizPDFExport';
 import { handleConcurrencyError } from '../utils/concurrencyHandler';
+import { QUIZ_LIMITS } from '../config/quizLimits';
 
 const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
     const { user, fetchWithAuth } = useAuth();
@@ -638,30 +639,30 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                     <div style={{ position: 'relative' }}>
                         <button
                             onClick={() => {
-                                if ((quiz.questionCount || 0) < 5) {
-                                    showError(`Cannot publish: Quiz needs at least 5 questions (currently has ${quiz.questionCount || 0})`);
+                                if ((quiz.questionCount || 0) < QUIZ_LIMITS.MIN_QUESTIONS) {
+                                    showError(`Cannot publish: Quiz needs at least ${QUIZ_LIMITS.MIN_QUESTIONS} question (currently has ${quiz.questionCount || 0})`);
                                     return;
                                 }
                                 handlePublish(quiz.id);
                             }}
-                            disabled={(quiz.questionCount || 0) < 5}
+                            disabled={(quiz.questionCount || 0) < QUIZ_LIMITS.MIN_QUESTIONS}
                             style={{
                                 width: '100%',
-                                background: (quiz.questionCount || 0) >= 5
+                                background: (quiz.questionCount || 0) >= QUIZ_LIMITS.MIN_QUESTIONS
                                     ? 'linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(16, 185, 129, 0.2))'
                                     : 'rgba(148, 163, 184, 0.2)',
-                                border: (quiz.questionCount || 0) >= 5
+                                border: (quiz.questionCount || 0) >= QUIZ_LIMITS.MIN_QUESTIONS
                                     ? '1px solid rgba(34, 197, 94, 0.3)'
                                     : '1px solid rgba(148, 163, 184, 0.3)',
-                                color: (quiz.questionCount || 0) >= 5 ? '#22c55e' : '#94a3b8',
+                                color: (quiz.questionCount || 0) >= QUIZ_LIMITS.MIN_QUESTIONS ? '#22c55e' : '#94a3b8',
                                 padding: '0.75rem',
                                 fontSize: '0.9rem',
-                                cursor: (quiz.questionCount || 0) >= 5 ? 'pointer' : 'not-allowed',
-                                opacity: (quiz.questionCount || 0) >= 5 ? 1 : 0.6
+                                cursor: (quiz.questionCount || 0) >= QUIZ_LIMITS.MIN_QUESTIONS ? 'pointer' : 'not-allowed',
+                                opacity: (quiz.questionCount || 0) >= QUIZ_LIMITS.MIN_QUESTIONS ? 1 : 0.6
                             }}
                         >
                             📤 {quiz.status === 'rejected' ? 'Resubmit' : 'Publish'}
-                            {(quiz.questionCount || 0) < 5 && ` (${quiz.questionCount || 0}/5 questions)`}
+                            {(quiz.questionCount || 0) < QUIZ_LIMITS.MIN_QUESTIONS && ` (${quiz.questionCount || 0}/${QUIZ_LIMITS.MIN_QUESTIONS} questions)`}
                         </button>
                     </div>
                 )}
