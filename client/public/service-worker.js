@@ -1,6 +1,6 @@
 // Cache version - MUST be updated with every deployment
 // Use Date.now() during runtime to ensure unique cache on each build
-const CACHE_VERSION = '20251224-mjja0e08';  // Update this with each deployment
+const CACHE_VERSION = '20251224-mjjcwtm9';  // Update this with each deployment
 const CACHE_NAME = `quainy-${CACHE_VERSION}`;
 const API_CACHE_NAME = `quainy-api-${CACHE_VERSION}`;
 

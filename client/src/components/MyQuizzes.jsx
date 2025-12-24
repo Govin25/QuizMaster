@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 import ConfirmDialog from './ConfirmDialog';
+import QuizPDFExport from './QuizPDFExport';
 import { handleConcurrencyError } from '../utils/concurrencyHandler';
 
 const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
@@ -16,6 +17,7 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
     const [deleteConfirm, setDeleteConfirm] = useState(null);
     const [inLibrary, setInLibrary] = useState(new Set());
     const [sourceFilter, setSourceFilter] = useState('all');
+    const [showExport, setShowExport] = useState(false);
 
     // Source filter configuration
     const sourceFilters = [
@@ -248,15 +250,30 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    marginBottom: '2rem'
+                    marginBottom: '2rem',
+                    flexWrap: 'wrap',
+                    gap: '1rem'
                 }}>
                     <h2 style={{ margin: 0 }}>Quiz Details</h2>
-                    <button onClick={() => setSelectedQuiz(null)} style={{
-                        background: 'rgba(255,255,255,0.1)',
-                        padding: '0.6rem 1.2rem'
-                    }}>
-                        ← Back to List
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                            onClick={() => setShowExport(true)}
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2))',
+                                border: '1px solid rgba(16, 185, 129, 0.3)',
+                                color: '#10b981',
+                                padding: '0.6rem 1.2rem'
+                            }}
+                        >
+                            📄 Export PDF
+                        </button>
+                        <button onClick={() => setSelectedQuiz(null)} style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            padding: '0.6rem 1.2rem'
+                        }}>
+                            ← Back to List
+                        </button>
+                    </div>
                 </div>
 
                 <div style={{ marginBottom: '2rem' }}>
@@ -313,6 +330,14 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                         ))}
                     </div>
                 </div>
+
+                {/* PDF Export Modal */}
+                {showExport && (
+                    <QuizPDFExport
+                        quiz={selectedQuiz}
+                        onClose={() => setShowExport(false)}
+                    />
+                )}
             </div>
         );
     }
