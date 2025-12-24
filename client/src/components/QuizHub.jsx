@@ -934,19 +934,23 @@ const QuizHub = ({ onBack, onViewProfile }) => {
                                 <div key={category} style={{
                                     background: 'rgba(255, 255, 255, 0.02)',
                                     borderRadius: '16px',
-                                    padding: '2rem',
-                                    border: '1px solid var(--glass-border)'
+                                    padding: 'clamp(1rem, 3vw, 2rem)',
+                                    border: '1px solid var(--glass-border)',
+                                    overflow: 'hidden',
+                                    maxWidth: '100%'
                                 }}>
                                     {/* Category Header */}
                                     <div style={{
                                         display: 'flex',
                                         justifyContent: 'space-between',
                                         alignItems: 'center',
-                                        marginBottom: '1.5rem'
+                                        marginBottom: '1.5rem',
+                                        flexWrap: 'wrap',
+                                        gap: '0.5rem'
                                     }}>
                                         <h3 style={{
                                             margin: 0,
-                                            fontSize: '1.5rem',
+                                            fontSize: 'clamp(1.1rem, 3vw, 1.5rem)',
                                             background: 'linear-gradient(135deg, #fff 0%, #a5b4fc 100%)',
                                             WebkitBackgroundClip: 'text',
                                             WebkitTextFillColor: 'transparent'
@@ -963,8 +967,8 @@ const QuizHub = ({ onBack, onViewProfile }) => {
 
                                     {/* Quiz Grid */}
                                     <div className="grid" style={{
-                                        gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                                        gap: '1.5rem',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
+                                        gap: 'clamp(1rem, 2vw, 1.5rem)',
                                         marginBottom: hasMoreByCategory[category] ? '1.5rem' : 0
                                     }}>
                                         {quizzes.map(quiz => (
