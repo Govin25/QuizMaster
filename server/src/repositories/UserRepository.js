@@ -206,6 +206,61 @@ class UserRepository {
             throw error;
         }
     }
+
+    /**
+     * Find user by Google ID
+     * @param {string} googleId 
+     * @returns {Promise<Object|null>}
+     */
+    async findByGoogleId(googleId) {
+        return await User.findOne({
+            where: { google_id: googleId }
+        });
+    }
+
+    /**
+     * Create a new user from Google OAuth
+     * @param {string} name - User's display name from Google
+     * @param {string} email - User's email from Google
+     * @param {string} googleId - Google's unique user ID
+     * @param {string} avatarUrl - Profile picture URL from Google
+     * @returns {Promise<Object>}
+     */
+    async createGoogleUser(name, email, googleId, avatarUrl = null) {
+        const username = await this.generateUniqueUsername(name);
+
+        const user = await User.create({
+            username,
+            email: email.toLowerCase().trim(),
+            name: name.trim(),
+            password: null, // No password for OAuth users
+            google_id: googleId,
+            auth_provider: 'google',
+            avatar_url: avatarUrl,
+            terms_accepted_at: new Date(),
+            privacy_accepted_at: new Date(),
+        });
+
+        const { password: _, ...userWithoutPassword } = user.toJSON();
+        return userWithoutPassword;
+    }
+
+    /**
+     * Link Google account to existing user
+     * @param {number} userId 
+     * @param {string} googleId 
+     * @returns {Promise<boolean>}
+     */
+    async linkGoogleAccount(userId, googleId) {
+        const [affectedRows] = await User.update(
+            {
+                google_id: googleId,
+                auth_provider: 'google' // Update to google as primary
+            },
+            { where: { id: userId } }
+        );
+        return affectedRows > 0;
+    }
 }
 
 module.exports = new UserRepository();

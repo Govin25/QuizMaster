@@ -210,4 +210,118 @@ router.get('/verify', authenticateToken, (req, res) => {
     });
 });
 
+// Google OAuth endpoint
+const { OAuth2Client } = require('google-auth-library');
+const UserRepository = require('../repositories/UserRepository');
+
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
+
+router.post('/google', authLimiter, async (req, res) => {
+    console.log('=== GOOGLE AUTH REQUEST RECEIVED ===');
+
+    try {
+        const { credential } = req.body;
+
+        if (!credential) {
+            return res.status(400).json({ error: 'Google credential is required' });
+        }
+
+        if (!GOOGLE_CLIENT_ID) {
+            logger.error('GOOGLE_CLIENT_ID not configured');
+            return res.status(500).json({ error: 'Google authentication is not configured' });
+        }
+
+        // Verify the Google ID token
+        const client = new OAuth2Client(GOOGLE_CLIENT_ID);
+        let ticket;
+        try {
+            ticket = await client.verifyIdToken({
+                idToken: credential,
+                audience: GOOGLE_CLIENT_ID,
+            });
+        } catch (verifyError) {
+            logger.error('Google token verification failed', { error: verifyError });
+            return res.status(401).json({ error: 'Invalid Google credential' });
+        }
+
+        const payload = ticket.getPayload();
+        const googleId = payload['sub'];
+        const email = payload['email'];
+        const name = payload['name'] || email.split('@')[0];
+        const picture = payload['picture'];
+
+        console.log('Google user info:', { googleId, email, name });
+
+        let user;
+        let isNewUser = false;
+
+        // 1. Check if user exists by Google ID
+        user = await UserRepository.findByGoogleId(googleId);
+
+        if (!user) {
+            // 2. Check if user exists by email (for account linking)
+            const existingUserByEmail = await UserRepository.findByEmail(email);
+
+            if (existingUserByEmail) {
+                // Link Google account to existing email user
+                await UserRepository.linkGoogleAccount(existingUserByEmail.id, googleId);
+                user = await UserRepository.findById(existingUserByEmail.id);
+                console.log('Linked Google account to existing user:', user.username);
+            } else {
+                // 3. Create new user
+                user = await UserRepository.createGoogleUser(name, email, googleId, picture);
+                isNewUser = true;
+                console.log('Created new Google user:', user.username);
+            }
+        } else {
+            console.log('Found existing Google user:', user.username);
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: user.id, username: user.username, role: user.role },
+            SECRET_KEY,
+            { expiresIn: '7d' }
+        );
+
+        // Set secure httpOnly cookie
+        const cookieOptions = {
+            httpOnly: true,
+            secure: isProduction,
+            sameSite: isProduction ? 'none' : 'lax',
+            path: '/',
+            maxAge: 7 * 24 * 60 * 60 * 1000  // 7 days
+        };
+
+        res.cookie('auth_token', token, cookieOptions);
+
+        // Prevent caching
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+
+        console.log('✅ Google auth successful for', user.username);
+
+        res.json({
+            user: {
+                id: user.id,
+                username: user.username,
+                name: user.name,
+                email: user.email,
+                role: user.role
+            },
+            token,
+            isNewUser
+        });
+    } catch (err) {
+        console.error('❌ Google auth error:', err);
+        logger.error('Google authentication failed', {
+            error: err,
+            requestId: req.requestId
+        });
+        res.status(500).json({ error: 'Google authentication failed' });
+    }
+});
+
 module.exports = router;
+

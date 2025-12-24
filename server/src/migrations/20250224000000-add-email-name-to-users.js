@@ -13,7 +13,7 @@ module.exports = {
         // Add name column to users table
         await queryInterface.addColumn('users', 'name', {
             type: Sequelize.STRING(100),
-            allowNull: false
+            allowNull: true
         });
 
         // Add index on email for fast lookups

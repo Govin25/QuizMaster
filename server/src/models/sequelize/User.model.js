@@ -27,7 +27,17 @@ module.exports = (sequelize) => {
         },
         password: {
             type: DataTypes.STRING,
+            allowNull: true, // Nullable for OAuth users
+        },
+        google_id: {
+            type: DataTypes.STRING(255),
+            allowNull: true,
+            unique: true,
+        },
+        auth_provider: {
+            type: DataTypes.STRING(20),
             allowNull: false,
+            defaultValue: 'local', // 'local' | 'google'
         },
         role: {
             type: DataTypes.STRING,
