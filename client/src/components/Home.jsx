@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext';
 import API_URL from '../config';
 import { LikeButton } from './SocialFeatures';
 import { formatDateShort } from '../utils/dateUtils';
+import QuizPDFExport from './QuizPDFExport';
 
 const Home = ({ onStartQuiz, onViewReport, onViewAllAttempts }) => {
     const { fetchWithAuth } = useAuth();
@@ -12,6 +13,7 @@ const Home = ({ onStartQuiz, onViewReport, onViewAllAttempts }) => {
     const [loading, setLoading] = useState(true);
     const [likesData, setLikesData] = useState({}); // Store like status and counts
     const [selectedQuiz, setSelectedQuiz] = useState(null); // For viewing quiz details
+    const [showExport, setShowExport] = useState(false); // For PDF export modal
 
     useEffect(() => {
         fetchLibrary();
@@ -400,12 +402,31 @@ const Home = ({ onStartQuiz, onViewReport, onViewAllAttempts }) => {
                     marginBottom: '2rem'
                 }}>
                     <h2 style={{ margin: 0 }}>Quiz Details</h2>
-                    <button onClick={() => setSelectedQuiz(null)} style={{
-                        background: 'rgba(255,255,255,0.1)',
-                        padding: '0.6rem 1.2rem'
-                    }}>
-                        ← Back to Home
-                    </button>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button
+                            onClick={() => setShowExport(true)}
+                            style={{
+                                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(139, 92, 246, 0.3))',
+                                border: '1px solid rgba(99, 102, 241, 0.4)',
+                                color: 'white',
+                                padding: '0.6rem 1.2rem',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontWeight: '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.4rem'
+                            }}
+                        >
+                            📄 Export PDF
+                        </button>
+                        <button onClick={() => setSelectedQuiz(null)} style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            padding: '0.6rem 1.2rem'
+                        }}>
+                            ← Back to Home
+                        </button>
+                    </div>
                 </div>
 
                 {/* Quiz Header */}
@@ -686,6 +707,14 @@ const Home = ({ onStartQuiz, onViewReport, onViewAllAttempts }) => {
                         </button>
                     )}
                 </div>
+
+                {/* PDF Export Modal */}
+                {showExport && (
+                    <QuizPDFExport
+                        quiz={selectedQuiz}
+                        onClose={() => setShowExport(false)}
+                    />
+                )}
             </div>
         );
     }

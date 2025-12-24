@@ -298,32 +298,113 @@ const MyQuizzes = ({ onEdit, onCreate, onBack }) => {
                 </div>
 
                 <div style={{ marginBottom: '2rem' }}>
-                    <h4>Questions ({selectedQuiz.questions?.length || 0})</h4>
+                    <h4 style={{ marginBottom: '1rem' }}>Questions ({selectedQuiz.questions?.length || 0})</h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         {selectedQuiz.questions?.map((q, idx) => (
-                            <div key={q.id} style={{
+                            <div key={q.id || idx} style={{
                                 background: 'rgba(255,255,255,0.05)',
-                                padding: '1rem',
-                                borderRadius: '8px',
-                                border: '1px solid var(--glass-border)'
+                                padding: '1rem 1.25rem',
+                                borderRadius: '10px',
+                                border: '1px solid var(--glass-border)',
+                                textAlign: 'left'
                             }}>
-                                <div style={{ fontWeight: '600', marginBottom: '0.5rem' }}>
-                                    Q{idx + 1}: {q.text}
+                                {/* Question text */}
+                                <div style={{
+                                    fontWeight: '600',
+                                    marginBottom: '0.75rem',
+                                    color: 'var(--text-primary)',
+                                    textAlign: 'left'
+                                }}>
+                                    <span style={{ color: 'var(--primary)', marginRight: '0.5rem' }}>Q{idx + 1}.</span>
+                                    {q.text}
                                 </div>
-                                {q.type === 'multiple_choice' && q.options && (
-                                    <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginLeft: '1rem' }}>
-                                        {q.options.map((opt, i) => (
-                                            <div key={i} style={{
-                                                color: opt === q.correctAnswer ? '#22c55e' : 'inherit'
-                                            }}>
-                                                {opt} {opt === q.correctAnswer && '✓'}
-                                            </div>
-                                        ))}
+
+                                {/* Multiple choice options */}
+                                {(q.type === 'multiple_choice' || (!q.type && q.options)) && q.options && (
+                                    <div style={{
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.5rem',
+                                        marginLeft: '1.5rem'
+                                    }}>
+                                        {q.options.map((opt, i) => {
+                                            const isCorrect = opt === q.correctAnswer ||
+                                                opt === q.correct_answer ||
+                                                i === q.correctAnswer ||
+                                                String.fromCharCode(65 + i) === q.correctAnswer;
+                                            return (
+                                                <div key={i} style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.75rem',
+                                                    padding: '0.5rem 0.75rem',
+                                                    borderRadius: '6px',
+                                                    background: isCorrect ? 'rgba(34, 197, 94, 0.15)' : 'transparent',
+                                                    border: isCorrect ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid transparent'
+                                                }}>
+                                                    <span style={{
+                                                        fontWeight: '600',
+                                                        color: isCorrect ? '#22c55e' : 'var(--text-muted)',
+                                                        minWidth: '20px'
+                                                    }}>
+                                                        {String.fromCharCode(65 + i)}.
+                                                    </span>
+                                                    <span style={{
+                                                        color: isCorrect ? '#22c55e' : 'var(--text-secondary)',
+                                                        flex: 1
+                                                    }}>
+                                                        {opt}
+                                                    </span>
+                                                    {isCorrect && (
+                                                        <span style={{ color: '#22c55e', fontSize: '1rem' }}>✓</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
+
+                                {/* True/False options */}
                                 {q.type === 'true_false' && (
-                                    <div style={{ fontSize: '0.9rem', color: '#22c55e', marginLeft: '1rem' }}>
-                                        Correct Answer: {q.correctAnswer}
+                                    <div style={{
+                                        display: 'flex',
+                                        gap: '1rem',
+                                        marginLeft: '1.5rem'
+                                    }}>
+                                        {['True', 'False'].map((option) => {
+                                            const isCorrect = q.correctAnswer === option ||
+                                                q.correctAnswer === option.toLowerCase() ||
+                                                q.correctAnswer === (option === 'True') ||
+                                                q.correct_answer === option;
+                                            return (
+                                                <div key={option} style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.5rem',
+                                                    padding: '0.5rem 1rem',
+                                                    borderRadius: '6px',
+                                                    background: isCorrect ? 'rgba(34, 197, 94, 0.15)' : 'rgba(255,255,255,0.05)',
+                                                    border: isCorrect ? '1px solid rgba(34, 197, 94, 0.4)' : '1px solid var(--glass-border)'
+                                                }}>
+                                                    <span style={{
+                                                        width: '14px',
+                                                        height: '14px',
+                                                        borderRadius: '50%',
+                                                        border: isCorrect ? '2px solid #22c55e' : '2px solid var(--text-muted)',
+                                                        background: isCorrect ? '#22c55e' : 'transparent'
+                                                    }} />
+                                                    <span style={{
+                                                        color: isCorrect ? '#22c55e' : 'var(--text-secondary)',
+                                                        fontWeight: isCorrect ? '600' : '400'
+                                                    }}>
+                                                        {option}
+                                                    </span>
+                                                    {isCorrect && (
+                                                        <span style={{ color: '#22c55e' }}>✓</span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>

@@ -14,7 +14,8 @@ class Question {
         return {
             id: this.id,
             text: this.text,
-            type: this.type
+            type: this.type,
+            correctAnswer: this.correctAnswer
         };
     }
 }
